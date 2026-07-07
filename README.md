@@ -1,99 +1,179 @@
-# 🧰 AI Toolbox
+# 🍄 Predictor de bolets · Catalunya
 
-Personal playground and toolbox for AI-assisted development: rules, skills, prompts, and knowledge I reuse across all my projects and **all AI tools** (Claude Code, Codex, Cursor, ...). Think of it as *dotfiles for AI*.
+Eina personal que, a partir de **dades obertes de Meteocat**, puntua on és més
+probable trobar bolets aquesta setmana. Privada, d'un sol usuari, pensada per
+ser barata de mantenir i honesta amb les seves limitacions.
 
-One repo, tool-agnostic, versioned like code. When a rule misfires, fix it and commit.
+---
 
-## Structure
+## Com funciona, en una frase
+
+Per a cada estació meteorològica de la XEMA calculem un **score de 0 a 1** que
+combina quanta pluja útil ha caigut (amb el retard de fructificació), si la
+temperatura és bona, i si l'entorn és bosc. No hi ha base de dades ni interpolació:
+tot es recalcula a cada execució demanant a l'API una finestra de dies.
 
 ```
-ai-toolbox/
-├── rules/
-│   └── AGENTS.md   # Canonical global rules — single source of truth
-├── skills/         # Reusable skill folders (SKILL.md + optional assets)
-│   └── <skill>/
-│       └── SKILL.md
-├── prompts/        # Prompt templates I reuse (SEO briefs, PR reviews, ...)
-├── knowledge/      # Stable reference docs (stack decisions, deployment gotchas)
-└── setup.sh        # Fans out rules into per-tool config for the current repo
+score = humitat × temperatura × altitud × hoste        (cada factor 0..1)
 ```
 
-### What goes where
+---
 
-| Folder | Purpose | Examples |
+## El model, factor a factor
+
+### 1. Humitat (`hScore`)
+Pluja acumulada dels últims **30 dies**, però amb dos matisos que no són òbvis i
+que vam descobrir validant amb dades reals:
+
+- **Sostre diari (`CAP`, 30 mm).** Una tromba de 90 mm en una hora no s'infiltra:
+  se'n va barranc avall (escorrentia). Per sobre del sostre, els mm de més no
+  compten com a humitat de sòl. Això evita que una DANA catastròfica surti com a
+  "gran setmana de bolets".
+- **Lag de fructificació (`lagWeight`).** El bolet triga ~1-2 setmanes a sortir
+  després de la pluja. Per tant la pluja d'ahir compta poc, el pic de pes és cap
+  als **6-9 dies**, i després s'esvaeix a mesura que el sòl s'asseca (~3 setmanes).
+  És una diferència de dues exponencials (paràmetres `LAG_RISE` / `LAG_FALL`).
+
+Després es passa per una corba que **satura** (`1 − e^(−H/H0)`): a partir de cert
+reg acumulat, més pluja ja no fa més bolets.
+
+### 2. Temperatura (`tempFactor`)
+Finestra ideal **10-20 °C**. Baixa a 0 amb glaçada (<2 °C) o massa calor (>28 °C).
+Fem servir la mitjana dels últims 5 dies.
+
+### 3. Altitud (`altFactor`) — ⚠️ PROXY provisional
+Mentre no tinguem el mapa de boscos, l'altitud fa de tapaforats de "hi ha bosc?".
+Banda òptima de pins/bolets ~**400-1600 m**; per sobre de ~2000 m no hi ha bosc
+(roca/gespa alpina) → 0. **No és la veritat**: un punt a 1200 m pot ser alzinar o
+pastura, no pineda. Ho substituirà l'hoste real (veure Següents passos).
+
+### 4. Hoste (`hostFactor`) — 🔜 pendent
+L'arbre micoríxic és el factor **clau** per a bolets (els rovellons volen pins).
+Ara mateix és 1 per a tothom. S'omplirà creuant la coordenada de cada estació amb
+el **MCSC** (tipus de bosc dominant).
+
+---
+
+## Decisions de disseny (per què així)
+
+| Decisió | Raó |
+|---|---|
+| **PWA, no app nativa** | Només cal mapa + geolocalització; funcionen al navegador. Un sol codebase; Capacitor si algun dia cal store. |
+| **Per estació, sense graella** | Evita interpolar pluja amb ~180 punts (el pas feble i car). L'usuari tria *zona* on anar, no un metre quadrat, així que puntuar a les estacions encaixa. |
+| **Stateless** | La suma ponderada dels últims 30 dies equival a l'índex recursiu `api = k·api + pluja`. Res d'estat diari a persistir, ni backfill, ni cron que no pugui fallar. |
+| **Hard way (sense CatDrought)** | CatDrought (CREAF) ja dona humitat de sòl diària per píxel, però l'accés és via app (Shiny), sense API neta. El fem servir com a *alternativa* de referència, no com a dependència. |
+| **JS/TS, no Python** | En simplificar a estacions vam eliminar la interpolació (scipy) i el balanç hídric (R/medfate), que eren els únics motius per Python. Node fa tota la feina. |
+
+**Capes deliberadament ajornades:** hoste (MCSC), orientació del vessant (obagues,
+del DEM), capacitat de retenció del sòl (mapa de sòls ICGC). S'afegeixen *només*
+si, un cop validat, es justifiquen contra el mapa — no per intuïció.
+
+---
+
+## Fonts de dades
+
+Tot del **portal de Dades Obertes de la Generalitat** (Socrata / SODA API,
+`analisi.transparenciacatalunya.cat`), obert i sense clau.
+
+| Dataset | ID | Contingut |
 |---|---|---|
-| `rules/` | **Global** rules that always apply. Loaded into every context, so keep them short. | TS conventions, "prefer explicit over clever", formatting preferences |
-| `skills/` | **Contextual** capabilities, only loaded when relevant. | Astro micro-site scaffold, Coolify deployment, SEO page checklist |
-| `prompts/` | Templates for recurring one-off tasks. | Keyword research brief, code review prompt |
-| `knowledge/` | Reference docs written once, reused everywhere. | Hono/Drizzle/Better Auth boilerplate decisions, Coolify quirks, Astro static-output setup |
+| Mesures XEMA | `nzvn-apee` | Mesures semihoràries (UTC). Columnes: `codi_estacio`, `codi_variable`, `data_lectura`, `valor_lectura` |
+| Metadades variables | `4fb2-n3yi` | Codis de variable ↓ |
+| Metadades estacions | `yqwd-vj5e` | `codi_estacio`, nom, latitud, longitud, altitud |
 
-**Rule of thumb:** if it should apply to *every* conversation → `rules/`. If it's only useful for a specific kind of task → `skills/`. If it's facts, not behavior → `knowledge/`.
+**Codis de variable útils:** `35`=PPT (pluja) · `32`=T (temperatura) ·
+`40`=Tx (T màx) · `42`=Tn (T mín, per glaçades) · `30`=VV10 (vent) ·
+`31`=DV10 (direcció vent) · `33`=HR (humitat relativa) · `36`=RS (radiació).
 
-## Design principle: one source, many formats
+**Pendents (per a les capes futures):**
+- **MCSC** — Mapa de Cobertes del Sòl de Catalunya (CREAF) → tipus de bosc / hoste.
+- **DEM i mapa de sòls** — ICGC → orientació del vessant i retenció d'aigua.
+- **CatDrought** (CREAF, laboratoriforestal) → humitat de sòl ja calculada; alternativa.
+- Motor propi possible: paquets R `meteoland` + `medfate` (el que fa servir CatDrought).
 
-Every tool wants its own file name for the same thing:
+---
 
-| Tool | Global rules | Per-project rules | Skills |
-|---|---|---|---|
-| **AGENTS.md standard** (Codex, and a growing list) | — | `AGENTS.md` | — |
-| **Claude Code** | `~/.claude/CLAUDE.md` | `CLAUDE.md` | `~/.claude/skills/` or `.claude/skills/` |
-| **Cursor** | user settings | `.cursor/rules/` or `.cursorrules` | — |
+## Com executar
 
-The content is 95% identical, so: **write once in `rules/AGENTS.md`, symlink everything else to it.** Never edit the tool-specific files directly.
-
-## Setup (user-level, once per machine)
-
-```bash
-git clone git@github.com:<you>/ai-toolbox.git ~/ai-toolbox
-
-# Claude Code — global rules + skills
-mkdir -p ~/.claude
-ln -s ~/ai-toolbox/rules/AGENTS.md ~/.claude/CLAUDE.md
-ln -s ~/ai-toolbox/skills ~/.claude/skills
-
-# Codex — global guidance
-mkdir -p ~/.codex
-ln -s ~/ai-toolbox/rules/AGENTS.md ~/.codex/AGENTS.md
-```
-
-Updating everything everywhere:
+Requereix només **Node 18+** (porta `fetch` de sèrie; cap `npm install`).
 
 ```bash
-cd ~/ai-toolbox && git pull
+# Condicions d'avui
+node score_estacions.mjs
+
+# Backtest: "com si fos" un dia passat (clau per validar)
+node score_estacions.mjs --date=2025-10-20
 ```
 
-> **Note:** back up any existing config files before symlinking.
+Sortida: un rànquing a consola (top 20) + un fitxer **`bolets.geojson`** amb totes
+les estacions puntuades, llest per pintar amb MapLibre.
 
-## Setup (per-repo)
+---
 
-For rules that should live *with* a project (and travel with it to CI, teammates, or cloud agents), run the fan-out script from inside the repo:
+## Validació
 
-```bash
-~/ai-toolbox/setup.sh
-```
+El problema de fons: **no hi ha dataset obert de "on he trobat bolets"** (ground
+truth). Per tant validem de dues maneres:
 
-Which does roughly:
+1. **Backtest contra setmanes conegudes.** `--date` a una tardor bona que recordis
+   i mirar si s'encenen les zones on saps que en surten.
+2. **Coherència amb episodis reals de pluja.** Exemple real que ens va ensenyar molt:
+   el backtest del **20-10-2025** posava els Ports #1. Investigant, resulta que el
+   12-13/10/2025 la **DANA Alice** va descarregar de manera històrica justament allà
+   (Mas de Barberans 92 mm, Ports 92 mm, Tivissa 190 mm). Conclusió doble:
+   - ✅ el pipeline reflecteix la realitat amb fidelitat (les dades són bones);
+   - ⚠️ però destapava que el model mesurava "on ha caigut més aigua", no "on hi
+     haurà bolets" → d'aquí van sortir el **sostre de pluja** i el **lag**.
 
-```bash
-# AGENTS.md is the canonical per-repo file
-touch AGENTS.md                  # project-specific rules go here
-ln -s AGENTS.md CLAUDE.md        # Claude Code reads it too
-```
+*En juliol tot surt sec i pla: és correcte, no un bug.*
 
-Project `AGENTS.md` = project-specific stuff only (stack, commands, structure). Global preferences stay in the toolbox — don't duplicate.
+---
 
-> **Tip for teams:** commit `AGENTS.md`, and decide as a team whether tool-specific symlinks get committed or gitignored.
+## Limitacions conegudes
 
-## Adding new content
+- **Hoste = proxy d'altitud** fins que entri el MCSC (pot recomanar zones sense pins).
+- **L'estació és un proxy del bosc**: pot ser a la vall i el bosc al vessant, a més
+  altura → la seva pluja/temperatura és aproximada, no exacta.
+- **Sense ground truth** no es pot ajustar fi de veritat; els paràmetres són raonables,
+  no òptims.
+- **Pluja torrencial vs suau**: el sostre ho mitiga, però la intensitat real per
+  hora no la modelem.
 
-1. **Start from real friction.** Don't design taxonomy up front — when you notice yourself re-explaining something to the AI for the third time, that's a rule/skill/knowledge doc waiting to be written.
-2. **Keep global rules minimal.** Everything in `rules/AGENTS.md` costs context window in every conversation. If it's not universally useful, make it a skill instead.
-3. **Write tool-agnostic.** Rules should make sense to any agent. Avoid tool-specific syntax in the canonical file; if a tool needs special directives, put them in a small tool-specific section or file.
-4. **Skills format:** one folder per skill with a `SKILL.md` containing a clear description of *when* it should trigger and *what* it does. Add supporting assets (templates, examples) in the same folder. Claude Code loads these natively; for other tools, reference the skill file explicitly in your prompt.
-5. **Commit like code.** Small commits, clear messages. Rules evolve — history tells you why.
+---
 
-## Conventions
+## Següents passos
 
-- Everything in Markdown unless there's a reason not to
-- English for rules/skills (better model performance), any language for personal notes in `knowledge/`
-- No secrets, ever — this repo may end up in many contexts
+1. **Capa hoste (MCSC).** Resoldre l'espècie de bosc a la coordenada de cada estació
+   (un cop, offline: QGIS o consulta a WMS/WFS) i omplir la taula `HOST`. Substitueix
+   el proxy d'altitud pel factor real.
+2. **Mapa MapLibre.** Un HTML que carrega `bolets.geojson` i pinta les estacions per
+   color de score. Amb això ja és "app".
+3. **Calibrar** `CAP`, `H0`, `LAG_RISE/FALL` i la finestra de temperatura contra
+   floracions reals recordades.
+4. Considerar **Tn (glaçades)** a banda de la T mitjana; i, si es vol precisió
+   espacial, tornar a valorar graella + orientació del vessant.
+
+---
+
+## Fitxers
+
+- **`score_estacions.mjs`** — el scorer (aquest és el que evoluciona).
+- **`spike_xema.mjs`** — diagnòstic d'un sol ús per validar l'accés a Socrata. Ja
+  ha fet la seva feina; es pot jubilar.
+- **`bolets.geojson`** — sortida generada (no es versiona; es regenera a cada run).
+
+---
+
+## Paràmetres afinables (mapa ràpid d'on tocar)
+
+Tots a la capçalera de `score_estacions.mjs`:
+
+| Paràmetre | Què controla |
+|---|---|
+| `DIES` | quants dies enrere de pluja mirem |
+| `CAP` | sostre mm/dia (llindar d'escorrentia) |
+| `H0` | on satura la humitat |
+| `LAG_RISE` / `LAG_FALL` | forma del retard de fructificació |
+| `tempFactor()` | finestra de temperatura ideal |
+| `altFactor()` | banda d'altitud "forestal" (proxy) |
+| `HOST{}` | factor d'hoste per estació (del MCSC) |
