@@ -1,56 +1,62 @@
 # 🍄 Predictor de bolets · Catalunya
 
 Eina personal que, a partir de **dades obertes de Meteocat**, puntua on és més
-probable trobar bolets aquesta setmana. Privada, d'un sol usuari, pensada per
-ser barata de mantenir i honesta amb les seves limitacions.
+probable trobar bolets aquesta setmana — **per espècie**. Privada, d'un sol usuari,
+barata de mantenir i honesta amb les seves limitacions.
 
 ---
 
 ## Com funciona, en una frase
 
-Per a cada estació meteorològica de la XEMA calculem un **score de 0 a 1** que
-combina quanta pluja útil ha caigut (amb el retard de fructificació), si la
-temperatura és bona, i si l'entorn és bosc. No hi ha base de dades ni interpolació:
+Per a cada estació de la XEMA i per a **una espècie concreta**, calculem un
+**score de 0 a 1** que combina pluja útil (amb retard de fructificació),
+temperatura, altitud, i si toca temporada. Sense base de dades ni interpolació:
 tot es recalcula a cada execució demanant a l'API una finestra de dies.
 
 ```
-score = humitat × temperatura × altitud × hoste        (cada factor 0..1)
+score = humitat × temperatura × altitud × estació × hoste     (cada factor 0..1)
 ```
+
+---
+
+## Espècies i la seva ecologia
+
+Cada espècie té la seva config (temporada, altitud, temperatura, arbre hoste).
+Els paràmetres són **priors ecològics raonables, no òptims** — sense ground truth
+de "on he trobat X" no es poden calibrar fi.
+
+| Espècie | Arbre hoste | Temporada | Altitud | Notes |
+|---|---|---|---|---|
+| **Rovelló** (*Lactarius*) | Pins | Set–Nov | Baixa–1600 m | Cas base |
+| **Cep** (*Boletus edulis* grp) | Faig, roure, castanyer, alzina, coníferes | Set–Nov (+estiu) | 600–1800 m | Vol humitat sostinguda, fresc |
+| **Llenega** (*Hygrophorus*) | Pins calcaris | Oct–Des | Mitja | Tardà, aguanta el fred |
+| **Trompeta de la mort** (*Craterellus*) | Planifolis, obagues | Set–Nov | 300–1400 m | Fullaraca humida i ombrívola |
+| **Rossinyol** (*C. cibarius*) | Ample | Jun–Oct | 300–1600 m | Llarg, tolera calor |
+| **Camagroc** (*C. lutescens*) | Pinedes molsoses | Oct–Gen | 400–1600 m | Molt tardà, fred, molla constant |
+| **Múrgola** (*Morchella*) | Freixe, ribera, cremats | **Mar–Maig** | 200–1400 m | **Primavera!** Sapròfit |
 
 ---
 
 ## El model, factor a factor
 
-### 1. Humitat (`hScore`)
-Pluja acumulada dels últims **30 dies**, però amb dos matisos que no són òbvis i
-que vam descobrir validant amb dades reals:
+### Humitat (`hScore`) — compartida per totes les espècies
+Pluja acumulada dels últims **30 dies**, amb dos matisos descoberts validant amb dades reals:
+- **Sostre diari (`CAP`, 30 mm):** una tromba de 90 mm/h se'n va barranc avall (escorrentia),
+  no s'infiltra. Per sobre del sostre no compta. Evita que una DANA surti com a "gran setmana".
+- **Lag de fructificació (`lagWeight`):** el bolet triga ~1-2 setmanes a sortir. La pluja d'ahir
+  compta poc, el pic de pes és cap als **6-9 dies**, i s'esvaeix cap a les 3 setmanes.
 
-- **Sostre diari (`CAP`, 30 mm).** Una tromba de 90 mm en una hora no s'infiltra:
-  se'n va barranc avall (escorrentia). Per sobre del sostre, els mm de més no
-  compten com a humitat de sòl. Això evita que una DANA catastròfica surti com a
-  "gran setmana de bolets".
-- **Lag de fructificació (`lagWeight`).** El bolet triga ~1-2 setmanes a sortir
-  després de la pluja. Per tant la pluja d'ahir compta poc, el pic de pes és cap
-  als **6-9 dies**, i després s'esvaeix a mesura que el sòl s'asseca (~3 setmanes).
-  És una diferència de dues exponencials (paràmetres `LAG_RISE` / `LAG_FALL`).
+Es passa per una corba que **satura** (`1 − e^(−H/H0)`): més pluja ja no fa més bolets.
 
-Després es passa per una corba que **satura** (`1 − e^(−H/H0)`): a partir de cert
-reg acumulat, més pluja ja no fa més bolets.
+### Temperatura, Altitud, Estació — per espècie
+- **Temperatura:** finestra ideal segons l'espècie (el cep vol fresc, el rossinyol tolera calor).
+- **Altitud:** banda segons l'espècie. ⚠️ **PROXY** de "hi ha bosc?" fins que entri el MCSC.
+- **Estació:** PORTA temporal — fora dels mesos de l'espècie, score ~0 (múrgola a l'octubre = 0).
 
-### 2. Temperatura (`tempFactor`)
-Finestra ideal **10-20 °C**. Baixa a 0 amb glaçada (<2 °C) o massa calor (>28 °C).
-Fem servir la mitjana dels últims 5 dies.
-
-### 3. Altitud (`altFactor`) — ⚠️ PROXY provisional
-Mentre no tinguem el mapa de boscos, l'altitud fa de tapaforats de "hi ha bosc?".
-Banda òptima de pins/bolets ~**400-1600 m**; per sobre de ~2000 m no hi ha bosc
-(roca/gespa alpina) → 0. **No és la veritat**: un punt a 1200 m pot ser alzinar o
-pastura, no pineda. Ho substituirà l'hoste real (veure Següents passos).
-
-### 4. Hoste (`hostFactor`) — 🔜 pendent
-L'arbre micoríxic és el factor **clau** per a bolets (els rovellons volen pins).
-Ara mateix és 1 per a tothom. S'omplirà creuant la coordenada de cada estació amb
-el **MCSC** (tipus de bosc dominant).
+### Hoste (`hostFactor`) — 🔜 pendent, i ara **imprescindible**
+L'arbre micoríxic és el factor clau. Encara és 1 per a tothom. Sense el MCSC, un
+predictor de ceps i un de rovellons miren gairebé el mateix (només els separa temporada
+i altitud). L'hoste és el que diu "aquí pineda → rovelló, aquí fageda → cep".
 
 ---
 
@@ -58,122 +64,96 @@ el **MCSC** (tipus de bosc dominant).
 
 | Decisió | Raó |
 |---|---|
-| **PWA, no app nativa** | Només cal mapa + geolocalització; funcionen al navegador. Un sol codebase; Capacitor si algun dia cal store. |
-| **Per estació, sense graella** | Evita interpolar pluja amb ~180 punts (el pas feble i car). L'usuari tria *zona* on anar, no un metre quadrat, així que puntuar a les estacions encaixa. |
-| **Stateless** | La suma ponderada dels últims 30 dies equival a l'índex recursiu `api = k·api + pluja`. Res d'estat diari a persistir, ni backfill, ni cron que no pugui fallar. |
-| **Hard way (sense CatDrought)** | CatDrought (CREAF) ja dona humitat de sòl diària per píxel, però l'accés és via app (Shiny), sense API neta. El fem servir com a *alternativa* de referència, no com a dependència. |
-| **JS/TS, no Python** | En simplificar a estacions vam eliminar la interpolació (scipy) i el balanç hídric (R/medfate), que eren els únics motius per Python. Node fa tota la feina. |
-
-**Capes deliberadament ajornades:** hoste (MCSC), orientació del vessant (obagues,
-del DEM), capacitat de retenció del sòl (mapa de sòls ICGC). S'afegeixen *només*
-si, un cop validat, es justifiquen contra el mapa — no per intuïció.
+| **PWA, no nativa** | Només cal mapa + geolocalització; funcionen al navegador. |
+| **Per estació, sense graella** | Evita interpolar pluja amb ~180 punts. L'usuari tria zona, no metre quadrat. |
+| **Stateless** | La suma ponderada equival a l'índex recursiu; res d'estat diari ni backfill. |
+| **Hard way (sense CatDrought)** | CatDrought (CREAF) dona humitat de sòl per píxel però l'accés és via app; queda com a alternativa. |
+| **JS/TS, no Python** | En simplificar a estacions vam eliminar interpolació i balanç hídric, els únics motius per Python. |
 
 ---
 
 ## Fonts de dades
 
-Tot del **portal de Dades Obertes de la Generalitat** (Socrata / SODA API,
-`analisi.transparenciacatalunya.cat`), obert i sense clau.
+Portal de Dades Obertes de la Generalitat (Socrata / SODA API, obert i sense clau).
 
 | Dataset | ID | Contingut |
 |---|---|---|
-| Mesures XEMA | `nzvn-apee` | Mesures semihoràries (UTC). Columnes: `codi_estacio`, `codi_variable`, `data_lectura`, `valor_lectura` |
+| Mesures XEMA | `nzvn-apee` | Semihorària (UTC). `codi_estacio`, `codi_variable`, `data_lectura`, `valor_lectura` |
 | Metadades variables | `4fb2-n3yi` | Codis de variable ↓ |
 | Metadades estacions | `yqwd-vj5e` | `codi_estacio`, nom, latitud, longitud, altitud |
 
-**Codis de variable útils:** `35`=PPT (pluja) · `32`=T (temperatura) ·
-`40`=Tx (T màx) · `42`=Tn (T mín, per glaçades) · `30`=VV10 (vent) ·
-`31`=DV10 (direcció vent) · `33`=HR (humitat relativa) · `36`=RS (radiació).
+**Codis de variable:** `35`=PPT (pluja) · `32`=T · `40`=Tx · `42`=Tn (glaçades) · `30`=VV10 (vent) · `33`=HR · `36`=RS.
 
-**Pendents (per a les capes futures):**
-- **MCSC** — Mapa de Cobertes del Sòl de Catalunya (CREAF) → tipus de bosc / hoste.
-- **DEM i mapa de sòls** — ICGC → orientació del vessant i retenció d'aigua.
-- **CatDrought** (CREAF, laboratoriforestal) → humitat de sòl ja calculada; alternativa.
-- Motor propi possible: paquets R `meteoland` + `medfate` (el que fa servir CatDrought).
+**Pendents (capes futures):** **MCSC** (CREAF) → hoste/tipus de bosc · **DEM i sòls** (ICGC) →
+orientació del vessant i retenció d'aigua · **CatDrought** (CREAF) → humitat de sòl alternativa.
 
 ---
 
 ## Com executar
 
-Requereix només **Node 18+** (porta `fetch` de sèrie; cap `npm install`).
+Requereix només **Node 18+** (`fetch` de sèrie, cap `npm install`).
 
 ```bash
-# Condicions d'avui
-node score_estacions.mjs
-
-# Backtest: "com si fos" un dia passat (clau per validar)
-node score_estacions.mjs --date=2025-10-20
+node score_estacions.mjs                            # rovelló, avui
+node score_estacions.mjs --species=cep --date=2025-10-20
+node score_estacions.mjs --all                      # totes les espècies
+node score_estacions.mjs --all --date=2025-10-20    # totes, backtest
+node score_estacions.mjs --list                     # espècies disponibles
 ```
 
-Sortida: un rànquing a consola (top 20) + un fitxer **`bolets.geojson`** amb totes
-les estacions puntuades, llest per pintar amb MapLibre.
+Escriu un `bolets.<espècie>.geojson` per espècie. Per veure el **mapa**, serveix la
+carpeta (no `file://`, el navegador no deixa carregar el geojson):
+
+```bash
+node score_estacions.mjs --all
+python3 -m http.server 8000      # o: npx serve
+# obre http://localhost:8000  → selector d'espècie a dalt a l'esquerra
+```
 
 ---
 
 ## Validació
 
-El problema de fons: **no hi ha dataset obert de "on he trobat bolets"** (ground
-truth). Per tant validem de dues maneres:
+No hi ha dataset obert de "on he trobat bolets" (ground truth). Validem així:
+1. **Backtest** (`--date`) a una tardor bona i mirar si s'encenen les zones esperades.
+2. **Coherència amb episodis reals.** Exemple: el backtest del 20-10-2025 posava els Ports #1;
+   resulta que el 12-13/10 la **DANA Alice** hi va descarregar de manera històrica (Ports 92 mm,
+   Tivissa 190 mm). Va confirmar que les dades són bones, però va destapar que el model mesurava
+   "on ha caigut més aigua" → d'aquí van sortir el sostre de pluja i el lag.
 
-1. **Backtest contra setmanes conegudes.** `--date` a una tardor bona que recordis
-   i mirar si s'encenen les zones on saps que en surten.
-2. **Coherència amb episodis reals de pluja.** Exemple real que ens va ensenyar molt:
-   el backtest del **20-10-2025** posava els Ports #1. Investigant, resulta que el
-   12-13/10/2025 la **DANA Alice** va descarregar de manera històrica justament allà
-   (Mas de Barberans 92 mm, Ports 92 mm, Tivissa 190 mm). Conclusió doble:
-   - ✅ el pipeline reflecteix la realitat amb fidelitat (les dades són bones);
-   - ⚠️ però destapava que el model mesurava "on ha caigut més aigua", no "on hi
-     haurà bolets" → d'aquí van sortir el **sostre de pluja** i el **lag**.
-
-*En juliol tot surt sec i pla: és correcte, no un bug.*
+*En juliol, o fora de temporada, tot surt sec/zero: és correcte, no un bug.*
 
 ---
 
 ## Limitacions conegudes
 
-- **Hoste = proxy d'altitud** fins que entri el MCSC (pot recomanar zones sense pins).
-- **L'estació és un proxy del bosc**: pot ser a la vall i el bosc al vessant, a més
-  altura → la seva pluja/temperatura és aproximada, no exacta.
-- **Sense ground truth** no es pot ajustar fi de veritat; els paràmetres són raonables,
-  no òptims.
-- **Pluja torrencial vs suau**: el sostre ho mitiga, però la intensitat real per
-  hora no la modelem.
+- **Hoste = proxy d'altitud** fins que entri el MCSC (pot recomanar zones sense l'arbre bo).
+- **L'estació és un proxy del bosc** (pot ser a la vall i el bosc al vessant).
+- **Sense ground truth**, els paràmetres són raonables, no òptims.
+- **Intensitat de pluja** només mitigada pel sostre, no modelada per hora.
 
 ---
 
 ## Següents passos
 
-1. **Capa hoste (MCSC).** Resoldre l'espècie de bosc a la coordenada de cada estació
-   (un cop, offline: QGIS o consulta a WMS/WFS) i omplir la taula `HOST`. Substitueix
-   el proxy d'altitud pel factor real.
-2. **Mapa MapLibre.** Un HTML que carrega `bolets.geojson` i pinta les estacions per
-   color de score. Amb això ja és "app".
-3. **Calibrar** `CAP`, `H0`, `LAG_RISE/FALL` i la finestra de temperatura contra
-   floracions reals recordades.
-4. Considerar **Tn (glaçades)** a banda de la T mitjana; i, si es vol precisió
-   espacial, tornar a valorar graella + orientació del vessant.
+1. **Capa hoste (MCSC)** — el gran desbloqueig. Resoldre el tipus de bosc a l'entorn de cada
+   estació (compte: l'estació sol ser en clariana, cal mirar un radi, no el píxel) i omplir
+   `hostFactor` per espècie. Substitueix el proxy d'altitud pel real.
+2. **Calibrar** paràmetres contra floracions recordades.
+3. Considerar **Tn (glaçades)** i, si cal precisió espacial, graella + orientació del vessant.
 
 ---
 
 ## Fitxers
 
-- **`score_estacions.mjs`** — el scorer (aquest és el que evoluciona).
-- **`spike_xema.mjs`** — diagnòstic d'un sol ús per validar l'accés a Socrata. Ja
-  ha fet la seva feina; es pot jubilar.
-- **`bolets.geojson`** — sortida generada (no es versiona; es regenera a cada run).
+- **`score_estacions.mjs`** — el scorer multi-espècie (el que evoluciona).
+- **`index.html`** — el mapa (MapLibre) amb selector d'espècie.
+- **`spike_xema.mjs`** — diagnòstic d'un sol ús (jubilat; validava l'accés a Socrata).
+- **`bolets.<espècie>.geojson`** — sortides generades (no es versionen; es regeneren).
 
 ---
 
-## Paràmetres afinables (mapa ràpid d'on tocar)
+## Paràmetres afinables
 
-Tots a la capçalera de `score_estacions.mjs`:
-
-| Paràmetre | Què controla |
-|---|---|
-| `DIES` | quants dies enrere de pluja mirem |
-| `CAP` | sostre mm/dia (llindar d'escorrentia) |
-| `H0` | on satura la humitat |
-| `LAG_RISE` / `LAG_FALL` | forma del retard de fructificació |
-| `tempFactor()` | finestra de temperatura ideal |
-| `altFactor()` | banda d'altitud "forestal" (proxy) |
-| `HOST{}` | factor d'hoste per estació (del MCSC) |
+Capçalera de `score_estacions.mjs`: `DIES`, `CAP`, `H0`, `LAG_RISE`/`LAG_FALL` (humitat, compartits),
+i el bloc **`SPECIES`** (temporada, banda d'altitud, finestra de temperatura i hoste per espècie).
