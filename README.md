@@ -45,29 +45,14 @@ Es satura amb `1 − e^(−H/H0)`.
 ### Temperatura · Altitud · Estació — per espècie
 Trapezis de finestra ideal (temperatura, altitud) i **porta temporal** (fora de mesos → ~0).
 
-### Hoste (`hostFactor`) — ✅ implementat via MCSC
+### Hoste (`hostFactor`) — via MCSC
 Es precalcula un cop (`buildHost.mjs`): per a cada estació, mostrejant una **graella de
 ~4 km** al voltant (perquè l'estació sol ser en clariana), el **tipus de bosc dominant**
 del Mapa de Cobertes del Sòl (WMS de l'ICGC) → `estacions_host.json`. El scorer compara
-el bosc de l'estació amb el que vol l'espècie:
-- bosc dominant correcte → alt (escalat per la fracció forestal de l'entorn),
-- el bo hi és però no domina → mig (0.45),
-- un altre bosc → baix (0.25, *suau a propòsit*: boscos mixtos),
-- entorn no forestal → molt baix (0.15).
+el bosc de l'estació amb el que vol l'espècie: dominant correcte → alt · el bo hi és però
+no domina → mig (0.45) · un altre bosc → baix (0.25, *suau a propòsit*) · no forestal → 0.15.
 
 *Categories MCSC: `conifer` (pins) · `deciduous` (roure/faig/castanyer) · `sclerophyll` (alzina/surera) · `ribera`.*
-
----
-
-## Decisions de disseny (per què així)
-
-| Decisió | Raó |
-|---|---|
-| **PWA, no nativa** | Només cal mapa + geolocalització. |
-| **Per estació, sense graella** | Evita interpolar pluja; l'usuari tria zona, no metre quadrat. |
-| **Stateless (meteo)** | Suma ponderada ≡ índex recursiu; res d'estat diari ni backfill. |
-| **Hoste precalculat** | El bosc no canvia; es mostreja un cop i es cacheja a un JSON. |
-| **JS/TS, no Python** | Amb estacions vam eliminar interpolació i balanç hídric (els motius per Python). |
 
 ---
 
@@ -78,14 +63,11 @@ el bosc de l'estació amb el que vol l'espècie:
 | Mesures XEMA | Socrata `nzvn-apee` | Semihorària. `codi_estacio`/`codi_variable`/`data_lectura`/`valor_lectura` |
 | Estacions | Socrata `yqwd-vj5e` | nom, lat, lon, altitud |
 | Variables | Socrata `4fb2-n3yi` | `35`=pluja · `32`=temp · `40`/`42`=Tx/Tn · `30`=vent · `33`=HR |
-| **MCSC** | WMS ICGC `cobertes-sol` (capa `cobertes_2009`) | Tipus de bosc per coordenada (GetFeatureInfo, `text/plain`) |
-
-**Pendents (futur):** DEM i sòls (ICGC) → orientació del vessant i retenció d'aigua ·
-CatDrought (CREAF) → humitat de sòl alternativa · MCSC amb espècie fina (descàrrega) si cal.
+| **MCSC** | WMS ICGC `cobertes-sol` (`cobertes_2009`) | Tipus de bosc per coordenada (GetFeatureInfo, `text/plain`) |
 
 ---
 
-## Com executar
+## Com executar (local)
 
 Node 18+ (`fetch` de sèrie, cap `npm install`).
 
@@ -94,15 +76,41 @@ Node 18+ (`fetch` de sèrie, cap `npm install`).
 node buildHost.mjs
 
 # 2) Puntuar (regenera els geojson)
-node score_estacions.mjs --all                       # totes les espècies, avui
-node score_estacions.mjs --species=cep --date=2025-10-20   # una espècie, backtest
+node score_estacions.mjs --all                         # totes les espècies, avui
+node score_estacions.mjs --species=cep --date=2025-10-20  # una espècie, backtest
 node score_estacions.mjs --list
 
 # 3) Mapa (cal servir la carpeta; no file://)
 npx serve            # o: python3 -m http.server 8000
 ```
 
-Escriu `bolets.<espècie>.geojson` per espècie; el mapa (`index.html`) té selector d'espècie.
+El scorer accepta `--out=<dir>` (per escriure els geojson on el servidor els serveix, p.ex. `public`).
+
+---
+
+## Desplegament (Docker + Coolify)
+
+Una sola imatge que **serveix estàtic** (`./public`: `index.html` + geojson) i, a
+l'arrencada, genera els geojson. El **scheduled task** de Coolify els regenera cada dia
+dins el mateix contenidor. La part meteo és stateless → si es reinicia o redesplega, es
+reconstrueix sol.
+
+**Provar en local:**
+```bash
+docker build -t boletscat .
+docker run -p 8080:8080 boletscat     # http://localhost:8080
+```
+
+**A Coolify:**
+1. Nou recurs → desplega des del repo. Detecta el `Dockerfile` sol.
+2. Port **8080**; assigna-li un domini.
+3. Desplega (l'entrypoint genera els geojson i aixeca el servidor).
+4. **Scheduled Task**: comanda `node score_estacions.mjs --all --out=public`, freqüència `0 6 * * *`.
+
+**Notes honestes:**
+- El cron de Coolify va en **UTC** (`0 6 * * *` ≈ 7-8 h a casa). Diari a qualsevol hora ja va bé.
+- **No cal volum**: es regenera a l'arrencada i cada dia. Un volum per `public/` només estalviaria la crida a Socrata de l'arrencada.
+- `buildHost.mjs` **no** va al cron. Per refrescar el bosc (un cop l'any, o mai), el corres en local i committeges el `estacions_host.json` nou.
 
 ---
 
@@ -128,22 +136,24 @@ No hi ha ground truth ("on he trobat X"). Validem per:
 
 ## Següents passos
 
-1. **Desplegament**: cron (Coolify) que corre `score_estacions.mjs --all` diari i serveix
-   els geojson estàtics + `index.html`. Stateless → si un dia falla, l'endemà recalcula sol.
-   (`buildHost.mjs` es corre a part, molt de tant en tant.)
-2. **Calibrar** paràmetres i la duresa de l'hoste contra floracions recordades.
-3. Considerar **Tn (glaçades)**, orientació del vessant (DEM), o espècie fina si cal.
+1. **Calibrar** paràmetres i la duresa de l'hoste contra floracions recordades.
+2. Considerar **Tn (glaçades)**, orientació del vessant (DEM), o espècie fina (MCSC complet) si cal.
+3. PWA: instal·lable + geolocalització "on soc ara".
 
 ---
 
 ## Fitxers
 
-- **`score_estacions.mjs`** — scorer multi-espècie (llegeix `estacions_host.json`).
-- **`buildHost.mjs`** — precompute de l'hoste (MCSC) → `estacions_host.json` (córrer un cop).
-- **`index.html`** — mapa MapLibre amb selector d'espècie.
-- **`estacions_host.json`** — bosc dominant per estació (generat; es pot versionar, canvia poc).
-- **`bolets.<espècie>.geojson`** — sortides diàries (generades; no cal versionar).
-- **`spike_xema.mjs` / `spike_mcsc.mjs`** — diagnòstics d'un sol ús (jubilats).
+| Fitxer | Què és |
+|---|---|
+| `score_estacions.mjs` | Scorer multi-espècie (llegeix `estacions_host.json`, `--out` per la carpeta de sortida). |
+| `buildHost.mjs` | Precompute de l'hoste (MCSC) → `estacions_host.json` (córrer un cop). |
+| `index.html` | Mapa MapLibre amb selector d'espècie. |
+| `serve.mjs` | Servidor estàtic sense dependències (serveix `./public`). |
+| `Dockerfile` · `docker-entrypoint.sh` · `.dockerignore` | Imatge de desplegament. |
+| `estacions_host.json` | Bosc dominant per estació (generat; **es versiona**, canvia poc). |
+| `bolets.<espècie>.geojson` | Sortides diàries (generades; **no** es versionen). |
+| `spike_xema.mjs` · `spike_mcsc.mjs` | Diagnòstics d'un sol ús (jubilats). |
 
 ---
 
