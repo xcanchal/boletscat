@@ -31,6 +31,7 @@
  */
 
 import { writeFileSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 
 const BASE = "https://analisi.transparenciacatalunya.cat/resource";
 const DS_MESURES = `${BASE}/nzvn-apee.json`, DS_ESTACIONS = `${BASE}/yqwd-vj5e.json`;
@@ -114,6 +115,7 @@ async function main() {
     for (const [k, s] of Object.entries(SPECIES)) console.log(`  ${k.padEnd(10)} ${s.nom}  ·  bosc ${s.host.join("/")}  ·  mesos ${s.mesos.join(",")}`);
     return;
   }
+  const OUT = args.find((a) => a.startsWith("--out="))?.slice(6) || ".";  // on escriure els geojson
   const all = args.includes("--all");
   const spKeys = all ? Object.keys(SPECIES) : [(args.find((a) => a.startsWith("--species="))?.slice(10)) || "rovello"];
   for (const k of spKeys) if (!SPECIES[k]) { console.error(`Espècie desconeguda: ${k}. Prova --list`); process.exit(1); }
@@ -173,8 +175,8 @@ async function main() {
         properties: { codi:f.codi, nom:f.nom, alt:f.alt, host:f.host, H:+f.h.toFixed(1), tMean:f.tMean, score:+f.score.toFixed(3) },
       })),
     };
-    writeFileSync(`bolets.${spKey}.geojson`, JSON.stringify(geojson));
-    console.log(`   ✓ → bolets.${spKey}.geojson\n`);
+    writeFileSync(join(OUT, `bolets.${spKey}.geojson`), JSON.stringify(geojson));
+    console.log(`   ✓ → ${join(OUT, `bolets.${spKey}.geojson`)}\n`);
   }
 }
 
