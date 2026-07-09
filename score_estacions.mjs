@@ -157,8 +157,10 @@ async function main() {
       if (!m.lat || !m.lon) continue;
       const h = H.get(codi) ?? 0, hScore = 1 - Math.exp(-h / H0);
       const tMean = Tn.has(codi) ? Tsum.get(codi) / Tn.get(codi) : null;
-      const score = hScore * trapezoid(tMean, ...sp.temp) * trapezoid(m.alt, ...sp.alt) * gate * hostFactor(codi, sp);
-      files.push({ codi, ...m, h, tMean, host: HOST?.[codi]?.host ?? null, score });
+      const fT = trapezoid(tMean, ...sp.temp), fAlt = trapezoid(m.alt, ...sp.alt), fHost = hostFactor(codi, sp);
+      const score = hScore * fT * fAlt * gate * fHost;
+      files.push({ codi, ...m, h, tMean, host: HOST?.[codi]?.host ?? null, score,
+                   fH: hScore, fT, fAlt, fSeason: gate, fHost });
     }
     files.sort((a, b) => b.score - a.score);
 
@@ -172,7 +174,8 @@ async function main() {
       type: "FeatureCollection", species: spKey, speciesNom: sp.nom, generated: refISO.slice(0, 10),
       features: files.map((f) => ({
         type: "Feature", geometry: { type: "Point", coordinates: [f.lon, f.lat] },
-        properties: { codi:f.codi, nom:f.nom, alt:f.alt, host:f.host, H:+f.h.toFixed(1), tMean:f.tMean, score:+f.score.toFixed(3) },
+        properties: { codi:f.codi, nom:f.nom, alt:f.alt, host:f.host, H:+f.h.toFixed(1), tMean:f.tMean, score:+f.score.toFixed(3),
+                      fH:+f.fH.toFixed(2), fT:+f.fT.toFixed(2), fAlt:+f.fAlt.toFixed(2), fSeason:+f.fSeason.toFixed(2), fHost:+f.fHost.toFixed(2) },
       })),
     };
     writeFileSync(join(OUT, `bolets.${spKey}.geojson`), JSON.stringify(geojson));

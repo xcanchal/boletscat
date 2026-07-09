@@ -53,6 +53,18 @@
     .legend .bar{height:8px;border-radius:6px;
       background:linear-gradient(90deg,#59665e 0%,#8f9b3f 30%,#c9932f 55%,#e2792a 78%,#c8451b 100%)}
     .legend .ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px}
+    .sec-h{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-top:14px}
+    .info-section{margin-top:14px;padding-bottom:12px;border-bottom:1px solid var(--edge)}
+    .info-header{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);user-select:none}
+    .info-header:hover{color:var(--text)}
+    .info-toggle{transition:transform .2s;flex-shrink:0}
+    .info-section.collapsed .info-toggle{transform:rotate(-90deg)}
+    .info-body{overflow:hidden;max-height:500px;transition:max-height .2s ease,opacity .15s;opacity:1}
+    .info-section.collapsed .info-body{max-height:0;opacity:0}
+    .info-item{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start;font-size:12px;padding:6px 0;line-height:1.35}
+    .info-item .label{color:var(--muted);white-space:nowrap}
+    .info-item .value{color:var(--text)}
+    .info-note{font-size:11px;color:var(--muted);line-height:1.4;padding-top:6px}
     .toplist{margin-top:14px;border-top:1px solid var(--edge);padding-top:10px}
     .toplist .h{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
     .row{display:flex;align-items:baseline;gap:10px;padding:6px 8px;margin:0 -8px;border-radius:8px;cursor:pointer}
@@ -60,6 +72,9 @@
     .row .rank{font-size:12px;color:var(--muted);width:14px;font-variant-numeric:tabular-nums}
     .row .nom{flex:1;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .row .sc{font-size:12.5px;font-variant-numeric:tabular-nums;font-weight:600;color:var(--rovello)}
+    .row .pop-plus{flex:none;align-self:center}
+    .row-factors{border-top:0;margin:0;padding:2px 0 8px 24px}
+    .row-factors.open{gap:4px 10px}
     .msg{font-size:13px;color:var(--muted);line-height:1.5;margin-top:12px}
     .msg code{background:rgba(232,226,214,.08);padding:1px 6px;border-radius:5px;font-size:12px}
 
@@ -76,7 +91,17 @@
       border-radius:12px;color:var(--text);font-family:var(--ui);padding:12px 14px}
     .maplibregl-popup-tip{display:none}
     .pop-nom{font-family:var(--display);font-weight:600;font-size:16px;margin-bottom:2px}
-    .pop-score{color:var(--rovello);font-weight:600;font-variant-numeric:tabular-nums}
+    .pop-score{color:var(--rovello);font-weight:600;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px}
+    .pop-plus{border:1px solid var(--edge);background:rgba(232,226,214,.05);color:var(--muted);
+      width:18px;height:18px;border-radius:5px;cursor:pointer;font-size:13px;line-height:1;padding:0;
+      display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .pop-plus:hover{color:var(--text)}
+    .pop-factors{display:none;margin-top:8px;border-top:1px solid var(--edge);padding-top:8px}
+    .pop-factors.open{display:grid;grid-template-columns:auto 1fr auto;gap:5px 10px;font-size:12px;align-items:center}
+    .pop-factors .k{color:var(--muted)}
+    .pop-factors .v{font-variant-numeric:tabular-nums;text-align:right}
+    .fbar{height:5px;border-radius:3px;background:rgba(232,226,214,.08);overflow:hidden;min-width:70px}
+    .fbar i{display:block;height:100%;background:var(--rovello);border-radius:3px}
     .pop-grid{display:grid;grid-template-columns:auto auto;gap:2px 14px;margin-top:8px;font-size:12.5px}
     .pop-grid .k{color:var(--muted)} .pop-grid .v{text-align:right;font-variant-numeric:tabular-nums}
     .maplibregl-ctrl-attrib{font-size:10px}
@@ -103,6 +128,14 @@
         <option value="rossinyol">Rossinyol</option><option value="camagroc">Camagroc</option>
         <option value="murgola">Múrgola</option>
       </select>
+      <div class="info-section collapsed" id="infoSection">
+        <div class="info-header">
+          <svg class="info-toggle" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Condicions ideals</span>
+        </div>
+        <div class="info-body" id="infoBody"></div>
+      </div>
+      <div class="sec-h">Mapa</div>
       <div class="seg" id="modes">
         <button data-mode="punts" class="on">Per estació</button>
         <button data-mode="pluja">Pluja acumulada</button>
@@ -121,6 +154,18 @@
   <script>
     const SCALE = [0,'#59665e',0.15,'#8f9b3f',0.3,'#c9932f',0.45,'#e2792a',0.6,'#c8451b'];
     const BOSC = { conifer:'pineda (coníferes)', deciduous:'bosc caducifoli', sclerophyll:'alzinar / esclerofil·le', ribera:'bosc de ribera' };
+
+    // Condicions ideals per espècie — mirall dels paràmetres del model (score_estacions.mjs):
+    // temperatura i altitud són el tram pla del trapezoide (encaix = 1), temporada els mesos amb porta oberta.
+    const SPECIES_INFO = {
+      rovello:   { bosc:'pineda (coníferes)',                temperatura:'8–20°C',  altitud:'200–1500 m',  temporada:'setembre–novembre' },
+      cep:       { bosc:'pineda, caducifoli o alzinar',      temperatura:'8–18°C',  altitud:'800–1600 m',  temporada:'juny · setembre–novembre' },
+      llenega:   { bosc:'pineda (coníferes)',                temperatura:'4–14°C',  altitud:'300–1300 m',  temporada:'octubre–desembre' },
+      trompeta:  { bosc:'caducifoli o alzinar',              temperatura:'8–18°C',  altitud:'400–1300 m',  temporada:'setembre–novembre' },
+      rossinyol: { bosc:'pineda, caducifoli o alzinar',      temperatura:'10–22°C', altitud:'400–1500 m',  temporada:'juny–octubre' },
+      camagroc:  { bosc:'pineda (coníferes)',                temperatura:'2–14°C',  altitud:'500–1500 m',  temporada:'octubre–gener' },
+      murgola:   { bosc:'bosc de ribera o caducifoli',       temperatura:'8–18°C',  altitud:'300–1200 m',  temporada:'març–maig' },
+    };
 
     // Capes base: fosc (llegir scores) · relleu (muntanyes i cares) · satèl·lit (bosc real)
     const BASES = [
@@ -146,16 +191,29 @@
     map.addControl(new maplibregl.NavigationControl({ showCompass:false }), 'bottom-right');
     const popup = new maplibregl.Popup({ closeButton:false, offset:12 });
     const fmt = v => (v==null ? '—' : (+v).toFixed(1));
-    // Popup complet, compartit pel clic al mapa i el clic a la llista
+    // Popup complet, compartit pel clic al mapa i el clic a la llista.
+    // El "+" desplega el desglossament: cada factor (0..1) diu com de lluny és de l'ideal de l'espècie.
+    const FACTORS = [['fSeason','temporada'],['fH','humitat'],['fT','temperatura'],['fAlt','altitud'],['fHost','bosc']];
+    const factorsHTML = p => FACTORS.map(([k,label]) => {
+      const v = Math.max(0, Math.min(1, +p[k]));
+      return `<span class="k">${label}</span>
+        <span class="fbar"><i style="width:${Math.round(v*100)}%"></i></span>
+        <span class="v">${v.toFixed(2)}</span>`;
+    }).join('');
     const popHTML = p => `
       <div class="pop-nom">${p.nom ?? p.codi}</div>
-      <div class="pop-score">score ${(+p.score).toFixed(3)}</div>
+      <div class="pop-score">score ${(+p.score).toFixed(3)}
+        ${p.fH != null ? `<button class="pop-plus" aria-label="Desglossa el score"
+          onclick="const f=this.closest('.maplibregl-popup-content').querySelector('.pop-factors');
+                   f.classList.toggle('open');this.textContent=f.classList.contains('open')?'−':'+'">+</button>` : ''}
+      </div>
       <div class="pop-grid">
         <span class="k">bosc</span><span class="v">${p.host ? (BOSC[p.host] ?? p.host) : '—'}</span>
         <span class="k">humitat (H)</span><span class="v">${fmt(p.H)}</span>
         <span class="k">temperatura</span><span class="v">${fmt(p.tMean)} °C</span>
         <span class="k">altitud</span><span class="v">${Math.round(p.alt||0)} m</span>
-      </div>`;
+      </div>
+      ${p.fH != null ? `<div class="pop-factors">${factorsHTML(p)}</div>` : ''}`;
 
     // Botons del selector de capa
     const basesEl = document.getElementById('bases');
@@ -173,6 +231,10 @@
     const panel = document.getElementById('panel');
     if (window.matchMedia('(max-width: 640px)').matches) panel.classList.add('collapsed');
     document.getElementById('collapse').addEventListener('click', () => panel.classList.toggle('collapsed'));
+
+    // Col·lapse de la secció de condicions ideals
+    const infoSection = document.getElementById('infoSection');
+    document.querySelector('.info-header').addEventListener('click', () => infoSection.classList.toggle('collapsed'));
 
     map.on('load', () => {
       map.addSource('estacions', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
@@ -238,6 +300,18 @@
       map.getSource('estacions').setData(geo);
       document.getElementById('meta').innerHTML = `<b>${geo.speciesNom ?? species}</b> · ${geo.generated ?? ''}`;
 
+      const info = SPECIES_INFO[species];
+      const infoBody = document.getElementById('infoBody');
+      if (info) {
+        infoBody.innerHTML = `
+          <div class="info-item"><span class="label">🌳 Bosc</span><span class="value">${info.bosc}</span></div>
+          <div class="info-item"><span class="label">🌡️ Temperatura</span><span class="value">${info.temperatura}</span></div>
+          <div class="info-item"><span class="label">⛰️ Altitud</span><span class="value">${info.altitud}</span></div>
+          <div class="info-item"><span class="label">📅 Temporada</span><span class="value">${info.temporada}</span></div>
+          <div class="info-note">💧 I pluja: com més n'hagi caigut els 30 dies previs, millor.</div>
+        `;
+      }
+
       const b = new maplibregl.LngLatBounds();
       geo.features.forEach(f => b.extend(f.geometry.coordinates));
       if (!b.isEmpty()) map.fitBounds(b, { padding:60, maxZoom:9, duration:600 });
@@ -255,6 +329,16 @@
           popup.setLngLat(f.geometry.coordinates).setHTML(popHTML(p)).addTo(map);
         };
         rows.appendChild(el);
+        if (p.fH != null) {
+          const det = document.createElement('div');
+          det.className = 'pop-factors row-factors'; det.innerHTML = factorsHTML(p);
+          const btn = document.createElement('button');
+          btn.className = 'pop-plus'; btn.textContent = '+'; btn.setAttribute('aria-label','Desglossa el score');
+          btn.onclick = ev => { ev.stopPropagation();
+            det.classList.toggle('open'); btn.textContent = det.classList.contains('open') ? '−' : '+'; };
+          el.appendChild(btn);
+          rows.appendChild(det);
+        }
       });
       content.style.display='block';
       if (!anyScore) { msg.style.display='block';
