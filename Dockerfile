@@ -6,7 +6,7 @@ WORKDIR /app
 COPY . .
 
 # public/ conté l'index.html i s'hi escriuen els geojson generats.
-RUN mkdir -p public && cp index.html public/
+RUN mkdir -p public && cp index.html favicon.svg public/
 
 ENV PORT=8080
 EXPOSE 8080
