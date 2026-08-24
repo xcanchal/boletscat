@@ -254,6 +254,21 @@ async function main() {
       width:grid.width,height:grid.height,cell:grid.cell,x0:grid.x0,y0:grid.y0,y1:grid.y1,
       coordinates:[utm31ToLngLat(grid.x0,grid.y1),utm31ToLngLat(grid.x1,grid.y1),utm31ToLngLat(grid.x1,grid.y0),utm31ToLngLat(grid.x0,grid.y0)],
     }));
+
+    // Metadades compactes compartides per totes les espècies. Permeten que un clic
+    // sobre qualsevol cel·la mostri el mateix detall que una estació sense enviar
+    // 1,2 milions de geometries al navegador.
+    const terrain=new Uint8Array(grid.width*grid.height*4), weather=new Uint8Array(grid.width*grid.height*4);
+    for(let i=0;i<grid.width*grid.height;i++) {
+      const host=grid.b[i*3+24], alt=grid.b.readInt16LE(i*3+25); if(!host||alt===-32768) continue;
+      const p=i*4, encodedAlt=alt+32768;
+      terrain[p]=host; terrain[p+1]=encodedAlt>>8; terrain[p+2]=encodedAlt&255; terrain[p+3]=255;
+      weather[p]=Math.max(0,Math.min(255,Math.round((gridWeather.outT[i]+20)*4)));
+      weather[p+1]=Math.round(humidityFactor(gridWeather.outH[i],gridWeather.outR[i])*255);
+      weather[p+3]=255;
+    }
+    writeFileSync(join(OUT,"bolets.terrain.png"),encodeRgbaPng(grid.width,grid.height,terrain));
+    writeFileSync(join(OUT,"bolets.weather.png"),encodeRgbaPng(grid.width,grid.height,weather));
   } else console.log("ℹ️  Sense graella.bin: es generen només els punts per estació. Corre node buildGrid.mjs\n");
 
   // ── Puntuem cada espècie ─────────────────────────────────────────────────
@@ -281,6 +296,7 @@ async function main() {
 
     const geojson = {
       type: "FeatureCollection", species: spKey, speciesNom: sp.nom, generated: refISO.slice(0, 10),
+      model: { host:sp.host, alt:sp.alt, temp:sp.temp, season:gate },
       features: files.map((f) => ({
         type: "Feature", geometry: { type: "Point", coordinates: [f.lon, f.lat] },
         properties: { codi:f.codi, nom:f.nom, alt:f.alt, host:f.host,

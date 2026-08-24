@@ -168,6 +168,7 @@
   <script>
     const SCALE = [0,'#59665e',0.1,'#747d45',0.25,'#a1a447',0.4,'#c9932f',0.6,'#e2792a',0.8,'#c8451b',1,'#a92e14'];
     const BOSC = { conifer:'pineda (coníferes)', deciduous:'bosc caducifoli', sclerophyll:'alzinar / esclerofil·le', ribera:'bosc de ribera' };
+    const HOST_BY_CODE = [null,'conifer','deciduous','sclerophyll','ribera'];
     const RATING = [
       { min:0.6, key:'very-high', nivell:'Molt alta', recomanacio:'Ves-hi' },
       { min:0.4, key:'high',      nivell:'Alta',      recomanacio:'Bona opció' },
@@ -249,7 +250,7 @@
     const popHTML = (p,lngLat) => {
       const r = rating(p.score);
       return `
-      <div class="pop-nom">${p.nom ?? p.codi}</div>
+      <div class="pop-nom">${esc(p.nom ?? p.codi)}</div>
       <div class="pop-score"><span class="quality q-${r.key}">${r.nivell}</span>
         ${p.fH != null ? `<button class="pop-plus" aria-label="Desglossa el score"
           onclick="const f=this.closest('.maplibregl-popup-content').querySelector('.pop-factors');
@@ -272,14 +273,26 @@
       return [500000+k0*n*(A+(1-t+c)*A**3/6+(5-18*t+t*t+72*c-58*ep)*A**5/120),
               k0*(m+n*Math.tan(p)*(A*A/2+(5-t+9*c+4*c*c)*A**4/24+(61-58*t+t*t+600*c-330*ep)*A**6/720))];
     }
-    function probabilityAt(lngLat) {
+    const trapezoid = (x,a,b,c,d) => x<=a||x>=d?0:x<b?(x-a)/(b-a):x<=c?1:(d-x)/(d-c);
+    function cellAt(lngLat) {
       if (!currentRaster?.pixels) return null;
       const { grid, pixels } = currentRaster, [x,y] = wgs84ToUtm31(lngLat.lng,lngLat.lat);
       const col=Math.floor((x-grid.x0)/grid.cell), row=Math.floor((grid.y1-y)/grid.cell);
       if (col<0||row<0||col>=grid.width||row>=grid.height) return null;
-      const alpha=pixels[(row*grid.width+col)*4+3];
+      const index=row*grid.width+col, alpha=pixels[index*4+3];
       if (!alpha) return null;
-      return alpha<=35 ? 0 : Math.max(0,Math.min(1,(alpha-105)/125));
+      return { index, score:alpha<=35 ? 0 : Math.max(0,Math.min(1,(alpha-105)/125)) };
+    }
+    function detailsAt(lngLat) {
+      const cell=cellAt(lngLat); if(!cell) return null;
+      const { terrain, weather, model }=currentRaster;
+      if(!terrain||!weather||!model) return { score:cell.score };
+      const p=cell.index*4; if(!terrain[p+3]||!weather[p+3]) return { score:cell.score };
+      const host=HOST_BY_CODE[terrain[p]], alt=((terrain[p+1]<<8)|terrain[p+2])-32768;
+      const tMean=weather[p]/4-20, fH=weather[p+1]/255;
+      const fT=trapezoid(tMean,...model.temp), fAlt=trapezoid(alt,...model.alt);
+      const fHost=model.host.includes(host)?1:.25, fSeason=model.season;
+      return { score:fH*fT*fAlt*fSeason*fHost, host, alt, tMean, fH, fT, fAlt, fHost, fSeason };
     }
     async function nearestPlace(lngLat) {
       const key=`${lngLat.lat.toFixed(3)},${lngLat.lng.toFixed(3)}`;
@@ -294,14 +307,11 @@
         placeCache.set(key,place); return place;
       } catch { return null; }
     }
-    const areaHTML = (place,score,lngLat) => {
+    const areaHTML = (place,details,lngLat) => {
       const title=place ? `A prop de ${place}` : `${lngLat.lat.toFixed(4)}, ${lngLat.lng.toFixed(4)}`;
-      if (score==null) return `<div class="pop-nom">${esc(title)}</div><div class="pop-index">Sense estimació forestal en aquest punt</div>${mapLinkHTML(lngLat)}`;
-      const r=rating(score);
-      return `<div class="pop-nom">${esc(title)}</div>
-        <div class="pop-score"><span class="quality q-${r.key}">${r.nivell}</span></div>
-        <div class="pop-index">Probabilitat ${Math.round(score*100)}%</div>
-        ${mapLinkHTML(lngLat)}`;
+      if (details==null) return `<div class="pop-nom">${esc(title)}</div><div class="pop-index">Sense estimació forestal en aquest punt</div>${mapLinkHTML(lngLat)}`;
+      if (details.fH==null) return `<div class="pop-nom">${esc(title)}</div><div class="pop-score"><span class="quality q-${rating(details.score).key}">${rating(details.score).nivell}</span></div><div class="pop-index">Probabilitat ${Math.round(details.score*100)}%</div>${mapLinkHTML(lngLat)}`;
+      return popHTML({ nom:title, ...details },lngLat);
     };
 
     // Botons del selector de capa
@@ -366,11 +376,11 @@
       map.on('click', async e => {
         panel.classList.add('collapsed');
         if (currentMode !== 'detallat') return;
-        const request=++areaRequest, score=probabilityAt(e.lngLat);
+        const request=++areaRequest, details=detailsAt(e.lngLat);
         popup.setLngLat(e.lngLat).setHTML(`<div class="pop-nom">Identificant la zona…</div>`).addTo(map);
         const place=await nearestPlace(e.lngLat);
         if (request!==areaRequest) return;
-        popup.setHTML(areaHTML(place,score,e.lngLat));
+        popup.setHTML(areaHTML(place,details,e.lngLat));
       });
       map.on('mouseenter','punt', () => map.getCanvas().style.cursor='pointer');
       map.on('mouseleave','punt', () => map.getCanvas().style.cursor='');
@@ -393,6 +403,14 @@
 
       load('rovello');
     });
+
+    async function imagePixels(url,grid) {
+      const blob=await fetch(url).then(r=>{if(!r.ok)throw new Error();return r.blob()});
+      const bitmap=await createImageBitmap(blob), canvas=document.createElement('canvas');
+      canvas.width=grid.width; canvas.height=grid.height;
+      const context=canvas.getContext('2d',{willReadFrequently:true}); context.drawImage(bitmap,0,0); bitmap.close();
+      return context.getImageData(0,0,grid.width,grid.height).data;
+    }
 
     async function load(species) {
       const msg = document.getElementById('msg'), content = document.getElementById('content');
@@ -422,11 +440,16 @@
             paint:{ ...PREDICTION_STYLE[currentBase], 'raster-fade-duration':180, 'raster-resampling':'linear' },
             layout:{ visibility:currentMode==='detallat'?'visible':'none' } }, REFERENCES[0].id);
         }
-        const blob=await fetch(imageUrl).then(r=>{if(!r.ok)throw new Error();return r.blob()});
-        const bitmap=await createImageBitmap(blob), canvas=document.createElement('canvas');
-        canvas.width=grid.width; canvas.height=grid.height;
-        const context=canvas.getContext('2d',{willReadFrequently:true}); context.drawImage(bitmap,0,0); bitmap.close();
-        currentRaster={ grid, pixels:context.getImageData(0,0,grid.width,grid.height).data };
+        const pixels=await imagePixels(imageUrl,grid), raster={ grid, pixels, model:geo.model };
+        currentRaster=raster;
+        try {
+          const version=encodeURIComponent(geo.generated??Date.now());
+          const [terrain,weather]=await Promise.all([
+            imagePixels(`./bolets.terrain.png?v=${version}`,grid),
+            imagePixels(`./bolets.weather.png?v=${version}`,grid),
+          ]);
+          if(currentRaster===raster) Object.assign(raster,{ terrain,weather });
+        } catch { /* Compatibilitat amb una generació antiga: el mapa i el score continuen funcionant. */ }
       } catch {
         currentRaster=null;
         if (map.getLayer('prediccio')) map.setLayoutProperty('prediccio','visibility','none');
