@@ -115,6 +115,9 @@
     .fbar i{display:block;height:100%;background:var(--rovello);border-radius:3px}
     .pop-grid{display:grid;grid-template-columns:auto auto;gap:2px 14px;margin-top:8px;font-size:12.5px}
     .pop-grid .k{color:var(--muted)} .pop-grid .v{text-align:right;font-variant-numeric:tabular-nums}
+    .pop-map{display:inline-flex;align-items:center;margin-top:10px;padding:5px 8px;border:1px solid var(--edge);
+      border-radius:7px;color:var(--text);font-size:11.5px;font-weight:600;text-decoration:none;transition:all .15s}
+    .pop-map:hover{border-color:var(--rovello);color:var(--rovello);background:rgba(232,114,42,.07)}
     .maplibregl-ctrl-attrib{font-size:10px}
   </style>
 </head>
@@ -237,7 +240,13 @@
         <span class="fbar"><i style="width:${Math.round(v*100)}%"></i></span>
         <span class="v">${v.toFixed(2)}</span>`;
     }).join('');
-    const popHTML = p => {
+    const mapLinkHTML = lngLat => {
+      const [lng,lat]=Array.isArray(lngLat)?lngLat:[lngLat.lng,lngLat.lat];
+      const destination=encodeURIComponent(`${(+lat).toFixed(6)},${(+lng).toFixed(6)}`);
+      return `<a class="pop-map" href="https://www.google.com/maps/dir/?api=1&amp;destination=${destination}"
+        target="_blank" rel="noopener noreferrer" aria-label="Obrir indicacions a Google Maps">Obrir al mapa ↗</a>`;
+    };
+    const popHTML = (p,lngLat) => {
       const r = rating(p.score);
       return `
       <div class="pop-nom">${p.nom ?? p.codi}</div>
@@ -252,7 +261,8 @@
         <span class="k">temperatura</span><span class="v">${fmt(p.tMean)} °C</span>
         <span class="k">altitud</span><span class="v">${Math.round(p.alt||0)} m</span>
       </div>
-      ${p.fH != null ? `<div class="pop-factors">${factorsHTML(p)}</div>` : ''}`;
+      ${p.fH != null ? `<div class="pop-factors">${factorsHTML(p)}</div>` : ''}
+      ${mapLinkHTML(lngLat)}`;
     };
 
     function wgs84ToUtm31(lon, lat) {
@@ -286,11 +296,12 @@
     }
     const areaHTML = (place,score,lngLat) => {
       const title=place ? `A prop de ${place}` : `${lngLat.lat.toFixed(4)}, ${lngLat.lng.toFixed(4)}`;
-      if (score==null) return `<div class="pop-nom">${esc(title)}</div><div class="pop-index">Sense estimació forestal en aquest punt</div>`;
+      if (score==null) return `<div class="pop-nom">${esc(title)}</div><div class="pop-index">Sense estimació forestal en aquest punt</div>${mapLinkHTML(lngLat)}`;
       const r=rating(score);
       return `<div class="pop-nom">${esc(title)}</div>
         <div class="pop-score"><span class="quality q-${r.key}">${r.nivell}</span></div>
-        <div class="pop-index">Probabilitat ${Math.round(score*100)}%</div>`;
+        <div class="pop-index">Probabilitat ${Math.round(score*100)}%</div>
+        ${mapLinkHTML(lngLat)}`;
     };
 
     // Botons del selector de capa
@@ -349,7 +360,7 @@
 
       map.on('click','punt', e => {
         areaRequest++;
-        popup.setLngLat(e.features[0].geometry.coordinates).setHTML(popHTML(e.features[0].properties)).addTo(map);
+        popup.setLngLat(e.features[0].geometry.coordinates).setHTML(popHTML(e.features[0].properties,e.features[0].geometry.coordinates)).addTo(map);
       });
       map.on('dragstart', () => panel.classList.add('collapsed'));
       map.on('click', async e => {
@@ -449,7 +460,7 @@
         el.onclick = () => {
           panel.classList.add('collapsed');
           map.flyTo({ center:f.geometry.coordinates, zoom:11, speed:0.8 });
-          popup.setLngLat(f.geometry.coordinates).setHTML(popHTML(p)).addTo(map);
+          popup.setLngLat(f.geometry.coordinates).setHTML(popHTML(p,f.geometry.coordinates)).addTo(map);
         };
         rows.appendChild(el);
         if (p.fH != null) {
