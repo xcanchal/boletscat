@@ -113,8 +113,18 @@
     button:focus-visible,.intensity-control input:focus-visible{outline:2px solid #6aa8ff;outline-offset:2px}
 
     @media (max-width:720px){
-      .map-tools{top:100px;right:10px;max-width:calc(100vw - 20px)}
-      .intensity-control{grid-template-columns:auto 66px 32px}.intensity-control input{width:66px}
+      .panel{top:12px;left:12px;width:calc(100vw - 24px);max-width:none;padding:15px 15px 12px}
+      .brand{gap:9px}.brand h1{font-size:clamp(19px,5.4vw,21px)}.brand .sub{font-size:11.5px;line-height:1.35}
+      .collapse{width:32px;height:32px}
+      .map-tools{top:calc(var(--panel-bottom, 88px) + 10px);right:12px;width:248px;
+        max-width:calc(100vw - 24px);flex-direction:column;align-items:stretch;gap:4px;
+        transition:top .2s ease,width .18s ease}
+      .map-mode-switch{display:grid;grid-template-columns:1fr 1fr}
+      .map-mode-switch button{padding:7px 9px}
+      .intensity-control{grid-template-columns:auto minmax(64px,1fr) 34px;width:100%;
+        min-height:34px;padding:7px 7px 3px;border-top:1px solid var(--edge);border-left:0}
+      .intensity-control input{width:100%}
+      .map-tools.stations{width:190px}
       .panel:not(.collapsed) ~ .map-tools{display:none}
     }
 
@@ -394,6 +404,9 @@
     // Col·lapse del panell (arrenca plegat en pantalla estreta)
     const panel = document.getElementById('panel');
     if (window.matchMedia('(max-width: 640px)').matches) panel.classList.add('collapsed');
+    const syncPanelBottom = () => document.documentElement.style.setProperty('--panel-bottom',`${panel.offsetTop+panel.offsetHeight}px`);
+    if ('ResizeObserver' in window) new ResizeObserver(syncPanelBottom).observe(panel);
+    window.addEventListener('resize',syncPanelBottom); syncPanelBottom();
     document.getElementById('collapse').addEventListener('click', () => panel.classList.toggle('collapsed'));
 
     // Col·lapse de la secció de condicions ideals
