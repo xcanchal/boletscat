@@ -192,23 +192,32 @@
         tiles:['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],
         attr:'© OpenStreetMap · © CARTO' },
       { id:'relief', label:'Relleu',
-        tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}'],
-        attr:'© Esri' },
+        tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}'],
+        attr:'© Esri',
+        paint:{ 'raster-saturation':-.68, 'raster-contrast':.05, 'raster-brightness-max':.82 } },
       { id:'sat', label:'Satèl·lit',
         tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-        attr:'© Esri' },
+        attr:'© Esri',
+        paint:{ 'raster-saturation':-.72, 'raster-contrast':.08, 'raster-brightness-max':.76 } },
+    ];
+    const REFERENCES = [
+      { id:'reference-transport', opacity:.72,
+        tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}'] },
+      { id:'reference-places', opacity:.9,
+        tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'] },
     ];
     const PREDICTION_STYLE = {
       dark:   { 'raster-opacity':.82, 'raster-contrast':.02, 'raster-saturation':0, 'raster-brightness-max':1 },
-      relief: { 'raster-opacity':.66, 'raster-contrast':.02, 'raster-saturation':0, 'raster-brightness-max':1 },
-      sat:    { 'raster-opacity':.72, 'raster-contrast':.03, 'raster-saturation':0, 'raster-brightness-max':1 },
+      relief: { 'raster-opacity':.84, 'raster-contrast':.05, 'raster-saturation':0, 'raster-brightness-max':1 },
+      sat:    { 'raster-opacity':.78, 'raster-contrast':.05, 'raster-saturation':0, 'raster-brightness-max':1 },
     };
 
     const map = new maplibregl.Map({
       container:'map',
       style:{ version:8,
         sources:Object.fromEntries(BASES.map(b => [b.id, { type:'raster', tileSize:256, tiles:b.tiles, attribution:b.attr }])),
-        layers:BASES.map((b,i) => ({ id:'base-'+b.id, type:'raster', source:b.id, layout:{ visibility:i===0?'visible':'none' } })),
+        layers:BASES.map((b,i) => ({ id:'base-'+b.id, type:'raster', source:b.id,
+          paint:b.paint ?? {}, layout:{ visibility:i===0?'visible':'none' } })),
       },
       center:[1.7,41.8], zoom:7,
     });
@@ -291,6 +300,12 @@
       for (const [property,value] of Object.entries(PREDICTION_STYLE[currentBase]))
         map.setPaintProperty('prediccio',property,value);
     };
+    const applyReferenceStyle = () => {
+      const visibility=currentBase==='dark'?'none':'visible';
+      REFERENCES.forEach(reference => {
+        if (map.getLayer(reference.id)) map.setLayoutProperty(reference.id,'visibility',visibility);
+      });
+    };
     BASES.forEach((b,i) => {
       const btn = document.createElement('button');
       btn.textContent = b.label; if (i===0) btn.classList.add('on');
@@ -299,6 +314,7 @@
         BASES.forEach(x => map.setLayoutProperty('base-'+x.id, 'visibility', x.id===b.id?'visible':'none'));
         [...basesEl.children].forEach(c => c.classList.toggle('on', c===btn));
         applyPredictionStyle();
+        applyReferenceStyle();
       };
       basesEl.appendChild(btn);
     });
@@ -322,6 +338,13 @@
         'circle-color':['interpolate',['linear'],['get','score'],...SCALE],
         'circle-radius':['interpolate',['linear'],['get','score'],0,3,0.2,6,0.4,11,0.6,16,0.8,20,1,24],
         'circle-stroke-width':1.2,'circle-stroke-color':'rgba(0,0,0,.45)' }, layout:{ visibility:'none' } });
+
+      // Noms i carreteres sempre per damunt de la predicció, perquè el color no tapi el context del mapa.
+      REFERENCES.forEach(reference => {
+        map.addSource(reference.id, { type:'raster', tileSize:256, tiles:reference.tiles, attribution:'© Esri' });
+        map.addLayer({ id:reference.id, type:'raster', source:reference.id,
+          paint:{ 'raster-opacity':reference.opacity }, layout:{ visibility:'none' } });
+      });
 
       map.on('click','punt', e => {
         areaRequest++;
@@ -385,7 +408,7 @@
           map.addSource('prediccio', { type:'image', ...image });
           map.addLayer({ id:'prediccio', type:'raster', source:'prediccio',
             paint:{ ...PREDICTION_STYLE[currentBase], 'raster-fade-duration':180, 'raster-resampling':'linear' },
-            layout:{ visibility:currentMode==='detallat'?'visible':'none' } }, 'halo');
+            layout:{ visibility:currentMode==='detallat'?'visible':'none' } }, REFERENCES[0].id);
         }
         const blob=await fetch(imageUrl).then(r=>{if(!r.ok)throw new Error();return r.blob()});
         const bitmap=await createImageBitmap(blob), canvas=document.createElement('canvas');
