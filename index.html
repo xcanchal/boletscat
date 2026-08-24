@@ -227,7 +227,7 @@
           onclick="const f=this.closest('.maplibregl-popup-content').querySelector('.pop-factors');
                    f.classList.toggle('open');this.textContent=f.classList.contains('open')?'−':'+'">+</button>` : ''}
       </div>
-      <div class="pop-index">Índex de condicions ${(+p.score).toFixed(3)} / 1</div>
+      <div class="pop-index">${Math.round((+p.score) * 100)}%</div>
       <div class="pop-grid">
         <span class="k">bosc</span><span class="v">${p.host ? (BOSC[p.host] ?? p.host) : '—'}</span>
         <span class="k">temperatura</span><span class="v">${fmt(p.tMean)} °C</span>
