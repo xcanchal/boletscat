@@ -313,7 +313,9 @@
         areaRequest++;
         popup.setLngLat(e.features[0].geometry.coordinates).setHTML(popHTML(e.features[0].properties)).addTo(map);
       });
+      map.on('dragstart', () => panel.classList.add('collapsed'));
       map.on('click', async e => {
+        panel.classList.add('collapsed');
         if (currentMode !== 'detallat') return;
         const request=++areaRequest, score=probabilityAt(e.lngLat);
         popup.setLngLat(e.lngLat).setHTML(`<div class="pop-nom">Identificant la zona…</div>`).addTo(map);
