@@ -55,7 +55,7 @@
     .seg-cap{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4}
     .legend{margin:15px 0 4px}
     .legend .bar{height:8px;border-radius:6px;
-      background:linear-gradient(90deg,#59665e 0%,#747d45 10%,#a1a447 25%,#c9932f 40%,#e2792a 60%,#c8451b 80%,#a92e14 100%)}
+      background:linear-gradient(90deg,#566574 0%,#3b82f6 10%,#6366f1 25%,#7c3aed 40%,#a855f7 60%,#d946ef 80%,#f43f8d 100%)}
     .legend .ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px}
     .sec-h{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-top:14px}
     .info-section{margin-top:14px;padding-bottom:12px;border-bottom:1px solid var(--edge)}
@@ -98,8 +98,10 @@
     .pop-score{color:var(--rovello);font-weight:600;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px}
     .quality{display:inline-flex;align-items:center;border:1px solid currentColor;border-radius:999px;
       padding:2px 7px;font-size:11px;line-height:1.2;letter-spacing:.15px}
-    .q-very-low,.q-low{color:#9aa39b}.q-medium{color:#b6b94f}
-    .q-high{color:#d99935}.q-very-high{color:#ee682e}
+    .q-very-low{color:#8a9aaa}.q-low{color:#3b82f6}.q-medium{color:#777af4}
+    .q-high{color:#b36af8}.q-very-high{color:#ef5aad}
+    .row .sc.q-very-low{color:#8a9aaa}.row .sc.q-low{color:#3b82f6}.row .sc.q-medium{color:#777af4}
+    .row .sc.q-high{color:#b36af8}.row .sc.q-very-high{color:#ef5aad}
     .pop-index{color:var(--muted);font-size:11px;margin-top:4px;font-variant-numeric:tabular-nums}
     .pop-plus{border:1px solid var(--edge);background:rgba(232,226,214,.05);color:var(--muted);
       width:18px;height:18px;border-radius:5px;cursor:pointer;font-size:13px;line-height:1;padding:0;
@@ -161,7 +163,7 @@
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script>
-    const SCALE = [0,'#59665e',0.1,'#747d45',0.25,'#a1a447',0.4,'#c9932f',0.6,'#e2792a',0.8,'#c8451b',1,'#a92e14'];
+    const SCALE = [0,'#566574',0.1,'#3b82f6',0.25,'#6366f1',0.4,'#7c3aed',0.6,'#a855f7',0.8,'#d946ef',1,'#f43f8d'];
     const BOSC = { conifer:'pineda (coníferes)', deciduous:'bosc caducifoli', sclerophyll:'alzinar / esclerofil·le', ribera:'bosc de ribera' };
     const RATING = [
       { min:0.6, key:'very-high', nivell:'Molt alta', recomanacio:'Ves-hi' },
@@ -197,9 +199,9 @@
         attr:'© Esri' },
     ];
     const PREDICTION_STYLE = {
-      dark:   { 'raster-opacity':.78, 'raster-contrast':.03, 'raster-saturation':.04, 'raster-brightness-max':1 },
-      relief: { 'raster-opacity':.46, 'raster-contrast':.04, 'raster-saturation':.04, 'raster-brightness-max':1 },
-      sat:    { 'raster-opacity':.58, 'raster-contrast':.06, 'raster-saturation':.06, 'raster-brightness-max':1 },
+      dark:   { 'raster-opacity':.82, 'raster-contrast':.02, 'raster-saturation':0, 'raster-brightness-max':1 },
+      relief: { 'raster-opacity':.66, 'raster-contrast':.02, 'raster-saturation':0, 'raster-brightness-max':1 },
+      sat:    { 'raster-opacity':.72, 'raster-contrast':.03, 'raster-saturation':0, 'raster-brightness-max':1 },
     };
 
     const map = new maplibregl.Map({
