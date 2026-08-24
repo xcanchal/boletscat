@@ -189,7 +189,7 @@
     // Capes base: fosc (llegir scores) · relleu (muntanyes i cares) · satèl·lit (bosc real)
     const BASES = [
       { id:'dark', label:'Fosc',
-        tiles:['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'],
+        tiles:['https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}.png'],
         attr:'© OpenStreetMap · © CARTO' },
       { id:'relief', label:'Relleu',
         tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}'],
@@ -201,9 +201,11 @@
         paint:{ 'raster-saturation':-.72, 'raster-contrast':.08, 'raster-brightness-max':.76 } },
     ];
     const REFERENCES = [
-      { id:'reference-transport', opacity:.72,
+      { id:'reference-dark-labels', opacity:1, bases:['dark'], attr:'© OpenStreetMap · © CARTO',
+        tiles:['https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}.png'] },
+      { id:'reference-transport', opacity:.72, bases:['relief','sat'], attr:'© Esri',
         tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}'] },
-      { id:'reference-places', opacity:.9,
+      { id:'reference-places', opacity:.9, bases:['relief','sat'], attr:'© Esri',
         tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'] },
     ];
     const PREDICTION_STYLE = {
@@ -301,8 +303,8 @@
         map.setPaintProperty('prediccio',property,value);
     };
     const applyReferenceStyle = () => {
-      const visibility=currentBase==='dark'?'none':'visible';
       REFERENCES.forEach(reference => {
+        const visibility=reference.bases.includes(currentBase)?'visible':'none';
         if (map.getLayer(reference.id)) map.setLayoutProperty(reference.id,'visibility',visibility);
       });
     };
@@ -341,9 +343,10 @@
 
       // Noms i carreteres sempre per damunt de la predicció, perquè el color no tapi el context del mapa.
       REFERENCES.forEach(reference => {
-        map.addSource(reference.id, { type:'raster', tileSize:256, tiles:reference.tiles, attribution:'© Esri' });
+        map.addSource(reference.id, { type:'raster', tileSize:256, tiles:reference.tiles, attribution:reference.attr });
         map.addLayer({ id:reference.id, type:'raster', source:reference.id,
-          paint:{ 'raster-opacity':reference.opacity }, layout:{ visibility:'none' } });
+          paint:{ 'raster-opacity':reference.opacity },
+          layout:{ visibility:reference.bases.includes(currentBase)?'visible':'none' } });
       });
 
       map.on('click','punt', e => {
