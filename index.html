@@ -23,6 +23,8 @@
       background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--edge);border-radius:14px;
       color:var(--text);padding:18px 18px 14px;box-shadow:0 12px 40px rgba(0,0,0,.45)}
     .brand{display:flex;align-items:center;gap:10px}
+    .brand>svg{flex:none}
+    .brand>div{min-width:0}
     .brand h1{font-family:var(--display);font-weight:600;font-size:21px;margin:0;line-height:1.05}
     .brand .sub{font-size:12px;color:var(--muted);margin-top:2px}
     .brand .sub b{color:var(--text);font-weight:500}
@@ -43,7 +45,7 @@
       background-repeat:no-repeat;background-position:right 12px center}
     select option{background:#1a201a}
 
-    /* Modes de dades (punts / pluja) */
+    /* Modes de dades (mapa continu / estacions de referència) */
     .seg{display:flex;gap:2px;margin-top:10px;padding:3px;background:rgba(232,226,214,.05);
       border:1px solid var(--edge);border-radius:10px}
     .seg button{flex:1;border:0;background:transparent;color:var(--muted);font-family:var(--ui);
@@ -53,7 +55,7 @@
     .seg-cap{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4}
     .legend{margin:15px 0 4px}
     .legend .bar{height:8px;border-radius:6px;
-      background:linear-gradient(90deg,#59665e 0%,#8f9b3f 30%,#c9932f 55%,#e2792a 78%,#c8451b 100%)}
+      background:linear-gradient(90deg,#59665e 0%,#747d45 10%,#a1a447 25%,#c9932f 40%,#e2792a 60%,#c8451b 80%,#a92e14 100%)}
     .legend .ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px}
     .sec-h{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-top:14px}
     .info-section{margin-top:14px;padding-bottom:12px;border-bottom:1px solid var(--edge)}
@@ -73,7 +75,7 @@
     .row:hover{background:rgba(232,226,214,.06)}
     .row .rank{font-size:12px;color:var(--muted);width:14px;font-variant-numeric:tabular-nums}
     .row .nom{flex:1;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .row .sc{font-size:12.5px;font-variant-numeric:tabular-nums;font-weight:600;color:var(--rovello)}
+    .row .sc{font-size:12px;font-weight:600;color:var(--rovello);text-align:right;white-space:nowrap}
     .row .pop-plus{flex:none;align-self:center}
     .row-factors{border-top:0;margin:0;padding:2px 0 8px 24px}
     .row-factors.open{gap:4px 10px}
@@ -94,6 +96,12 @@
     .maplibregl-popup-tip{display:none}
     .pop-nom{font-family:var(--display);font-weight:600;font-size:16px;margin-bottom:2px}
     .pop-score{color:var(--rovello);font-weight:600;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px}
+    .quality{display:inline-flex;align-items:center;border:1px solid currentColor;border-radius:999px;
+      padding:2px 7px;font-size:11px;line-height:1.2;letter-spacing:.15px}
+    .q-very-low,.q-low{color:#9aa39b}.q-medium{color:#b6b94f}
+    .q-high{color:#d99935}.q-very-high{color:#ee682e}
+    .recommend{color:var(--text);font-size:13px}
+    .pop-index{color:var(--muted);font-size:11px;margin-top:4px;font-variant-numeric:tabular-nums}
     .pop-plus{border:1px solid var(--edge);background:rgba(232,226,214,.05);color:var(--muted);
       width:18px;height:18px;border-radius:5px;cursor:pointer;font-size:13px;line-height:1;padding:0;
       display:flex;align-items:center;justify-content:center;transition:all .15s}
@@ -139,12 +147,12 @@
       </div>
       <div class="sec-h">Mapa</div>
       <div class="seg" id="modes">
-        <button data-mode="punts" class="on">Per estació</button>
-        <button data-mode="pluja">Pluja acumulada</button>
+        <button data-mode="detallat" class="on">Detallat</button>
+        <button data-mode="punts">Estacions</button>
       </div>
-      <div class="seg-cap" id="modecap">Score per estació: el racó concret que puntua.</div>
+      <div class="seg-cap" id="modecap">Estimació contínua en zones forestals.</div>
       <div class="legend"><div class="bar"></div>
-        <div class="ticks"><span>sec</span><span>bona aposta</span></div></div>
+        <div class="ticks"><span>Molt baixa</span><span>Mitjana</span><span>Molt alta</span></div></div>
       <div id="content" class="toplist" style="display:none"><div class="h">Millors punts</div><div id="rows"></div></div>
       <div id="msg" class="msg" style="display:none"></div>
     </div>
@@ -154,8 +162,16 @@
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script>
-    const SCALE = [0,'#59665e',0.15,'#8f9b3f',0.3,'#c9932f',0.45,'#e2792a',0.6,'#c8451b'];
+    const SCALE = [0,'#59665e',0.1,'#747d45',0.25,'#a1a447',0.4,'#c9932f',0.6,'#e2792a',0.8,'#c8451b',1,'#a92e14'];
     const BOSC = { conifer:'pineda (coníferes)', deciduous:'bosc caducifoli', sclerophyll:'alzinar / esclerofil·le', ribera:'bosc de ribera' };
+    const RATING = [
+      { min:0.6, key:'very-high', nivell:'Molt alta', condicio:'Condicions molt altes', recomanacio:'Ves-hi' },
+      { min:0.4, key:'high',      nivell:'Alta',      condicio:'Condicions altes',      recomanacio:'Bona opció' },
+      { min:0.25,key:'medium',    nivell:'Mitjana',   condicio:'Condicions mitjanes',   recomanacio:'Pots provar' },
+      { min:0.1, key:'low',       nivell:'Baixa',     condicio:'Condicions baixes',     recomanacio:'No compensa' },
+      { min:0,   key:'very-low',  nivell:'Molt baixa',condicio:'Condicions molt baixes',recomanacio:'No hi vagis' },
+    ];
+    const rating = score => RATING.find(x => +score >= x.min) ?? RATING.at(-1);
 
     // Condicions ideals per espècie — mirall dels paràmetres del model (score_estacions.mjs):
     // temperatura i altitud són el tram pla del trapezoide (encaix = 1), temporada els mesos amb porta oberta.
@@ -192,6 +208,7 @@
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass:false }), 'bottom-right');
     const popup = new maplibregl.Popup({ closeButton:false, offset:12 });
+    let currentMode = 'detallat';
     const fmt = v => (v==null ? '—' : (+v).toFixed(1));
     // Popup complet, compartit pel clic al mapa i el clic a la llista.
     // El "+" desplega el desglossament: cada factor (0..1) diu com de lluny és de l'ideal de l'espècie.
@@ -202,20 +219,24 @@
         <span class="fbar"><i style="width:${Math.round(v*100)}%"></i></span>
         <span class="v">${v.toFixed(2)}</span>`;
     }).join('');
-    const popHTML = p => `
+    const popHTML = p => {
+      const r = rating(p.score);
+      return `
       <div class="pop-nom">${p.nom ?? p.codi}</div>
-      <div class="pop-score">score ${(+p.score).toFixed(3)}
+      <div class="pop-score"><span class="quality q-${r.key}">${r.condicio}</span>
+        <span class="recommend">${r.recomanacio}</span>
         ${p.fH != null ? `<button class="pop-plus" aria-label="Desglossa el score"
           onclick="const f=this.closest('.maplibregl-popup-content').querySelector('.pop-factors');
                    f.classList.toggle('open');this.textContent=f.classList.contains('open')?'−':'+'">+</button>` : ''}
       </div>
+      <div class="pop-index">Índex de condicions ${(+p.score).toFixed(3)} / 1</div>
       <div class="pop-grid">
         <span class="k">bosc</span><span class="v">${p.host ? (BOSC[p.host] ?? p.host) : '—'}</span>
-        <span class="k">humitat (H)</span><span class="v">${fmt(p.H)}</span>
         <span class="k">temperatura</span><span class="v">${fmt(p.tMean)} °C</span>
         <span class="k">altitud</span><span class="v">${Math.round(p.alt||0)} m</span>
       </div>
       ${p.fH != null ? `<div class="pop-factors">${factorsHTML(p)}</div>` : ''}`;
+    };
 
     // Botons del selector de capa
     const basesEl = document.getElementById('bases');
@@ -242,21 +263,12 @@
       map.addSource('estacions', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
       map.addLayer({ id:'halo', type:'circle', source:'estacions', paint:{
         'circle-color':['interpolate',['linear'],['get','score'],...SCALE],
-        'circle-radius':['interpolate',['linear'],['get','score'],0,4,0.2,10,0.4,20,0.6,32],
-        'circle-blur':1,'circle-opacity':0.35 } });
+        'circle-radius':['interpolate',['linear'],['get','score'],0,4,0.2,10,0.4,20,0.6,30,0.8,38,1,44],
+        'circle-blur':1,'circle-opacity':0.35 }, layout:{ visibility:'none' } });
       map.addLayer({ id:'punt', type:'circle', source:'estacions', paint:{
         'circle-color':['interpolate',['linear'],['get','score'],...SCALE],
-        'circle-radius':['interpolate',['linear'],['get','score'],0,3,0.2,6,0.4,11,0.6,16],
-        'circle-stroke-width':1.2,'circle-stroke-color':'rgba(0,0,0,.45)' } });
-
-      // Mode "pluja acumulada": mapa de calor ponderat per la humitat (H). Ocult per defecte.
-      map.addLayer({ id:'heat', type:'heatmap', source:'estacions', layout:{ visibility:'none' }, paint:{
-        'heatmap-weight':['interpolate',['linear'],['get','H'],0,0,28,1],
-        'heatmap-intensity':['interpolate',['linear'],['zoom'],6,1.0,10,2.2],
-        'heatmap-radius':['interpolate',['linear'],['zoom'],6,32,10,62],
-        'heatmap-opacity':0.78,
-        'heatmap-color':['interpolate',['linear'],['heatmap-density'],
-          0,'rgba(0,0,0,0)', 0.12,'#4b5c34', 0.35,'#9aa53a', 0.55,'#d29130', 0.75,'#e8722a', 1,'#c8451b'] } });
+        'circle-radius':['interpolate',['linear'],['get','score'],0,3,0.2,6,0.4,11,0.6,16,0.8,20,1,24],
+        'circle-stroke-width':1.2,'circle-stroke-color':'rgba(0,0,0,.45)' }, layout:{ visibility:'none' } });
 
       map.on('click','punt', e => {
         popup.setLngLat(e.features[0].geometry.coordinates).setHTML(popHTML(e.features[0].properties)).addTo(map);
@@ -266,17 +278,17 @@
 
       document.getElementById('species').addEventListener('change', e => load(e.target.value));
 
-      // Mode de dades: punts (score per estació) vs pluja (mapa de calor d'humitat)
+      // Mode de dades: resultat detallat vs estacions que alimenten l'estimació.
       const cap = document.getElementById('modecap');
       document.getElementById('modes').addEventListener('click', e => {
         const btn = e.target.closest('button'); if (!btn) return;
-        const mode = btn.dataset.mode, punts = mode === 'punts';
+        const mode = btn.dataset.mode, punts = mode === 'punts'; currentMode = mode;
+        if (map.getLayer('prediccio')) map.setLayoutProperty('prediccio', 'visibility', punts ? 'none' : 'visible');
         map.setLayoutProperty('halo', 'visibility', punts ? 'visible' : 'none');
         map.setLayoutProperty('punt', 'visibility', punts ? 'visible' : 'none');
-        map.setLayoutProperty('heat', 'visibility', punts ? 'none' : 'visible');
         cap.textContent = punts
-          ? "Score per estació: el racó concret que puntua."
-          : "Humitat acumulada (estimació): la zona molla, sigui quina sigui l'espècie.";
+          ? "Estacions meteorològiques de referència."
+          : "Estimació contínua en zones forestals.";
         [...e.currentTarget.children].forEach(c => c.classList.toggle('on', c === btn));
       });
 
@@ -300,6 +312,19 @@
       }
       msg.style.display='none';
       map.getSource('estacions').setData(geo);
+      try {
+        const grid = await fetch('./bolets.grid.json').then(r => { if (!r.ok) throw new Error(); return r.json(); });
+        const image = { url:`./bolets.${species}.png?v=${geo.generated ?? Date.now()}`, coordinates:grid.coordinates };
+        if (map.getSource('prediccio')) map.getSource('prediccio').updateImage(image);
+        else {
+          map.addSource('prediccio', { type:'image', ...image });
+          map.addLayer({ id:'prediccio', type:'raster', source:'prediccio',
+            paint:{ 'raster-opacity':.78, 'raster-fade-duration':180, 'raster-resampling':'linear' },
+            layout:{ visibility:currentMode==='detallat'?'visible':'none' } }, 'halo');
+        }
+      } catch {
+        if (map.getLayer('prediccio')) map.setLayoutProperty('prediccio','visibility','none');
+      }
       document.getElementById('meta').innerHTML = `<b>${geo.speciesNom ?? species}</b> · ${geo.generated ?? ''}`;
 
       const info = SPECIES_INFO[species];
@@ -310,7 +335,7 @@
           <div class="info-item"><span class="label">🌡️ Temperatura</span><span class="value">${info.temperatura}</span></div>
           <div class="info-item"><span class="label">⛰️ Altitud</span><span class="value">${info.altitud}</span></div>
           <div class="info-item"><span class="label">📅 Temporada</span><span class="value">${info.temporada}</span></div>
-          <div class="info-note">💧 I pluja: com més n'hagi caigut els 30 dies previs, millor.</div>
+          <div class="info-item"><span class="label">💧 Humitat</span><span class="value">sòl humit i pluges recents</span></div>
         `;
       }
 
@@ -322,10 +347,10 @@
       const rows = document.getElementById('rows'); rows.innerHTML='';
       const anyScore = top[0] && top[0].properties.score > 0;
       top.forEach((f,i) => {
-        const p = f.properties;
+        const p = f.properties, r = rating(p.score);
         const el = document.createElement('div'); el.className='row';
         el.innerHTML = `<span class="rank">${i+1}</span><span class="nom">${p.nom ?? p.codi}</span>
-                        <span class="sc">${(+p.score).toFixed(2)}</span>`;
+                        <span class="sc q-${r.key}" title="${r.recomanacio} · Índex ${(+p.score).toFixed(3)} / 1">${r.nivell}</span>`;
         el.onclick = () => {
           map.flyTo({ center:f.geometry.coordinates, zoom:11, speed:0.8 });
           popup.setLngLat(f.geometry.coordinates).setHTML(popHTML(p)).addTo(map);

@@ -8,10 +8,9 @@ barata de mantenir i honesta amb les seves limitacions.
 
 ## Com funciona, en una frase
 
-Per a cada estació de la XEMA i per a **una espècie concreta**, calculem un
-**score de 0 a 1** que combina pluja útil (amb retard de fructificació),
-temperatura, altitud, temporada i **tipus de bosc**. Sense estat ni interpolació:
-tot es recalcula demanant a l'API una finestra de dies (l'hoste es precalcula un cop).
+Per a **una espècie concreta**, calculem un **índex de 0 a 1** que combina humitat,
+temperatura, altitud, temporada i **tipus de bosc**. La meteorologia de la XEMA
+s'interpola sobre una graella forestal de 250 m; el terreny es precalcula un cop.
 
 ```
 score = humitat × temperatura × altitud × estació × hoste     (cada factor 0..1)
@@ -38,9 +37,17 @@ Paràmetres = **priors ecològics raonables, no òptims** (sense ground truth no
 ## El model, factor a factor
 
 ### Humitat (`hScore`) — compartida
-Pluja acumulada 30 dies, amb **sostre diari** (`CAP`: per sobre és escorrentia, no
-humitat) i **lag de fructificació** (`lagWeight`: pic de pes cap als 6-9 dies, no ahir).
-Es satura amb `1 − e^(−H/H0)`.
+Combina dos senyals de la pluja dels últims 30 dies, sempre amb **sostre diari**
+(`CAP`: per sobre compta menys perquè hi ha escorrentia):
+
+- **Impuls de fructificació**: la pluja no encén bolets immediatament; el pes puja
+  durant els primers dies, té el màxim cap al dia 8 i després decau.
+- **Reserva hídrica**: decau gradualment però inclou la pluja d'avui, que ajuda a
+  conservar la humitat del sòl i els carpòfors que ja creixien.
+
+Cada senyal arriba exactament a `1` quan assoleix el seu llindar ideal provisional
+(`TRIGGER_IDEAL` / `RESERVE_IDEAL`). Així un lloc realment ideal pot puntuar `1`,
+però el millor lloc d'un dia dolent no es normalitza artificialment.
 
 ### Temperatura · Altitud · Estació — per espècie
 Trapezis de finestra ideal (temperatura, altitud) i **porta temporal** (fora de mesos → ~0).
@@ -54,6 +61,14 @@ no domina → mig (0.45) · un altre bosc → baix (0.25, *suau a propòsit*) ·
 
 *Categories MCSC: `conifer` (pins) · `deciduous` (roure/faig/castanyer) · `sclerophyll` (alzina/surera) · `ribera`.*
 
+### Graella de 250 m
+
+`buildGrid.mjs` descarrega una sola vegada la coberta del sòl 2024 i el model
+d'elevacions de l'ICGC. En desa una representació compacta a `graella.bin` (bosc +
+altitud per cel·la). El procés diari interpola la meteorologia, corregeix la
+temperatura amb l'altitud local i genera un PNG transparent per espècie. El
+navegador rep una sola imatge d'uns centenars de KB, no 1,2 milions de geometries.
+
 ---
 
 ## Fonts de dades
@@ -64,6 +79,8 @@ no domina → mig (0.45) · un altre bosc → baix (0.25, *suau a propòsit*) ·
 | Estacions | Socrata `yqwd-vj5e` | nom, lat, lon, altitud |
 | Variables | Socrata `4fb2-n3yi` | `35`=pluja · `32`=temp · `40`/`42`=Tx/Tn · `30`=vent · `33`=HR |
 | **MCSC** | WMS ICGC `cobertes-sol` (`cobertes_2009`) | Tipus de bosc per coordenada (GetFeatureInfo, `text/plain`) |
+| **MCSC 2024** | WMS ICGC `cobertes_2024` | Coberta forestal de la graella de 250 m |
+| **MET 5 m** | WCS ICGC `icc_mdt` | Altitud agregada a la graella de 250 m |
 
 ---
 
@@ -72,7 +89,8 @@ no domina → mig (0.45) · un altre bosc → baix (0.25, *suau a propòsit*) ·
 Node 18+ (`fetch` de sèrie, cap `npm install`).
 
 ```bash
-# 1) Un sol cop: precalcular el bosc de cada estació (~2-4 min)
+# 1) Un sol cop: terreny detallat + bosc al voltant de les estacions
+node buildGrid.mjs
 node buildHost.mjs
 
 # 2) Puntuar (regenera els geojson)
@@ -90,8 +108,8 @@ El scorer accepta `--out=<dir>` (per escriure els geojson on el servidor els ser
 
 ## Desplegament (Docker + Coolify)
 
-Una sola imatge que **serveix estàtic** (`./public`: `index.html` + geojson) i, a
-l'arrencada, genera els geojson. El **scheduled task** de Coolify els regenera cada dia
+Una sola imatge que **serveix estàtic** (`./public`: `index.html` + PNG + GeoJSON) i, a
+l'arrencada, genera les sortides. El **scheduled task** de Coolify les regenera cada dia
 dins el mateix contenidor. La part meteo és stateless → si es reinicia o redesplega, es
 reconstrueix sol.
 
@@ -123,12 +141,18 @@ No hi ha ground truth ("on he trobat X"). Validem per:
 
 *Fora de temporada o en sec, tot surt zero: és correcte.*
 
+El mapa tradueix l'índex tècnic a cinc nivells ordenats: **Molt baixa · Baixa ·
+Mitjana · Alta · Molt alta**. Al detall també dona una recomanació breu (`No hi vagis`,
+`Pots provar`, `Ves-hi`...). El valor `0..1` es manté per poder auditar el model;
+és un índex de condicions, no una probabilitat estadística de trobar bolets.
+
 ---
 
 ## Limitacions conegudes
 
 - **MCSC dominant** pot ignorar un arbre minoritari (per això la penalització d'hoste és suau).
-- **L'estació és un proxy del bosc** (pot ser a la vall i el bosc al vessant).
+- La meteorologia entre estacions continua sent una estimació; la graella afina
+  l'hàbitat i l'altitud, no crea observacions meteorològiques noves.
 - **Sense ground truth**, els paràmetres són raonables, no òptims.
 - **Espècie fina** de pi/roure no distingida (categoria ampla del MCSC simplificat).
 
@@ -146,19 +170,23 @@ No hi ha ground truth ("on he trobat X"). Validem per:
 
 | Fitxer | Què és |
 |---|---|
-| `score_estacions.mjs` | Scorer multi-espècie (llegeix `estacions_host.json`, `--out` per la carpeta de sortida). |
+| `score_estacions.mjs` | Scorer multi-espècie: punts GeoJSON + mapa PNG per espècie. |
+| `buildGrid.mjs` | Precompute de coberta forestal i altitud a 250 m → `graella.bin`. |
+| `raster.mjs` | Codificador/descodificador PNG sense dependències. |
 | `buildHost.mjs` | Precompute de l'hoste (MCSC) → `estacions_host.json` (córrer un cop). |
 | `index.html` | Mapa MapLibre amb selector d'espècie. |
 | `serve.mjs` | Servidor estàtic sense dependències (serveix `./public`). |
 | `Dockerfile` · `docker-entrypoint.sh` · `.dockerignore` | Imatge de desplegament. |
 | `estacions_host.json` | Bosc dominant per estació (generat; **es versiona**, canvia poc). |
 | `bolets.<espècie>.geojson` | Sortides diàries (generades; **no** es versionen). |
+| `bolets.<espècie>.png` · `bolets.grid.json` | Ràsters diaris i georeferenciació (generats). |
 | `spike_xema.mjs` · `spike_mcsc.mjs` | Diagnòstics d'un sol ús (jubilats). |
 
 ---
 
 ## Paràmetres afinables
 
-`score_estacions.mjs`: `CAP`, `H0`, `LAG_RISE`/`LAG_FALL` (humitat) · el bloc `SPECIES`
+`score_estacions.mjs`: `CAP`, `LAG_RISE`/`LAG_FALL`, `RESERVE_FALL`,
+`TRIGGER_IDEAL`/`RESERVE_IDEAL` (humitat) · el bloc `SPECIES`
 (temporada, altitud, temperatura, bosc per espècie) · els factors dins `hostFactor` (duresa de l'hoste).
 `buildHost.mjs`: `GRID`/`STEP` (radi i densitat del mostreig).
