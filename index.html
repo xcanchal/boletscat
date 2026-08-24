@@ -201,12 +201,10 @@
         paint:{ 'raster-saturation':-.72, 'raster-contrast':.08, 'raster-brightness-max':.76 } },
     ];
     const REFERENCES = [
-      { id:'reference-dark-labels', opacity:1, bases:['dark'], attr:'© OpenStreetMap · © CARTO',
+      { id:'reference-dark-labels', opacity:1, bases:['dark','sat'], attr:'© OpenStreetMap · © CARTO',
         tiles:['https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}.png'] },
-      { id:'reference-transport', opacity:.72, bases:['relief','sat'], attr:'© Esri',
-        tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}'] },
-      { id:'reference-places', opacity:.9, bases:['relief','sat'], attr:'© Esri',
-        tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'] },
+      { id:'reference-light-labels', opacity:.95, bases:['relief'], attr:'© OpenStreetMap · © CARTO',
+        tiles:['https://a.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png'] },
     ];
     const PREDICTION_STYLE = {
       dark:   { 'raster-opacity':.82, 'raster-contrast':.02, 'raster-saturation':0, 'raster-brightness-max':1 },
@@ -341,7 +339,7 @@
         'circle-radius':['interpolate',['linear'],['get','score'],0,3,0.2,6,0.4,11,0.6,16,0.8,20,1,24],
         'circle-stroke-width':1.2,'circle-stroke-color':'rgba(0,0,0,.45)' }, layout:{ visibility:'none' } });
 
-      // Noms i carreteres sempre per damunt de la predicció, perquè el color no tapi el context del mapa.
+      // Només les etiquetes van per damunt de la predicció; el relleu, els límits i les vies queden al fons.
       REFERENCES.forEach(reference => {
         map.addSource(reference.id, { type:'raster', tileSize:256, tiles:reference.tiles, attribution:reference.attr });
         map.addLayer({ id:reference.id, type:'raster', source:reference.id,
