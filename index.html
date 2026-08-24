@@ -352,6 +352,7 @@
         el.innerHTML = `<span class="rank">${i+1}</span><span class="nom">${p.nom ?? p.codi}</span>
                         <span class="sc q-${r.key}" title="${r.recomanacio} · Índex ${(+p.score).toFixed(3)} / 1">${r.nivell}</span>`;
         el.onclick = () => {
+          panel.classList.add('collapsed');
           map.flyTo({ center:f.geometry.coordinates, zoom:11, speed:0.8 });
           popup.setLngLat(f.geometry.coordinates).setHTML(popHTML(p)).addTo(map);
         };
