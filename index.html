@@ -100,7 +100,6 @@
       padding:2px 7px;font-size:11px;line-height:1.2;letter-spacing:.15px}
     .q-very-low,.q-low{color:#9aa39b}.q-medium{color:#b6b94f}
     .q-high{color:#d99935}.q-very-high{color:#ee682e}
-    .recommend{color:var(--text);font-size:13px}
     .pop-index{color:var(--muted);font-size:11px;margin-top:4px;font-variant-numeric:tabular-nums}
     .pop-plus{border:1px solid var(--edge);background:rgba(232,226,214,.05);color:var(--muted);
       width:18px;height:18px;border-radius:5px;cursor:pointer;font-size:13px;line-height:1;padding:0;
@@ -165,11 +164,11 @@
     const SCALE = [0,'#59665e',0.1,'#747d45',0.25,'#a1a447',0.4,'#c9932f',0.6,'#e2792a',0.8,'#c8451b',1,'#a92e14'];
     const BOSC = { conifer:'pineda (coníferes)', deciduous:'bosc caducifoli', sclerophyll:'alzinar / esclerofil·le', ribera:'bosc de ribera' };
     const RATING = [
-      { min:0.6, key:'very-high', nivell:'Molt alta', condicio:'Condicions molt altes', recomanacio:'Ves-hi' },
-      { min:0.4, key:'high',      nivell:'Alta',      condicio:'Condicions altes',      recomanacio:'Bona opció' },
-      { min:0.25,key:'medium',    nivell:'Mitjana',   condicio:'Condicions mitjanes',   recomanacio:'Pots provar' },
-      { min:0.1, key:'low',       nivell:'Baixa',     condicio:'Condicions baixes',     recomanacio:'No compensa' },
-      { min:0,   key:'very-low',  nivell:'Molt baixa',condicio:'Condicions molt baixes',recomanacio:'No hi vagis' },
+      { min:0.6, key:'very-high', nivell:'Molt alta', recomanacio:'Ves-hi' },
+      { min:0.4, key:'high',      nivell:'Alta',      recomanacio:'Bona opció' },
+      { min:0.25,key:'medium',    nivell:'Mitjana',   recomanacio:'Pots provar' },
+      { min:0.1, key:'low',       nivell:'Baixa',     recomanacio:'No compensa' },
+      { min:0,   key:'very-low',  nivell:'Molt baixa',recomanacio:'No hi vagis' },
     ];
     const rating = score => RATING.find(x => +score >= x.min) ?? RATING.at(-1);
 
@@ -223,8 +222,7 @@
       const r = rating(p.score);
       return `
       <div class="pop-nom">${p.nom ?? p.codi}</div>
-      <div class="pop-score"><span class="quality q-${r.key}">${r.condicio}</span>
-        <span class="recommend">${r.recomanacio}</span>
+      <div class="pop-score"><span class="quality q-${r.key}">${r.nivell}</span>
         ${p.fH != null ? `<button class="pop-plus" aria-label="Desglossa el score"
           onclick="const f=this.closest('.maplibregl-popup-content').querySelector('.pop-factors');
                    f.classList.toggle('open');this.textContent=f.classList.contains('open')?'−':'+'">+</button>` : ''}
