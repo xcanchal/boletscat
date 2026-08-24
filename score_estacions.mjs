@@ -251,7 +251,7 @@ async function main() {
     }
     gridWeather=interpolateGrid(grid,signals);
     writeFileSync(join(OUT,"bolets.grid.json"),JSON.stringify({
-      width:grid.width,height:grid.height,cell:grid.cell,
+      width:grid.width,height:grid.height,cell:grid.cell,x0:grid.x0,y0:grid.y0,y1:grid.y1,
       coordinates:[utm31ToLngLat(grid.x0,grid.y1),utm31ToLngLat(grid.x1,grid.y1),utm31ToLngLat(grid.x1,grid.y0),utm31ToLngLat(grid.x0,grid.y0)],
     }));
   } else console.log("ℹ️  Sense graella.bin: es generen només els punts per estació. Corre node buildGrid.mjs\n");

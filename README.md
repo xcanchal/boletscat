@@ -81,6 +81,7 @@ navegador rep una sola imatge d'uns centenars de KB, no 1,2 milions de geometrie
 | **MCSC** | WMS ICGC `cobertes-sol` (`cobertes_2009`) | Tipus de bosc per coordenada (GetFeatureInfo, `text/plain`) |
 | **MCSC 2024** | WMS ICGC `cobertes_2024` | Coberta forestal de la graella de 250 m |
 | **MET 5 m** | WCS ICGC `icc_mdt` | Altitud agregada a la graella de 250 m |
+| **Geocodificador ICGC** | API REST `geocodificador/invers` | Topònim més proper quan es clica el mapa |
 
 ---
 

@@ -208,7 +208,10 @@
     map.addControl(new maplibregl.NavigationControl({ showCompass:false }), 'bottom-right');
     const popup = new maplibregl.Popup({ closeButton:false, offset:12 });
     let currentMode = 'detallat';
+    let currentRaster = null, areaRequest = 0;
+    const placeCache = new Map();
     const fmt = v => (v==null ? '—' : (+v).toFixed(1));
+    const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     // Popup complet, compartit pel clic al mapa i el clic a la llista.
     // El "+" desplega el desglossament: cada factor (0..1) diu com de lluny és de l'ideal de l'espècie.
     const FACTORS = [['fSeason','temporada'],['fH','humitat'],['fT','temperatura'],['fAlt','altitud'],['fHost','bosc']];
@@ -234,6 +237,44 @@
         <span class="k">altitud</span><span class="v">${Math.round(p.alt||0)} m</span>
       </div>
       ${p.fH != null ? `<div class="pop-factors">${factorsHTML(p)}</div>` : ''}`;
+    };
+
+    function wgs84ToUtm31(lon, lat) {
+      const a=6378137, ecc=.00669438, k0=.9996, rad=Math.PI/180, p=lat*rad, l=lon*rad, l0=3*rad;
+      const ep=ecc/(1-ecc), n=a/Math.sqrt(1-ecc*Math.sin(p)**2), t=Math.tan(p)**2, c=ep*Math.cos(p)**2, A=Math.cos(p)*(l-l0);
+      const m=a*((1-ecc/4-3*ecc**2/64-5*ecc**3/256)*p-(3*ecc/8+3*ecc**2/32+45*ecc**3/1024)*Math.sin(2*p)+(15*ecc**2/256+45*ecc**3/1024)*Math.sin(4*p)-(35*ecc**3/3072)*Math.sin(6*p));
+      return [500000+k0*n*(A+(1-t+c)*A**3/6+(5-18*t+t*t+72*c-58*ep)*A**5/120),
+              k0*(m+n*Math.tan(p)*(A*A/2+(5-t+9*c+4*c*c)*A**4/24+(61-58*t+t*t+600*c-330*ep)*A**6/720))];
+    }
+    function probabilityAt(lngLat) {
+      if (!currentRaster?.pixels) return null;
+      const { grid, pixels } = currentRaster, [x,y] = wgs84ToUtm31(lngLat.lng,lngLat.lat);
+      const col=Math.floor((x-grid.x0)/grid.cell), row=Math.floor((grid.y1-y)/grid.cell);
+      if (col<0||row<0||col>=grid.width||row>=grid.height) return null;
+      const alpha=pixels[(row*grid.width+col)*4+3];
+      if (!alpha) return null;
+      return alpha<=35 ? 0 : Math.max(0,Math.min(1,(alpha-105)/125));
+    }
+    async function nearestPlace(lngLat) {
+      const key=`${lngLat.lat.toFixed(3)},${lngLat.lng.toFixed(3)}`;
+      if (placeCache.has(key)) return placeCache.get(key);
+      try {
+        const url='https://eines.icgc.cat/geocodificador/invers?'+new URLSearchParams({
+          lat:String(lngLat.lat),lon:String(lngLat.lng),layers:'topo1,topo2',size:'5'
+        });
+        const data=await fetch(url).then(r=>{if(!r.ok)throw new Error();return r.json()});
+        const feature=[...(data.features??[])].sort((a,b)=>(+a.properties.distancia||Infinity)-(+b.properties.distancia||Infinity))[0];
+        const place=feature?.properties?.etiqueta||feature?.properties?.nom||null;
+        placeCache.set(key,place); return place;
+      } catch { return null; }
+    }
+    const areaHTML = (place,score,lngLat) => {
+      const title=place ? `A prop de ${place}` : `${lngLat.lat.toFixed(4)}, ${lngLat.lng.toFixed(4)}`;
+      if (score==null) return `<div class="pop-nom">${esc(title)}</div><div class="pop-index">Sense estimació forestal en aquest punt</div>`;
+      const r=rating(score);
+      return `<div class="pop-nom">${esc(title)}</div>
+        <div class="pop-score"><span class="quality q-${r.key}">${r.nivell}</span></div>
+        <div class="pop-index">Probabilitat ${Math.round(score*100)}%</div>`;
     };
 
     // Botons del selector de capa
@@ -269,7 +310,16 @@
         'circle-stroke-width':1.2,'circle-stroke-color':'rgba(0,0,0,.45)' }, layout:{ visibility:'none' } });
 
       map.on('click','punt', e => {
+        areaRequest++;
         popup.setLngLat(e.features[0].geometry.coordinates).setHTML(popHTML(e.features[0].properties)).addTo(map);
+      });
+      map.on('click', async e => {
+        if (currentMode !== 'detallat') return;
+        const request=++areaRequest, score=probabilityAt(e.lngLat);
+        popup.setLngLat(e.lngLat).setHTML(`<div class="pop-nom">Identificant la zona…</div>`).addTo(map);
+        const place=await nearestPlace(e.lngLat);
+        if (request!==areaRequest) return;
+        popup.setHTML(areaHTML(place,score,e.lngLat));
       });
       map.on('mouseenter','punt', () => map.getCanvas().style.cursor='pointer');
       map.on('mouseleave','punt', () => map.getCanvas().style.cursor='');
@@ -312,7 +362,8 @@
       map.getSource('estacions').setData(geo);
       try {
         const grid = await fetch('./bolets.grid.json').then(r => { if (!r.ok) throw new Error(); return r.json(); });
-        const image = { url:`./bolets.${species}.png?v=${geo.generated ?? Date.now()}`, coordinates:grid.coordinates };
+        const imageUrl=`./bolets.${species}.png?v=${geo.generated ?? Date.now()}`;
+        const image = { url:imageUrl, coordinates:grid.coordinates };
         if (map.getSource('prediccio')) map.getSource('prediccio').updateImage(image);
         else {
           map.addSource('prediccio', { type:'image', ...image });
@@ -320,7 +371,13 @@
             paint:{ 'raster-opacity':.78, 'raster-fade-duration':180, 'raster-resampling':'linear' },
             layout:{ visibility:currentMode==='detallat'?'visible':'none' } }, 'halo');
         }
+        const blob=await fetch(imageUrl).then(r=>{if(!r.ok)throw new Error();return r.blob()});
+        const bitmap=await createImageBitmap(blob), canvas=document.createElement('canvas');
+        canvas.width=grid.width; canvas.height=grid.height;
+        const context=canvas.getContext('2d',{willReadFrequently:true}); context.drawImage(bitmap,0,0); bitmap.close();
+        currentRaster={ grid, pixels:context.getImageData(0,0,grid.width,grid.height).data };
       } catch {
+        currentRaster=null;
         if (map.getLayer('prediccio')) map.setLayoutProperty('prediccio','visibility','none');
       }
       document.getElementById('meta').innerHTML = `<b>${geo.speciesNom ?? species}</b> · ${geo.generated ?? ''}`;
