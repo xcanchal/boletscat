@@ -196,6 +196,11 @@
         tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
         attr:'© Esri' },
     ];
+    const PREDICTION_STYLE = {
+      dark:   { 'raster-opacity':.78, 'raster-contrast':.03, 'raster-saturation':.04, 'raster-brightness-max':1 },
+      relief: { 'raster-opacity':.46, 'raster-contrast':.04, 'raster-saturation':.04, 'raster-brightness-max':1 },
+      sat:    { 'raster-opacity':.58, 'raster-contrast':.06, 'raster-saturation':.06, 'raster-brightness-max':1 },
+    };
 
     const map = new maplibregl.Map({
       container:'map',
@@ -207,7 +212,7 @@
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass:false }), 'bottom-right');
     const popup = new maplibregl.Popup({ closeButton:false, offset:12 });
-    let currentMode = 'detallat';
+    let currentMode = 'detallat', currentBase = 'dark';
     let currentRaster = null, areaRequest = 0;
     const placeCache = new Map();
     const fmt = v => (v==null ? '—' : (+v).toFixed(1));
@@ -279,12 +284,19 @@
 
     // Botons del selector de capa
     const basesEl = document.getElementById('bases');
+    const applyPredictionStyle = () => {
+      if (!map.getLayer('prediccio')) return;
+      for (const [property,value] of Object.entries(PREDICTION_STYLE[currentBase]))
+        map.setPaintProperty('prediccio',property,value);
+    };
     BASES.forEach((b,i) => {
       const btn = document.createElement('button');
       btn.textContent = b.label; if (i===0) btn.classList.add('on');
       btn.onclick = () => {
+        currentBase = b.id;
         BASES.forEach(x => map.setLayoutProperty('base-'+x.id, 'visibility', x.id===b.id?'visible':'none'));
         [...basesEl.children].forEach(c => c.classList.toggle('on', c===btn));
+        applyPredictionStyle();
       };
       basesEl.appendChild(btn);
     });
@@ -370,7 +382,7 @@
         else {
           map.addSource('prediccio', { type:'image', ...image });
           map.addLayer({ id:'prediccio', type:'raster', source:'prediccio',
-            paint:{ 'raster-opacity':.78, 'raster-fade-duration':180, 'raster-resampling':'linear' },
+            paint:{ ...PREDICTION_STYLE[currentBase], 'raster-fade-duration':180, 'raster-resampling':'linear' },
             layout:{ visibility:currentMode==='detallat'?'visible':'none' } }, 'halo');
         }
         const blob=await fetch(imageUrl).then(r=>{if(!r.ok)throw new Error();return r.blob()});
