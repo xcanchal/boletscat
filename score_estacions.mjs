@@ -46,7 +46,7 @@ const LAG_RISE = 6, LAG_FALL = 16, RESERVE_FALL = 14;
 // exactament; s'han d'afinar amb observacions/backtests, no amb el màxim del dia.
 const TRIGGER_IDEAL = 60, RESERVE_IDEAL = 100;
 const HOST_CODE = { conifer:1, deciduous:2, sclerophyll:3, ribera:4 };
-const COLOR_STOPS = [[0,[86,101,116]],[.1,[59,130,246]],[.25,[99,102,241]],[.4,[124,58,237]],[.6,[168,85,247]],[.8,[217,70,239]],[1,[244,63,141]]];
+const COLOR_STOPS = [[0,[89,102,94]],[.1,[116,125,69]],[.25,[161,164,71]],[.4,[201,147,47]],[.6,[226,121,42]],[.8,[200,69,27]],[1,[169,46,20]]];
 
 // ── Config per espècie ──────────────────────────────────────────────────────
 // host = categories de bosc del MCSC: conifer (pins) · deciduous (roure/faig/castanyer)
