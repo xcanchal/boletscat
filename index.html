@@ -91,6 +91,33 @@
     .bases button:hover{color:var(--text)}
     .bases button.on{background:rgba(232,226,214,.10);color:var(--text)}
 
+    /* Eina de camp persistent: el mode sempre és accessible encara que el panell estigui plegat. */
+    .map-tools{position:absolute;top:16px;right:16px;z-index:2;display:flex;align-items:center;gap:8px;
+      padding:4px;background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--edge);
+      border-radius:11px;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+    .map-mode-switch{display:flex;gap:2px}
+    .map-mode-switch button{border:0;background:transparent;color:var(--muted);font:500 12px var(--ui);
+      padding:7px 10px;border-radius:8px;cursor:pointer;transition:all .15s}
+    .map-mode-switch button:hover{color:var(--text)}
+    .map-mode-switch button.on{background:rgba(232,226,214,.11);color:var(--text)}
+    .intensity-control{display:grid;grid-template-columns:auto 82px 34px;align-items:center;gap:7px;
+      min-height:30px;padding:0 6px 0 10px;border-left:1px solid var(--edge);font-size:11px;color:var(--muted)}
+    .intensity-control output{font-variant-numeric:tabular-nums;text-align:right;color:var(--text)}
+    .intensity-control input{width:82px;height:16px;margin:0;appearance:none;background:transparent;cursor:pointer}
+    .intensity-control input::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,#747d45,#e8722a)}
+    .intensity-control input::-webkit-slider-thumb{appearance:none;width:13px;height:13px;margin-top:-4.5px;
+      border:2px solid var(--text);border-radius:50%;background:var(--rovello);box-shadow:0 1px 4px rgba(0,0,0,.5)}
+    .intensity-control input::-moz-range-track{height:4px;border:0;border-radius:4px;background:linear-gradient(90deg,#747d45,#e8722a)}
+    .intensity-control input::-moz-range-thumb{width:11px;height:11px;border:2px solid var(--text);border-radius:50%;background:var(--rovello)}
+    .map-tools.stations .intensity-control{display:none}
+    button:focus-visible,.intensity-control input:focus-visible{outline:2px solid #6aa8ff;outline-offset:2px}
+
+    @media (max-width:720px){
+      .map-tools{top:100px;right:10px;max-width:calc(100vw - 20px)}
+      .intensity-control{grid-template-columns:auto 66px 32px}.intensity-control input{width:66px}
+      .panel:not(.collapsed) ~ .map-tools{display:none}
+    }
+
     .maplibregl-popup-content{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--edge);
       border-radius:12px;color:var(--text);font-family:var(--ui);padding:12px 14px}
     .maplibregl-popup-tip{display:none}
@@ -163,6 +190,17 @@
   </div>
 
   <div class="bases" id="bases"></div>
+  <div class="map-tools" id="mapTools">
+    <div class="map-mode-switch" id="mapModes" role="group" aria-label="Vista del mapa">
+      <button data-mode="detallat" class="on" aria-pressed="true">Detallat</button>
+      <button data-mode="punts" aria-pressed="false">Estacions</button>
+    </div>
+    <label class="intensity-control" for="heatmapIntensity">
+      <span>Intensitat</span>
+      <input id="heatmapIntensity" type="range" min="35" max="100" step="5" value="100" />
+      <output id="intensityValue" for="heatmapIntensity">100%</output>
+    </label>
+  </div>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script>
@@ -228,6 +266,8 @@
     map.addControl(new maplibregl.NavigationControl({ showCompass:false }), 'bottom-right');
     const popup = new maplibregl.Popup({ closeButton:false, offset:12 });
     let currentMode = 'detallat', currentBase = 'dark';
+    let predictionIntensity=1;
+    try { predictionIntensity=Math.max(.35,Math.min(1,(+localStorage.getItem('prediction-intensity')||100)/100)); } catch {}
     let currentRaster = null, areaRequest = 0;
     const placeCache = new Map();
     const fmt = v => (v==null ? '—' : (+v).toFixed(1));
@@ -318,8 +358,10 @@
     const basesEl = document.getElementById('bases');
     const applyPredictionStyle = () => {
       if (!map.getLayer('prediccio')) return;
-      for (const [property,value] of Object.entries(PREDICTION_STYLE[currentBase]))
-        map.setPaintProperty('prediccio',property,value);
+      for (const [property,value] of Object.entries(PREDICTION_STYLE[currentBase])) {
+        const adjusted=property==='raster-opacity'?value*predictionIntensity:value;
+        map.setPaintProperty('prediccio',property,adjusted);
+      }
     };
     const applyReferenceStyle = () => {
       REFERENCES.forEach(reference => {
@@ -338,6 +380,15 @@
         applyReferenceStyle();
       };
       basesEl.appendChild(btn);
+    });
+
+    const intensityInput=document.getElementById('heatmapIntensity'), intensityValue=document.getElementById('intensityValue');
+    intensityInput.value=String(Math.round(predictionIntensity*100));
+    intensityValue.value=`${intensityInput.value}%`;
+    intensityInput.addEventListener('input',e=>{
+      predictionIntensity=+e.target.value/100; intensityValue.value=`${e.target.value}%`;
+      try { localStorage.setItem('prediction-intensity',e.target.value); } catch {}
+      applyPredictionStyle();
     });
 
     // Col·lapse del panell (arrenca plegat en pantalla estreta)
@@ -387,19 +438,26 @@
 
       document.getElementById('species').addEventListener('change', e => load(e.target.value));
 
-      // Mode de dades: resultat detallat vs estacions que alimenten l'estimació.
+      // Mode de dades: els dos selectors comparteixen exactament el mateix estat.
       const cap = document.getElementById('modecap');
-      document.getElementById('modes').addEventListener('click', e => {
-        const btn = e.target.closest('button'); if (!btn) return;
-        const mode = btn.dataset.mode, punts = mode === 'punts'; currentMode = mode;
+      const mapTools=document.getElementById('mapTools'), modeGroups=[document.getElementById('modes'),document.getElementById('mapModes')];
+      const setMode = mode => {
+        const punts = mode === 'punts'; currentMode = mode;
         if (map.getLayer('prediccio')) map.setLayoutProperty('prediccio', 'visibility', punts ? 'none' : 'visible');
         map.setLayoutProperty('halo', 'visibility', punts ? 'visible' : 'none');
         map.setLayoutProperty('punt', 'visibility', punts ? 'visible' : 'none');
+        mapTools.classList.toggle('stations',punts);
         cap.textContent = punts
           ? "Estacions meteorològiques de referència."
           : "Estimació contínua en zones forestals.";
-        [...e.currentTarget.children].forEach(c => c.classList.toggle('on', c === btn));
-      });
+        modeGroups.forEach(group=>[...group.children].forEach(button=>{
+          const active=button.dataset.mode===mode; button.classList.toggle('on',active); button.setAttribute('aria-pressed',String(active));
+        }));
+      };
+      modeGroups.forEach(group=>group.addEventListener('click',e=>{
+        const btn=e.target.closest('button[data-mode]'); if(btn)setMode(btn.dataset.mode);
+      }));
+      setMode(currentMode);
 
       load('rovello');
     });
