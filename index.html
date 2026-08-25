@@ -295,7 +295,7 @@
       const [lng,lat]=Array.isArray(lngLat)?lngLat:[lngLat.lng,lngLat.lat];
       const destination=encodeURIComponent(`${(+lat).toFixed(6)},${(+lng).toFixed(6)}`);
       return `<a class="pop-map" href="https://www.google.com/maps/dir/?api=1&amp;destination=${destination}"
-        target="_blank" rel="noopener noreferrer" aria-label="Obrir indicacions a Google Maps">Obrir al mapa ↗</a>`;
+        target="_blank" rel="noopener noreferrer" aria-label="Com arribar-hi amb Google Maps">Com arribar-hi ↗</a>`;
     };
     const popHTML = (p,lngLat) => {
       const r = rating(p.score);
