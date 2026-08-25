@@ -263,6 +263,10 @@
       relief: { 'raster-opacity':.84, 'raster-contrast':.05, 'raster-saturation':0, 'raster-brightness-max':1 },
       sat:    { 'raster-opacity':.78, 'raster-contrast':.05, 'raster-saturation':0, 'raster-brightness-max':1 },
     };
+    // A escala territorial, la interpolació agrega visualment les cel·les de 250 m.
+    // Quan cada cel·la ja és visible, nearest evita que el mapa continuï semblant borrós.
+    const DETAIL_RESAMPLING_ZOOM = 9.5;
+    const MEDIUM_RESAMPLING_ZOOM = 8;
 
     const map = new maplibregl.Map({
       container:'map',
@@ -373,6 +377,21 @@
         map.setPaintProperty('prediccio',property,adjusted);
       }
     };
+    let predictionResampling = null, predictionVariant = null;
+    const predictionVariantAtZoom = () => map.getZoom()>=DETAIL_RESAMPLING_ZOOM?'detail'
+      :map.getZoom()>=MEDIUM_RESAMPLING_ZOOM?'medium':'overview';
+    const updatePredictionRendering = () => {
+      if (!map.getLayer('prediccio')) return;
+      const variant=predictionVariantAtZoom(), next=variant==='detail'?'nearest':'linear';
+      if (variant!==predictionVariant && currentRaster?.visuals?.[variant]) {
+        map.getSource('prediccio').updateImage({ url:currentRaster.visuals[variant], coordinates:currentRaster.grid.coordinates });
+        predictionVariant=variant;
+      }
+      if (next!==predictionResampling) {
+        map.setPaintProperty('prediccio','raster-resampling',next);
+        predictionResampling=next;
+      }
+    };
     const applyReferenceStyle = () => {
       REFERENCES.forEach(reference => {
         const visibility=reference.bases.includes(currentBase)?'visible':'none';
@@ -437,6 +456,7 @@
         popup.setLngLat(e.features[0].geometry.coordinates).setHTML(popHTML(e.features[0].properties,e.features[0].geometry.coordinates)).addTo(map);
       });
       map.on('dragstart', () => panel.classList.add('collapsed'));
+      map.on('zoom', updatePredictionRendering);
       map.on('click', async e => {
         panel.classList.add('collapsed');
         if (currentMode !== 'detallat') return;
@@ -483,6 +503,27 @@
       return context.getImageData(0,0,grid.width,grid.height).data;
     }
 
+    function aggregateRasterUrl(pixels,width,height,factor) {
+      const outWidth=Math.ceil(width/factor), outHeight=Math.ceil(height/factor);
+      const out=new Uint8ClampedArray(outWidth*outHeight*4);
+      for(let oy=0;oy<outHeight;oy++) for(let ox=0;ox<outWidth;ox++) {
+        let sumA=0,sumR=0,sumG=0,sumB=0,count=0,forest=0;
+        const y1=Math.min(height,(oy+1)*factor), x1=Math.min(width,(ox+1)*factor);
+        for(let y=oy*factor;y<y1;y++) for(let x=ox*factor;x<x1;x++) {
+          const p=(y*width+x)*4,a=pixels[p+3]; count++;
+          if(a) forest++;
+          sumA+=a; sumR+=pixels[p]*a; sumG+=pixels[p+1]*a; sumB+=pixels[p+2]*a;
+        }
+        if(!sumA) continue;
+        const p=(oy*outWidth+ox)*4;
+        out[p]=Math.round(sumR/sumA); out[p+1]=Math.round(sumG/sumA); out[p+2]=Math.round(sumB/sumA);
+        out[p+3]=Math.round((sumA/forest)*Math.sqrt(forest/count));
+      }
+      const canvas=document.createElement('canvas'); canvas.width=outWidth; canvas.height=outHeight;
+      canvas.getContext('2d').putImageData(new ImageData(out,outWidth,outHeight),0,0);
+      return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(URL.createObjectURL(blob)):reject(new Error()),'image/png'));
+    }
+
     async function load(species) {
       const msg = document.getElementById('msg'), content = document.getElementById('content');
       let geo;
@@ -503,16 +544,24 @@
       try {
         const grid = await fetch('./bolets.grid.json').then(r => { if (!r.ok) throw new Error(); return r.json(); });
         const imageUrl=`./bolets.${species}.png?v=${geo.generated ?? Date.now()}`;
-        const image = { url:imageUrl, coordinates:grid.coordinates };
+        const pixels=await imagePixels(imageUrl,grid);
+        const [medium,overview]=await Promise.all([
+          aggregateRasterUrl(pixels,grid.width,grid.height,2),
+          aggregateRasterUrl(pixels,grid.width,grid.height,3),
+        ]);
+        const raster={ grid, pixels, model:geo.model, visuals:{ detail:imageUrl,medium,overview } };
+        if(currentRaster?.visuals) for(const url of [currentRaster.visuals.medium,currentRaster.visuals.overview]) URL.revokeObjectURL(url);
+        currentRaster=raster;
+        const variant=predictionVariantAtZoom(), image={ url:raster.visuals[variant], coordinates:grid.coordinates };
         if (map.getSource('prediccio')) map.getSource('prediccio').updateImage(image);
         else {
           map.addSource('prediccio', { type:'image', ...image });
           map.addLayer({ id:'prediccio', type:'raster', source:'prediccio',
-            paint:{ ...PREDICTION_STYLE[currentBase], 'raster-fade-duration':180, 'raster-resampling':'linear' },
+            paint:{ ...PREDICTION_STYLE[currentBase], 'raster-fade-duration':180,
+              'raster-resampling':variant==='detail'?'nearest':'linear' },
             layout:{ visibility:currentMode==='detallat'?'visible':'none' } }, REFERENCES[0].id);
         }
-        const pixels=await imagePixels(imageUrl,grid), raster={ grid, pixels, model:geo.model };
-        currentRaster=raster;
+        predictionVariant=variant; predictionResampling=null; updatePredictionRendering();
         try {
           const version=encodeURIComponent(geo.generated??Date.now());
           const [terrain,weather]=await Promise.all([

@@ -68,6 +68,8 @@ d'elevacions de l'ICGC. En desa una representació compacta a `graella.bin` (bos
 altitud per cel·la). El procés diari interpola la meteorologia, corregeix la
 temperatura amb l'altitud local i genera un PNG transparent per espècie. El
 navegador rep una sola imatge d'uns centenars de KB, no 1,2 milions de geometries.
+Per evitar soroll visual, la representació s'agrega a 750 m de lluny i a 500 m a
+escala intermèdia; en apropar-se recupera les cel·les originals i nítides de 250 m.
 
 ---
 
