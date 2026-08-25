@@ -371,6 +371,10 @@
       if (details.fH==null) return `<div class="pop-nom">${esc(title)}</div><div class="pop-score"><span class="quality q-${rating(details.score).key}">${rating(details.score).nivell}</span></div><div class="pop-index">Probabilitat ${Math.round(details.score*100)}%</div>${mapLinkHTML(lngLat)}`;
       return popHTML({ nom:title, ...details },lngLat);
     };
+    const locationHTML = (place,lngLat) => {
+      const title=place ? `A prop de ${place}` : `${lngLat.lat.toFixed(4)}, ${lngLat.lng.toFixed(4)}`;
+      return `<div class="pop-nom">${esc(title)}</div>${mapLinkHTML(lngLat)}`;
+    };
 
     // Botons del selector de capa
     const basesEl = document.getElementById('bases');
@@ -457,12 +461,13 @@
       map.on('zoom', updatePredictionRendering);
       map.on('click', async e => {
         panel.classList.add('collapsed');
-        if (currentMode !== 'detallat') return;
-        const request=++areaRequest, details=detailsAt(e.lngLat);
+        if (currentMode==='punts' && map.queryRenderedFeatures(e.point,{ layers:['punt'] }).length) return;
+        const mode=currentMode, request=++areaRequest;
+        const details=mode==='detallat'?detailsAt(e.lngLat):null;
         popup.setLngLat(e.lngLat).setHTML(`<div class="pop-nom">Identificant la zona…</div>`).addTo(map);
         const place=await nearestPlace(e.lngLat);
         if (request!==areaRequest) return;
-        popup.setHTML(areaHTML(place,details,e.lngLat));
+        popup.setHTML(mode==='detallat'?areaHTML(place,details,e.lngLat):locationHTML(place,e.lngLat));
       });
       map.on('mouseenter','punt', () => map.getCanvas().style.cursor='pointer');
       map.on('mouseleave','punt', () => map.getCanvas().style.cursor='');
