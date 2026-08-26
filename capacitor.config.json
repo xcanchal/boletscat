@@ -1,0 +1,11 @@
+{
+  "appId": "com.xaviercanchal.bolets",
+  "appName": "Predictor de bolets",
+  "webDir": "www",
+  "backgroundColor": "#12160f",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

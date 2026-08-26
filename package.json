@@ -1,0 +1,21 @@
+{
+  "name": "boletscat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Predictor de bolets per Catalunya, web i app Capacitor.",
+  "scripts": {
+    "build:mobile": "node build-mobile.mjs",
+    "cap:sync": "npm run build:mobile && npx cap sync",
+    "cap:open:ios": "npm run cap:sync && npx cap open ios",
+    "cap:open:android": "npm run cap:sync && npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.0",
+    "@capacitor/core": "8.5.0",
+    "@capacitor/ios": "8.5.0",
+    "maplibre-gl": "4.7.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.0"
+  }
+}

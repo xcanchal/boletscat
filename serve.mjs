@@ -26,6 +26,8 @@ createServer(async (req, res) => {
     res.writeHead(200, {
       "Content-Type": TYPES[extname(file)] ?? "application/octet-stream",
       "Cache-Control": "no-cache",   // que el navegador no serveixi geojson vells
+      "Access-Control-Allow-Origin": "*", // dades públiques per al client web i Capacitor
+      "Cross-Origin-Resource-Policy": "cross-origin",
     });
     res.end(data);
   } catch {

@@ -1,2 +1,5 @@
 node_modules/
 bolets.*.geojson
+bolets.*.png
+bolets.grid.json
+www/

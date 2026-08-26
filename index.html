@@ -2,14 +2,20 @@
 <html lang="ca">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Predicció diària de les condicions per trobar bolets a Catalunya segons meteorologia, altitud i tipus de bosc." />
+  <meta property="og:title" content="Predictor de bolets · Catalunya" />
+  <meta property="og:description" content="Consulta on hi ha les millors condicions per trobar bolets avui a Catalunya." />
+  <meta property="og:url" content="https://boletada.cat/" />
+  <meta property="og:type" content="website" />
   <title>Predictor de bolets · Catalunya</title>
+  <link rel="canonical" href="https://boletada.cat/" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-  <script defer src="https://analytics.xaviercanchal.com/script.js" data-website-id="7bc8768a-5e02-47a2-ac08-8ee9a0618792" data-domains="bolets.xaviercanchal.com"></script>
+  <script defer src="https://analytics.xaviercanchal.com/script.js" data-website-id="7bc8768a-5e02-47a2-ac08-8ee9a0618792" data-domains="boletada.cat"></script>
   <style>
     :root {
       --bg:#12160f; --panel:rgba(24,30,22,.86); --edge:rgba(232,226,214,.10);
@@ -17,9 +23,10 @@
       --display:'Spectral',Georgia,serif; --ui:'Inter',system-ui,sans-serif;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;height:100%;background:var(--bg);font-family:var(--ui)}
-    #map{position:absolute;inset:0}
-    .panel{position:absolute;top:16px;left:16px;z-index:2;width:320px;max-width:calc(100vw - 32px);
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg);font-family:var(--ui);-webkit-text-size-adjust:100%}
+    #map{position:fixed;inset:0;width:100%;height:100%}
+    button,select,input,a{touch-action:manipulation}
+    .panel{position:absolute;top:max(16px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));z-index:2;width:320px;max-width:calc(100vw - 32px);
       background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--edge);border-radius:14px;
       color:var(--text);padding:18px 18px 14px;box-shadow:0 12px 40px rgba(0,0,0,.45)}
     .brand{display:flex;align-items:center;gap:10px}
@@ -36,7 +43,7 @@
     .collapse svg{transition:transform .2s}
     .panel.collapsed .collapse svg{transform:rotate(180deg)}
     /* Cos plegable */
-    .body{overflow:hidden;transition:max-height .25s ease,opacity .2s,margin-top .25s;max-height:80vh}
+    .body{overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;transition:max-height .25s ease,opacity .2s,margin-top .25s;max-height:80vh}
     .panel.collapsed .body{max-height:0;opacity:0;margin-top:0}
     select{width:100%;margin-top:14px;padding:9px 11px;border-radius:9px;cursor:pointer;
       background:rgba(232,226,214,.06);color:var(--text);border:1px solid var(--edge);
@@ -83,7 +90,7 @@
     .msg code{background:rgba(232,226,214,.08);padding:1px 6px;border-radius:5px;font-size:12px}
 
     /* Selector de capa base */
-    .bases{position:absolute;left:16px;bottom:16px;z-index:2;display:flex;gap:2px;padding:3px;
+    .bases{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(16px,env(safe-area-inset-bottom));z-index:2;display:flex;gap:2px;padding:3px;
       background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--edge);border-radius:10px;
       box-shadow:0 8px 24px rgba(0,0,0,.4)}
     .bases button{border:0;background:transparent;color:var(--muted);font-family:var(--ui);font-size:12.5px;
@@ -92,7 +99,7 @@
     .bases button.on{background:rgba(232,226,214,.10);color:var(--text)}
 
     /* Eina de camp persistent: el mode sempre és accessible encara que el panell estigui plegat. */
-    .map-tools{position:absolute;top:16px;right:16px;z-index:2;display:flex;align-items:center;gap:8px;
+    .map-tools{position:absolute;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:2;display:flex;align-items:center;gap:8px;
       padding:4px;background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--edge);
       border-radius:11px;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,.4)}
     .map-mode-switch{display:flex;gap:2px}
@@ -115,23 +122,31 @@
     button:focus-visible,.intensity-control input:focus-visible{outline:2px solid #6aa8ff;outline-offset:2px}
 
     @media (max-width:720px){
-      .panel{top:12px;left:12px;width:calc(100vw - 24px);max-width:none;padding:15px 15px 12px}
+      .panel{top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));width:calc(100vw - max(24px,env(safe-area-inset-left) + env(safe-area-inset-right)));max-width:none;padding:15px 15px 12px}
+      .panel .body{max-height:calc(100dvh - max(96px,env(safe-area-inset-top) + 84px) - env(safe-area-inset-bottom))}
       .brand{gap:9px}.brand h1{font-size:clamp(19px,5.4vw,21px)}.brand .sub{font-size:11.5px;line-height:1.35}
       .collapse{width:32px;height:32px}
-      .map-tools{top:calc(var(--panel-bottom, 88px) + 10px);right:12px;width:248px;
-        max-width:calc(100vw - 24px);flex-direction:column;align-items:stretch;gap:4px;
+      .map-tools{top:calc(max(12px,env(safe-area-inset-top)) + var(--panel-height, 69px) + 10px);
+        left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));width:auto;max-width:none;
+        flex-direction:column;align-items:stretch;gap:4px;
         transition:top .2s ease,width .18s ease}
       .map-mode-switch{display:grid;grid-template-columns:1fr 1fr}
       .map-mode-switch button{padding:7px 9px}
       .intensity-control{grid-template-columns:auto minmax(64px,1fr) 34px;width:100%;
         min-height:34px;padding:7px 7px 3px;border-top:1px solid var(--edge);border-left:0}
       .intensity-control input{width:100%}
-      .map-tools.stations{width:190px}
+      .map-tools.stations{width:auto}
       .panel:not(.collapsed) ~ .map-tools{display:none}
+      body.panel-open .bases,body.panel-open .maplibregl-ctrl-bottom-right{display:none}
     }
 
+    /* Manté els controls fora del home indicator i evita el doble toc de zoom d'iOS. */
+    .maplibregl-ctrl-bottom-right{right:env(safe-area-inset-right);bottom:env(safe-area-inset-bottom)}
+    .maplibregl-ctrl-group button{touch-action:manipulation}
+
     .maplibregl-popup-content{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--edge);
-      border-radius:12px;color:var(--text);font-family:var(--ui);padding:12px 14px}
+      border-radius:12px;color:var(--text);font-family:var(--ui);padding:12px 14px;max-height:min(70dvh,420px);
+      overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
     .maplibregl-popup-tip{display:none}
     .pop-nom{font-family:var(--display);font-weight:600;font-size:16px;margin-bottom:2px}
     .pop-score{color:var(--rovello);font-weight:600;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px}
@@ -216,6 +231,8 @@
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script>
+    const DATA_BASE = document.querySelector('meta[name="bolets-data-base"]')?.content ?? '.';
+    const dataUrl = path => DATA_BASE === '.' ? `./${path}` : new URL(path, DATA_BASE).href;
     const SCALE = [0,'#59665e',0.1,'#747d45',0.25,'#a1a447',0.4,'#c9932f',0.6,'#e2792a',0.8,'#c8451b',1,'#a92e14'];
     const BOSC = { conifer:'pineda (coníferes)', deciduous:'bosc caducifoli', sclerophyll:'alzinar / esclerofil·le', ribera:'bosc de ribera' };
     const HOST_BY_CODE = [null,'conifer','deciduous','sclerophyll','ribera'];
@@ -265,9 +282,12 @@
       relief: { 'raster-opacity':.84, 'raster-contrast':.05, 'raster-saturation':0, 'raster-brightness-max':1 },
       sat:    { 'raster-opacity':.78, 'raster-contrast':.05, 'raster-saturation':0, 'raster-brightness-max':1 },
     };
+    const COVERAGE_OPACITY = { dark:.09, relief:.075, sat:.065 };
+    const DISPLAY_SCORE_MIN = .08;
     // De lluny, linear dona aspecte de mapa de calor; de prop, nearest manté
     // nítides les cel·les originals de 250 m sense generar ràsters al navegador.
-    const DETAIL_RESAMPLING_ZOOM = 9.5;
+    const DETAIL_RESAMPLING_ZOOM = 12;
+    const DEFAULT_VIEW = { center:[1.7,41.8], zoom:7 };
 
     const map = new maplibregl.Map({
       container:'map',
@@ -276,10 +296,92 @@
         layers:BASES.map((b,i) => ({ id:'base-'+b.id, type:'raster', source:b.id,
           paint:b.paint ?? {}, layout:{ visibility:i===0?'visible':'none' } })),
       },
-      center:[1.7,41.8], zoom:7,
+      center:DEFAULT_VIEW.center, zoom:DEFAULT_VIEW.zoom,
     });
-    map.addControl(new maplibregl.NavigationControl({ showCompass:false }), 'bottom-right');
     const popup = new maplibregl.Popup({ closeButton:false, offset:12 });
+
+    // El control natiu amplia respecte del centre del mapa. Si el popup és lluny
+    // del centre, diversos clics el fan sortir de pantalla. Aquest control conserva
+    // el punt actiu al mateix lloc visual i també evita el doble toc de zoom d'iOS.
+    class PopupAwareZoomControl {
+      onAdd(controlMap) {
+        this.map=controlMap;
+        this.container=document.createElement('div');
+        this.container.className='maplibregl-ctrl maplibregl-ctrl-group';
+        this.zoomIn=this.button('maplibregl-ctrl-zoom-in','Apropa',1);
+        this.zoomOut=this.button('maplibregl-ctrl-zoom-out','Allunya',-1);
+        this.update=()=>{
+          this.zoomIn.disabled=this.map.getZoom()>=this.map.getMaxZoom();
+          this.zoomOut.disabled=this.map.getZoom()<=this.map.getMinZoom();
+        };
+        this.map.on('zoom',this.update); this.update();
+        return this.container;
+      }
+      button(className,label,delta) {
+        const button=document.createElement('button');
+        button.type='button'; button.className=className; button.title=label;
+        button.setAttribute('aria-label',label);
+        button.innerHTML='<span class="maplibregl-ctrl-icon" aria-hidden="true"></span>';
+        button.addEventListener('click',event=>{
+          event.preventDefault(); event.stopPropagation(); button.blur();
+          const around=popup.isOpen()?popup.getLngLat():this.map.getCenter();
+          this.map.easeTo({ zoom:this.map.getZoom()+delta, around, duration:300 });
+        });
+        this.container.appendChild(button); return button;
+      }
+      onRemove() {
+        this.map.off('zoom',this.update); this.container.remove(); this.map=undefined;
+      }
+    }
+    map.addControl(new PopupAwareZoomControl(), 'bottom-right');
+    const popupViewport = () => {
+      const viewport=window.visualViewport;
+      let left=(viewport?.offsetLeft??0)+12, top=(viewport?.offsetTop??0)+12;
+      let right=left+(viewport?.width??innerWidth)-24, bottom=top+(viewport?.height??innerHeight)-24;
+      for (const selector of ['#panel','#mapTools']) {
+        const obstacle=document.querySelector(selector);
+        if (obstacle && getComputedStyle(obstacle).display!=='none') top=Math.max(top,obstacle.getBoundingClientRect().bottom+12);
+      }
+      const bases=document.getElementById('bases');
+      if (bases && getComputedStyle(bases).display!=='none') bottom=Math.min(bottom,bases.getBoundingClientRect().top-12);
+      return { left,top,right,bottom };
+    };
+    const keepPopupVisible = () => requestAnimationFrame(()=>{
+      const element=popup.getElement(); if (!element?.isConnected) return;
+      const rect=element.getBoundingClientRect(), { left,top,right,bottom }=popupViewport();
+      let x=0,y=0;
+      if (rect.left<left) x=rect.left-left; else if (rect.right>right) x=rect.right-right;
+      if (rect.top<top) y=rect.top-top; else if (rect.bottom>bottom) y=rect.bottom-bottom;
+      if (x||y) map.panBy([x,y],{ duration:250 });
+    });
+    let centeringPopup=false;
+    const centerPopup = () => {
+      centeringPopup=true;
+      requestAnimationFrame(()=>{
+      const element=popup.getElement(); if (!element?.isConnected) return;
+      const bounds=popupViewport(), content=element.querySelector('.maplibregl-popup-content');
+      if (content) content.style.maxHeight=`${Math.max(120,Math.min(420,bounds.bottom-bounds.top-2))}px`;
+      const rect=element.getBoundingClientRect();
+      const x=(rect.left+rect.right-bounds.left-bounds.right)/2;
+      const y=(rect.top+rect.bottom-bounds.top-bounds.bottom)/2;
+      if (Math.abs(x)>.5||Math.abs(y)>.5) map.panBy([x,y],{ duration:300 });
+      else centeringPopup=false;
+      });
+    };
+    const showPopup = (lngLat,html,center=false) => {
+      popup.setLngLat(lngLat).setHTML(html).addTo(map);
+      if (center!==null) (center?centerPopup:keepPopupVisible)();
+    };
+    const updatePopup = (html,center=false) => {
+      popup.setHTML(html); (center?centerPopup:keepPopupVisible)();
+    };
+    map.on('moveend',()=>{
+      if (centeringPopup) { centeringPopup=false; return; }
+      if (popup.isOpen()) keepPopupVisible();
+    });
+    map.getContainer().addEventListener('click',event=>{
+      if (event.target.closest('.maplibregl-popup .pop-plus')) setTimeout(centerPopup);
+    });
     let currentMode = 'detallat', currentBase = 'dark';
     let predictionIntensity=1;
     try {
@@ -367,7 +469,12 @@
     }
     const areaHTML = (place,details,lngLat) => {
       const title=place ? `A prop de ${place}` : `${lngLat.lat.toFixed(4)}, ${lngLat.lng.toFixed(4)}`;
-      if (details==null) return `<div class="pop-nom">${esc(title)}</div><div class="pop-index">Sense estimació forestal en aquest punt</div>${mapLinkHTML(lngLat)}`;
+      if (details==null) {
+        const note=map.getZoom()<DETAIL_RESAMPLING_ZOOM
+          ? 'La vista general agrupa blocs d’1 km; aquesta cel·la de 250 m queda fora de la cobertura forestal.'
+          : 'Fora de les zones forestals modelades (cel·la de 250 m).';
+        return `<div class="pop-nom">${esc(title)}</div><div class="pop-index">${note}</div>${mapLinkHTML(lngLat)}`;
+      }
       if (details.fH==null) return `<div class="pop-nom">${esc(title)}</div><div class="pop-score"><span class="quality q-${rating(details.score).key}">${rating(details.score).nivell}</span></div><div class="pop-index">Probabilitat ${Math.round(details.score*100)}%</div>${mapLinkHTML(lngLat)}`;
       return popHTML({ nom:title, ...details },lngLat);
     };
@@ -379,18 +486,21 @@
     // Botons del selector de capa
     const basesEl = document.getElementById('bases');
     const applyPredictionStyle = () => {
-      if (!map.getLayer('prediccio')) return;
-      for (const [property,value] of Object.entries(PREDICTION_STYLE[currentBase])) {
-        const adjusted=property==='raster-opacity'?value*predictionIntensity:value;
-        map.setPaintProperty('prediccio',property,adjusted);
+      for (const layer of ['prediccio','prediccio-detall']) {
+        if (map.getLayer(layer)) {
+          for (const [property,value] of Object.entries(PREDICTION_STYLE[currentBase])) {
+            const adjusted=property==='raster-opacity'?value*predictionIntensity:value;
+            map.setPaintProperty(layer,property,adjusted);
+          }
+        }
       }
+      if (map.getLayer('cobertura')) map.setPaintProperty('cobertura','raster-opacity',COVERAGE_OPACITY[currentBase]*predictionIntensity);
     };
     let predictionResampling = null;
     const updatePredictionRendering = () => {
-      if (!map.getLayer('prediccio')) return;
       const next=map.getZoom()>=DETAIL_RESAMPLING_ZOOM?'nearest':'linear';
       if (next!==predictionResampling) {
-        map.setPaintProperty('prediccio','raster-resampling',next);
+        for (const layer of ['cobertura','prediccio','prediccio-detall']) if (map.getLayer(layer)) map.setPaintProperty(layer,'raster-resampling',next);
         predictionResampling=next;
       }
     };
@@ -424,10 +534,12 @@
 
     // Col·lapse del panell (arrenca plegat en pantalla estreta)
     const panel = document.getElementById('panel');
-    if (window.matchMedia('(max-width: 640px)').matches) panel.classList.add('collapsed');
-    const syncPanelBottom = () => document.documentElement.style.setProperty('--panel-bottom',`${panel.offsetTop+panel.offsetHeight}px`);
-    if ('ResizeObserver' in window) new ResizeObserver(syncPanelBottom).observe(panel);
-    window.addEventListener('resize',syncPanelBottom); syncPanelBottom();
+    if (window.matchMedia('(max-width: 640px), (max-height: 500px)').matches) panel.classList.add('collapsed');
+    const syncPanelState = () => document.body.classList.toggle('panel-open',!panel.classList.contains('collapsed'));
+    new MutationObserver(syncPanelState).observe(panel,{ attributes:true,attributeFilter:['class'] });
+    const syncPanelHeight = () => document.documentElement.style.setProperty('--panel-height',`${panel.offsetHeight}px`);
+    if ('ResizeObserver' in window) new ResizeObserver(syncPanelHeight).observe(panel);
+    window.addEventListener('resize',syncPanelHeight); syncPanelHeight(); syncPanelState();
     document.getElementById('collapse').addEventListener('click', () => panel.classList.toggle('collapsed'));
 
     // Col·lapse de la secció de condicions ideals
@@ -455,7 +567,7 @@
 
       map.on('click','punt', e => {
         areaRequest++;
-        popup.setLngLat(e.features[0].geometry.coordinates).setHTML(popHTML(e.features[0].properties,e.features[0].geometry.coordinates)).addTo(map);
+        showPopup(e.features[0].geometry.coordinates,popHTML(e.features[0].properties,e.features[0].geometry.coordinates),true);
       });
       map.on('dragstart', () => panel.classList.add('collapsed'));
       map.on('zoom', updatePredictionRendering);
@@ -464,10 +576,10 @@
         if (currentMode==='punts' && map.queryRenderedFeatures(e.point,{ layers:['punt'] }).length) return;
         const mode=currentMode, request=++areaRequest;
         const details=mode==='detallat'?detailsAt(e.lngLat):null;
-        popup.setLngLat(e.lngLat).setHTML(`<div class="pop-nom">Identificant la zona…</div>`).addTo(map);
+        showPopup(e.lngLat,`<div class="pop-nom">Identificant la zona…</div>`,true);
         const place=await nearestPlace(e.lngLat);
         if (request!==areaRequest) return;
-        popup.setHTML(mode==='detallat'?areaHTML(place,details,e.lngLat):locationHTML(place,e.lngLat));
+        updatePopup(mode==='detallat'?areaHTML(place,details,e.lngLat):locationHTML(place,e.lngLat),true);
       });
       map.on('mouseenter','punt', () => map.getCanvas().style.cursor='pointer');
       map.on('mouseleave','punt', () => map.getCanvas().style.cursor='');
@@ -478,14 +590,21 @@
       const cap = document.getElementById('modecap');
       const mapTools=document.getElementById('mapTools'), modeGroups=[document.getElementById('modes'),document.getElementById('mapModes')];
       const setMode = mode => {
+        if (mode!==currentMode) {
+          areaRequest++;
+          centeringPopup=false;
+          popup.remove();
+          map.easeTo({ ...DEFAULT_VIEW, bearing:0, pitch:0, duration:600 });
+        }
         const punts = mode === 'punts'; currentMode = mode;
-        if (map.getLayer('prediccio')) map.setLayoutProperty('prediccio', 'visibility', punts ? 'none' : 'visible');
+        for (const layer of ['prediccio','prediccio-detall']) if (map.getLayer(layer)) map.setLayoutProperty(layer, 'visibility', punts ? 'none' : 'visible');
+        if (map.getLayer('cobertura')) map.setLayoutProperty('cobertura', 'visibility', punts ? 'none' : 'visible');
         map.setLayoutProperty('halo', 'visibility', punts ? 'visible' : 'none');
         map.setLayoutProperty('punt', 'visibility', punts ? 'visible' : 'none');
         mapTools.classList.toggle('stations',punts);
         cap.textContent = punts
           ? "Estacions meteorològiques de referència."
-          : "Estimació contínua en zones forestals.";
+          : "Color: condicions · molsa suau: zona modelada.";
         modeGroups.forEach(group=>[...group.children].forEach(button=>{
           const active=button.dataset.mode===mode; button.classList.toggle('on',active); button.setAttribute('aria-pressed',String(active));
         }));
@@ -506,11 +625,52 @@
       return context.getImageData(0,0,grid.width,grid.height).data;
     }
 
+    function displayRasterUrl(pixels,grid,kind) {
+      const canvas=document.createElement('canvas'); canvas.width=grid.width; canvas.height=grid.height;
+      const context=canvas.getContext('2d'), image=context.createImageData(grid.width,grid.height), out=image.data;
+      for(let p=0;p<pixels.length;p+=4) {
+        if(!pixels[p+3]) continue;
+        if(kind==='coverage') {
+          out[p]=89; out[p+1]=102; out[p+2]=94; out[p+3]=255;
+          continue;
+        }
+        const score=pixels[p+3]<=35?0:Math.max(0,Math.min(1,(pixels[p+3]-105)/125));
+        if(score<DISPLAY_SCORE_MIN) continue;
+        out[p]=pixels[p]; out[p+1]=pixels[p+1]; out[p+2]=pixels[p+2];
+        out[p+3]=Math.round(pixels[p+3]*Math.min(1,(score-DISPLAY_SCORE_MIN)/.08));
+      }
+      context.putImageData(image,0,0); return canvas.toDataURL('image/png');
+    }
+
+    // A la vista de navegació agrupem 4×4 cel·les (1 km). El color pren el
+    // senyal més alt del bloc, però la seva opacitat depèn de quanta superfície
+    // forestal real conté: taques llegibles sense presentar-les com punts exactes.
+    function overviewRasterUrl(pixels,grid) {
+      const factor=4, width=Math.ceil(grid.width/factor), height=Math.ceil(grid.height/factor);
+      const canvas=document.createElement('canvas'); canvas.width=width; canvas.height=height;
+      const context=canvas.getContext('2d'), image=context.createImageData(width,height), out=image.data;
+      for(let row=0;row<height;row++) for(let col=0;col<width;col++) {
+        let valid=0,best=-1,bestAlpha=0;
+        for(let y=row*factor;y<Math.min(grid.height,(row+1)*factor);y++)
+          for(let x=col*factor;x<Math.min(grid.width,(col+1)*factor);x++) {
+            const p=(y*grid.width+x)*4, alpha=pixels[p+3]; if(!alpha) continue;
+            valid++;
+            const score=alpha<=35?0:Math.max(0,Math.min(1,(alpha-105)/125));
+            if(score>=DISPLAY_SCORE_MIN&&alpha>bestAlpha) { best=p; bestAlpha=alpha; }
+          }
+        if(best<0) continue;
+        const p=(row*width+col)*4, coverage=valid/(factor*factor);
+        out[p]=pixels[best]; out[p+1]=pixels[best+1]; out[p+2]=pixels[best+2];
+        out[p+3]=Math.round(bestAlpha*Math.min(1,Math.sqrt(coverage)*1.35));
+      }
+      context.putImageData(image,0,0); return canvas.toDataURL('image/png');
+    }
+
     async function load(species) {
       const msg = document.getElementById('msg'), content = document.getElementById('content');
       let geo;
       try {
-        const res = await fetch(`./bolets.${species}.geojson`);
+        const res = await fetch(dataUrl(`bolets.${species}.geojson`));
         if (!res.ok) throw new Error();
         geo = await res.json();
       } catch {
@@ -524,32 +684,53 @@
       msg.style.display='none';
       map.getSource('estacions').setData(geo);
       try {
-        const grid = await fetch('./bolets.grid.json').then(r => { if (!r.ok) throw new Error(); return r.json(); });
-        const imageUrl=`./bolets.${species}.png?v=${geo.generated ?? Date.now()}`;
+        const grid = await fetch(dataUrl('bolets.grid.json')).then(r => { if (!r.ok) throw new Error(); return r.json(); });
+        const imageUrl=`${dataUrl(`bolets.${species}.png`)}?v=${encodeURIComponent(geo.generated ?? Date.now())}`;
         const pixels=await imagePixels(imageUrl,grid);
         const raster={ grid, pixels, model:geo.model };
         currentRaster=raster;
-        const image={ url:imageUrl, coordinates:grid.coordinates };
-        if (map.getSource('prediccio')) map.getSource('prediccio').updateImage(image);
+        const image={ url:overviewRasterUrl(pixels,grid), coordinates:grid.coordinates };
+        const detailImage={ url:displayRasterUrl(pixels,grid,'prediction'), coordinates:grid.coordinates };
+        if (map.getSource('prediccio')) {
+          map.getSource('prediccio').updateImage(image);
+          map.getSource('prediccio-detall').updateImage(detailImage);
+        }
         else {
           map.addSource('prediccio', { type:'image', ...image });
           map.addLayer({ id:'prediccio', type:'raster', source:'prediccio',
             paint:{ ...PREDICTION_STYLE[currentBase], 'raster-fade-duration':180,
               'raster-resampling':map.getZoom()>=DETAIL_RESAMPLING_ZOOM?'nearest':'linear' },
-            layout:{ visibility:currentMode==='detallat'?'visible':'none' } }, REFERENCES[0].id);
+            layout:{ visibility:currentMode==='detallat'?'visible':'none' }, maxzoom:DETAIL_RESAMPLING_ZOOM }, REFERENCES[0].id);
+          map.addSource('prediccio-detall', { type:'image', ...detailImage });
+          map.addLayer({ id:'prediccio-detall', type:'raster', source:'prediccio-detall',
+            paint:{ ...PREDICTION_STYLE[currentBase], 'raster-fade-duration':180, 'raster-resampling':'nearest' },
+            layout:{ visibility:currentMode==='detallat'?'visible':'none' }, minzoom:DETAIL_RESAMPLING_ZOOM }, REFERENCES[0].id);
         }
         predictionResampling=null; updatePredictionRendering();
         try {
           const version=encodeURIComponent(geo.generated??Date.now());
           const [terrain,weather]=await Promise.all([
-            imagePixels(`./bolets.terrain.png?v=${version}`,grid),
-            imagePixels(`./bolets.weather.png?v=${version}`,grid),
+            imagePixels(`${dataUrl('bolets.terrain.png')}?v=${version}`,grid),
+            imagePixels(`${dataUrl('bolets.weather.png')}?v=${version}`,grid),
           ]);
-          if(currentRaster===raster) Object.assign(raster,{ terrain,weather });
+          if(currentRaster===raster) {
+            Object.assign(raster,{ terrain,weather });
+            const coverage={ url:displayRasterUrl(terrain,grid,'coverage'), coordinates:grid.coordinates };
+            if(map.getSource('cobertura')) map.getSource('cobertura').updateImage(coverage);
+            else {
+              map.addSource('cobertura',{ type:'image', ...coverage });
+              map.addLayer({ id:'cobertura', type:'raster', source:'cobertura',
+                paint:{ 'raster-opacity':COVERAGE_OPACITY[currentBase]*predictionIntensity,
+                  'raster-resampling':map.getZoom()>=DETAIL_RESAMPLING_ZOOM?'nearest':'linear' },
+                layout:{ visibility:currentMode==='detallat'?'visible':'none' } },'prediccio');
+            }
+            predictionResampling=null; updatePredictionRendering();
+          }
         } catch { /* Compatibilitat amb una generació antiga: el mapa i el score continuen funcionant. */ }
       } catch {
         currentRaster=null;
-        if (map.getLayer('prediccio')) map.setLayoutProperty('prediccio','visibility','none');
+        for (const layer of ['prediccio','prediccio-detall']) if (map.getLayer(layer)) map.setLayoutProperty(layer,'visibility','none');
+        if (map.getLayer('cobertura')) map.setLayoutProperty('cobertura','visibility','none');
       }
       document.getElementById('meta').innerHTML = `<b>${geo.speciesNom ?? species}</b> · ${geo.generated ?? ''}`;
 
@@ -580,7 +761,7 @@
         el.onclick = () => {
           panel.classList.add('collapsed');
           map.flyTo({ center:f.geometry.coordinates, zoom:11, speed:0.8 });
-          popup.setLngLat(f.geometry.coordinates).setHTML(popHTML(p,f.geometry.coordinates)).addTo(map);
+          showPopup(f.geometry.coordinates,popHTML(p,f.geometry.coordinates));
         };
         rows.appendChild(el);
         if (p.fH != null) {

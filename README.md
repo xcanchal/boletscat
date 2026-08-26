@@ -135,6 +135,25 @@ docker run -p 8080:8080 boletscat     # http://localhost:8080
 
 ---
 
+## App mòbil (Capacitor)
+
+La mateixa interfície web s'empaqueta localment per a iOS i Android. Les prediccions
+diàries no queden incloses a l'app: es carreguen de `boletada.cat`, de
+manera que s'actualitzen sense haver de publicar una versió nova a les botigues.
+
+```bash
+npm install
+npm run cap:sync          # genera www/ i sincronitza iOS + Android
+npm run cap:open:ios      # obre el projecte amb Xcode
+npm run cap:open:android  # obre el projecte amb Android Studio
+```
+
+`build-mobile.mjs` empaqueta MapLibre dins l'app i prepara el client natiu. Els
+projectes `ios/` i `android/` contenen les metadades, icones, permisos i configuració
+de publicació pròpies de cada botiga.
+
+---
+
 ## Validació
 
 No hi ha ground truth ("on he trobat X"). Validem per:

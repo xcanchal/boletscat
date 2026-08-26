@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Predictor de bolets</string>
+    <string name="title_activity_main">Predictor de bolets</string>
+    <string name="package_name">com.xaviercanchal.bolets</string>
+    <string name="custom_url_scheme">com.xaviercanchal.bolets</string>
+</resources>
