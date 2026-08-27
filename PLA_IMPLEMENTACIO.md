@@ -23,7 +23,7 @@ començar la següent.
 |---|---|
 | Accés gratuït | Cap: la landing, el registre, el pagament i la restauració són públics; el mapa no |
 | Pla | Un únic pla anual |
-| Preu web | **24,99 € / any**, provisional fins a validar impostos i posicionament |
+| Preu web | **29,99 € / any** |
 | Prova gratuïta | No |
 | Entitlement de RevenueCat | `pro` |
 | Identificador comú | `Better Auth user.id` = `RevenueCat App User ID` |
@@ -108,7 +108,7 @@ sessió Better Auth vàlida AND entitlement RevenueCat `boletada_pro` actiu
 
 - [ ] Confirmar domini públic i domini de l'API.
 - [ ] Confirmar el nom comercial definitiu de l'app.
-- [ ] Confirmar **24,99 € / any**, sense pla gratuït ni prova.
+- [x] Confirmar **29,99 € / any**, sense pla gratuït ni prova.
 - [ ] Crear entorns separats de desenvolupament i producció.
 - [ ] Crear PostgreSQL a Coolify amb volum persistent i còpies de seguretat.
 - [ ] Crear/configurar comptes de RevenueCat, Stripe, App Store Connect i Google Play Console.
@@ -271,7 +271,7 @@ concedeixin manualment.
 
 ### Stripe web
 
-- [ ] Crear a Stripe un producte anual web de **24,99 €**, provisional.
+- [ ] Crear a RevenueCat Web el producte anual de **29,99 €** connectat a Stripe.
 - [ ] Connectar Stripe Billing amb RevenueCat Web.
 - [ ] Importar el producte i associar-lo a `pro`.
 - [ ] Crear una offering anual.
