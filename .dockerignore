@@ -1,6 +1,10 @@
 .git
+.env
 node_modules
-bolets.*.geojson
-bolets.*.png
-bolets.grid.json
-spike_*.mjs
+public
+private
+www
+promo-video
+ios
+android
+*.log

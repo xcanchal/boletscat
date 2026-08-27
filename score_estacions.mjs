@@ -31,7 +31,7 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { writeFileSync, readFileSync, existsSync } from "node:fs";
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { encodeRgbaPng } from "./raster.mjs";
 
@@ -203,6 +203,7 @@ async function main() {
     return;
   }
   const OUT = args.find((a) => a.startsWith("--out="))?.slice(6) || ".";  // on escriure els geojson
+  mkdirSync(OUT, { recursive:true });
   const all = args.includes("--all");
   const spKeys = all ? Object.keys(SPECIES) : [(args.find((a) => a.startsWith("--species="))?.slice(10)) || "rovello"];
   for (const k of spKeys) if (!SPECIES[k]) { console.error(`Espècie desconeguda: ${k}. Prova --list`); process.exit(1); }

@@ -1,8 +1,8 @@
 # 🍄 Predictor de bolets · Catalunya
 
-Eina personal que, a partir de **dades obertes** (Meteocat + MCSC), puntua on és més
-probable trobar bolets aquesta setmana, **per espècie**. Privada, d'un sol usuari,
-barata de mantenir i honesta amb les seves limitacions.
+Producte web de pagament que, a partir de **dades obertes** (Meteocat + MCSC), puntua
+on hi ha millors condicions per trobar bolets, **per espècie**. El mapa requereix
+compte i entitlement `boletada_pro`; les prediccions no són fitxers públics.
 
 ---
 
@@ -68,8 +68,12 @@ d'elevacions de l'ICGC. En desa una representació compacta a `graella.bin` (bos
 altitud per cel·la). El procés diari interpola la meteorologia, corregeix la
 temperatura amb l'altitud local i genera un PNG transparent per espècie. El
 navegador rep una sola imatge d'uns centenars de KB, no 1,2 milions de geometries.
-De lluny, el mapa interpola visualment el ràster perquè es llegeixi com un mapa de
-calor; en apropar-se mostra nítidament les cel·les originals de 250 m.
+La dada manté la resolució de 250 m, però el client la suavitza a qualsevol zoom
+perquè es llegeixi sempre com un mapa de calor. Si el punt tocat no té dades però
+el color prové d'una cel·la pròxima, el popup usa la cel·la forestal més propera
+dins d'1,5 km i n'indica la distància. El fons fosc i les etiquetes són vectorials
+(CARTO + OpenStreetMap); relleu i satèl·lit es mantenen com a capes Esri sota les
+mateixes etiquetes vectorials.
 
 ---
 
@@ -89,48 +93,53 @@ calor; en apropar-se mostra nítidament les cel·les originals de 250 m.
 
 ## Com executar (local)
 
-Node 18+ (`fetch` de sèrie, cap `npm install`).
+Node 22+. Docker només és necessari si vols PostgreSQL local; amb Neon no cal.
 
 ```bash
-# 1) Un sol cop: terreny detallat + bosc al voltant de les estacions
-node buildGrid.mjs
-node buildHost.mjs
+# Configuració local (substitueix els secrets d'exemple si cal)
+cp .env.example .env
+npm install
 
-# 2) Puntuar (regenera els geojson)
-node score_estacions.mjs --all                         # totes les espècies, avui
-node score_estacions.mjs --species=cep --date=2025-10-20  # una espècie, backtest
-node score_estacions.mjs --list
+# Esquema Better Auth/Boletada sobre la DATABASE_URL configurada
+npm run db:migrate
 
-# 3) Mapa (cal servir la carpeta; no file://)
-npx serve            # o: python3 -m http.server 8000
+# Prediccions privades + servidor web
+node score_estacions.mjs --all --out=private/predictions
+npm run dev            # http://localhost:8080
 ```
 
-El scorer accepta `--out=<dir>` (per escriure els geojson on el servidor els serveix, p.ex. `public`).
+`npm run prepare:public` genera només el client i els vendors públics. El scorer ha
+d'escriure sempre a `private/predictions`, mai a `public`.
+
+La landing pública es publica a `/`; el registre, el paywall i el predictor viuen
+a `/app/`. `npm run build:mobile` continua empaquetant directament el predictor.
 
 ---
 
 ## Desplegament (Docker + Coolify)
 
-Una sola imatge que **serveix estàtic** (`./public`: `index.html` + PNG + GeoJSON) i, a
-l'arrencada, genera les sortides. El **scheduled task** de Coolify les regenera cada dia
-dins el mateix contenidor. La part meteo és stateless → si es reinicia o redesplega, es
-reconstrueix sol.
+La imatge executa Hono, aplica les migracions, genera les prediccions dins
+`private/predictions` i serveix la landing, el client de `/app/` i els vendors des
+de `public/`.
+PostgreSQL ha de ser persistent; pot ser Neon o un recurs separat a Coolify.
 
 **Provar en local:**
 ```bash
-docker build -t boletscat .
-docker run -p 8080:8080 boletscat     # http://localhost:8080
+docker compose up -d db
+docker build -t boletada .
+docker run --env-file .env -p 8080:8080 boletada
 ```
 
 **A Coolify:**
-1. Nou recurs → desplega des del repo. Detecta el `Dockerfile` sol.
-2. Port **8080**; assigna-li un domini.
-3. Desplega (l'entrypoint genera els geojson i aixeca el servidor).
-4. **Scheduled Task**: comanda `node score_estacions.mjs --all --out=public`, freqüència `0 6 * * *`.
+1. Configurar la `DATABASE_URL` de producció de Neon o d’un PostgreSQL persistent.
+2. Desplegar el repo amb el `Dockerfile`, port **8080**, domini `boletada.cat`.
+3. Configurar les variables de `.env.example` amb secrets reals.
+4. **Scheduled Task**: `node score_estacions.mjs --all --out=private/predictions`, freqüència `0 6 * * *`.
 
 **Notes honestes:**
 - El cron de Coolify va en **UTC** (`0 6 * * *` ≈ 7-8 h a casa). Diari a qualsevol hora ja va bé.
-- **No cal volum**: es regenera a l'arrencada i cada dia. Un volum per `public/` només estalviaria la crida a Socrata de l'arrencada.
+- PostgreSQL necessita persistència i backups. Les prediccions es poden regenerar i
+  no necessiten persistència si l'scheduled task corre dins del mateix contenidor.
 - `buildHost.mjs` **no** va al cron. Per refrescar el bosc (un cop l'any, o mai), el corres en local i committeges el `estacions_host.json` nou.
 
 ---
@@ -196,8 +205,12 @@ Mitjana · Alta · Molt alta**. Al detall també dona una recomanació breu (`No
 | `buildGrid.mjs` | Precompute de coberta forestal i altitud a 250 m → `graella.bin`. |
 | `raster.mjs` | Codificador/descodificador PNG sense dependències. |
 | `buildHost.mjs` | Precompute de l'hoste (MCSC) → `estacions_host.json` (córrer un cop). |
-| `index.html` | Mapa MapLibre amb selector d'espècie. |
-| `serve.mjs` | Servidor estàtic sense dependències (serveix `./public`). |
+| `index.html` | Landing pública de Boletada. |
+| `app.html` | Mapa MapLibre, accés i selector d'espècie. |
+| `src/server.mjs` | Servidor Hono: auth, billing i fitxers privats. |
+| `src/auth.mjs` · `src/db.mjs` | Better Auth i PostgreSQL. |
+| `src/revenuecat.mjs` | Sincronització de l’entitlement amb RevenueCat. |
+| `migrations/001_app.sql` | Projecció local mínima de l’accés `boletada_pro`. |
 | `Dockerfile` · `docker-entrypoint.sh` · `.dockerignore` | Imatge de desplegament. |
 | `estacions_host.json` | Bosc dominant per estació (generat; **es versiona**, canvia poc). |
 | `bolets.<espècie>.geojson` | Sortides diàries (generades; **no** es versionen). |

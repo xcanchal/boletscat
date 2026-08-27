@@ -11,7 +11,7 @@ const DATA_BASE = "https://boletada.cat/";
 await rm(OUT, { recursive: true, force: true });
 await mkdir(join(OUT, "vendor"), { recursive: true });
 
-let html = await readFile(join(ROOT, "index.html"), "utf8");
+let html = await readFile(join(ROOT, "app.html"), "utf8");
 html = html
   .replace(
     'content="width=device-width, initial-scale=1, viewport-fit=cover"',
@@ -23,19 +23,25 @@ html = html
   )
   .replace('href="/favicon.svg"', 'href="./favicon.svg"')
   .replace(
-    'href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"',
+    'href="/vendor/maplibre-gl.css"',
     'href="./vendor/maplibre-gl.css"',
   )
   .replace(
-    'src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"',
+    'src="/vendor/maplibre-gl.js"',
     'src="./vendor/maplibre-gl.js"',
+  )
+  .replace(
+    "from '/vendor/purchases.es.js'",
+    "from './vendor/purchases.es.js'",
   );
 
 await Promise.all([
   writeFile(join(OUT, "index.html"), html),
+  cp(join(ROOT, "preview-map.webp"), join(OUT, "preview-map.webp")),
   cp(join(ROOT, "favicon.svg"), join(OUT, "favicon.svg")),
   cp(join(ROOT, "node_modules/maplibre-gl/dist/maplibre-gl.css"), join(OUT, "vendor/maplibre-gl.css")),
   cp(join(ROOT, "node_modules/maplibre-gl/dist/maplibre-gl.js"), join(OUT, "vendor/maplibre-gl.js")),
+  cp(join(ROOT, "node_modules/@revenuecat/purchases-js/dist/Purchases.es.js"), join(OUT, "vendor/purchases.es.js")),
 ]);
 
 console.log(`Client mòbil generat a ${OUT}`);

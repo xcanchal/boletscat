@@ -3,3 +3,13 @@ bolets.*.geojson
 bolets.*.png
 bolets.grid.json
 www/
+.env
+.env.*
+!.env.example
+public/
+private/
+
+# L'únic raster de mostra necessari per poder reeditar el vídeo de Remotion.
+!promo-video/public/
+!promo-video/public/data/
+!promo-video/public/data/bolets.rossinyol.png
