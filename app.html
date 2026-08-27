@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="description" content="Accedeix al predictor de condicions favorables per trobar bolets a Catalunya." />
   <meta name="robots" content="noindex, nofollow" />
-  <meta property="og:title" content="Predictor de bolets · Catalunya" />
+  <meta property="og:title" content="Boletada · Mapa de bolets" />
   <meta property="og:description" content="Consulta on hi ha les millors condicions per trobar bolets avui a Catalunya." />
   <meta property="og:url" content="https://boletada.cat/app/" />
   <meta property="og:type" content="website" />
-  <title>Predictor de bolets · Catalunya</title>
+  <title>Boletada · Mapa de bolets</title>
   <link rel="canonical" href="https://boletada.cat/app/" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link href="/vendor/maplibre-gl.css" rel="stylesheet" />
@@ -31,9 +31,11 @@
       background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--edge);border-radius:14px;
       color:var(--text);padding:18px 18px 14px;box-shadow:0 12px 40px rgba(0,0,0,.45)}
     .brand{display:flex;align-items:center;gap:10px}
-    .brand>svg{flex:none}
-    .brand>div{min-width:0}
+    .brand-home{display:flex;align-items:center;gap:10px;min-width:0;color:inherit;text-decoration:none}
+    .brand-home>svg{flex:none}
+    .brand-home>div{min-width:0}
     .brand h1{font-family:var(--display);font-weight:600;font-size:21px;margin:0;line-height:1.05}
+    .brand-home h1{transition:color .15s}.brand-home:hover h1{color:#f08a49}
     .brand .sub{font-size:12px;color:var(--muted);margin-top:2px}
     .brand .sub b{color:var(--text);font-weight:500}
     /* Botó de col·lapse */
@@ -110,7 +112,7 @@
       background:linear-gradient(90deg,rgba(238,239,230,.18),rgba(238,239,230,.95))}
     .intensity-control input::-moz-range-thumb{width:11px;height:11px;border:2px solid #fff;border-radius:50%;background:#d8dbd2}
     .map-tools.stations .intensity-control{display:none}
-    button:focus-visible,.intensity-control input:focus-visible{outline:2px solid #6aa8ff;outline-offset:2px}
+    button:focus-visible,.brand-home:focus-visible,.intensity-control input:focus-visible{outline:2px solid #6aa8ff;outline-offset:2px}
 
     @media (max-width:720px){
       .panel{top:max(12px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));width:calc(100vw - max(24px,env(safe-area-inset-left) + env(safe-area-inset-right)));max-width:none;padding:15px 15px 12px}
@@ -188,16 +190,20 @@
     .gate-brand svg{width:29px;height:29px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.45))}.gate-brand span{font-family:var(--display);font-size:21px}
     .map-preview-credit{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(9px,env(safe-area-inset-bottom));
       color:rgba(225,228,218,.5);font-size:9px;text-shadow:0 1px 6px rgba(0,0,0,.8)}
+    .access-loading{grid-column:1;grid-row:2;align-self:center;justify-self:center;display:grid;justify-items:center;gap:15px;
+      color:#f0eee4;text-align:center;pointer-events:none;text-shadow:0 2px 18px rgba(0,0,0,.7)}
+    .access-radar{position:relative;width:72px;height:72px;display:grid;place-items:center}
+    .access-radar::before,.access-radar::after{content:"";position:absolute;inset:0;border:1px solid rgba(232,114,42,.5);border-radius:50%;
+      animation:access-radar-pulse 1.8s ease-out infinite}
+    .access-radar::after{inset:12px;animation-delay:.45s}.access-radar svg{width:32px;height:32px;filter:drop-shadow(0 3px 12px rgba(0,0,0,.5))}
+    .access-loading strong{font-size:14px;letter-spacing:.01em}.access-loading span{display:block;margin-top:4px;color:#a9afa3;font-size:11px}
+    @keyframes access-radar-pulse{0%{opacity:0;transform:scale(.66)}35%{opacity:.75}100%{opacity:0;transform:scale(1.16)}}
     .gate-kicker,.card-kicker{text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:700;color:#a8ad8e}
     .gate-card{grid-column:1;grid-row:2;align-self:center;justify-self:center;width:min(430px,100%);pointer-events:auto;background:rgba(18,25,17,.91);
       border:1px solid rgba(223,226,210,.17);border-radius:22px;padding:28px;box-shadow:0 26px 90px rgba(0,0,0,.48);
       backdrop-filter:blur(24px) saturate(1.08)}
     .gate-card h2{font-family:var(--display);font-size:32px;line-height:1.08;margin:8px 0 9px;letter-spacing:-.025em}
     .card-copy{color:#9fa598;font-size:14px;line-height:1.5;margin:0 0 22px}
-    .signup-offer{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin:-7px 0 19px;padding:12px 13px;
-      border:1px solid rgba(223,226,210,.11);border-radius:11px;background:rgba(4,8,4,.24);color:#aeb4a7;font-size:11px}
-    .signup-offer strong{font-family:var(--display);font-size:22px;font-weight:600;color:#f1eee3;white-space:nowrap}
-    .signup-offer strong span{font-family:var(--ui);font-size:11px;font-weight:500;color:#858c80}
     .auth-form{display:grid;gap:14px}.auth-field{display:grid;gap:6px;color:#aeb3a7;font-size:12px;font-weight:600}
     .auth-field input{width:100%;border:1px solid rgba(223,226,210,.15);border-radius:10px;background:#10150f;color:#f0eee4;
       padding:12px 13px;font:15px var(--ui);outline:none;transition:border-color .15s,box-shadow .15s}
@@ -206,15 +212,22 @@
       font:750 14px var(--ui);cursor:pointer;transition:transform .15s,filter .15s;margin-top:3px}
     .primary-action:hover{filter:brightness(1.08);transform:translateY(-1px)}.primary-action:disabled{opacity:.55;cursor:wait;transform:none}
     .text-action{border:0;background:none;color:#9fa598;font:600 12px var(--ui);padding:3px 0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
-    .form-foot{display:flex;justify-content:flex-end}.form-foot[hidden]{display:none}.auth-switch{display:flex;align-items:baseline;justify-content:center;gap:6px;margin:18px 0 0;color:#858c80;font-size:12px}.auth-switch .text-action{color:#c9cec2}.gate-message{min-height:18px;margin:12px 0 0;color:#d5a36c;font-size:12px;line-height:1.45}
-    .gate-message.error{color:#ef8a70}.gate-message.success{color:#b9c875}
+    .form-foot{display:flex;justify-content:center}.form-foot[hidden]{display:none}.auth-switch{display:flex;align-items:baseline;justify-content:center;gap:6px;margin:18px 0 0;color:#858c80;font-size:12px}.auth-switch .text-action{color:#c9cec2}
+    .gate-message{min-height:18px;margin:12px 0 0;color:#d5a36c;font-size:12px;line-height:1.45}
+    .gate-message:empty{display:none}
+    .gate-message.error,.gate-message.success{position:relative;min-height:0;padding:12px 14px 12px 42px;border:1px solid;border-radius:11px;font-size:12px;font-weight:650;line-height:1.45;text-align:left}
+    .gate-message.error{border-color:rgba(239,112,79,.36);background:rgba(121,39,24,.25);color:#ffd2c5;box-shadow:0 8px 24px rgba(34,8,4,.18)}
+    .gate-message.success{border-color:rgba(185,200,117,.3);background:rgba(83,99,32,.2);color:#dce9aa}
+    .gate-message.error::before,.gate-message.success::before{position:absolute;left:13px;top:11px;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800}
+    .gate-message.error::before{content:"!";background:#e87551;color:#1c0d08}
+    .gate-message.success::before{content:"✓";background:#b9c875;color:#10150f}
     .benefits{display:grid;gap:11px;margin:22px 0;padding:0;list-style:none;color:#c8ccbf;font-size:13px}
     .benefits li{display:grid;grid-template-columns:18px 1fr;gap:8px}.benefits li::before{content:"✓";color:#d17a3d;font-weight:800}
     .price-line{display:flex;align-items:baseline;gap:7px;margin:18px 0 4px}.price{font-family:var(--display);font-size:42px;color:#f1eee3}
     .price-period{color:#888f83;font-size:13px}.price-note{color:#777f73;font-size:11px;margin-bottom:18px}
     .account-line{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding-top:16px;
       border-top:1px solid rgba(223,226,210,.1);color:#858c80;font-size:11px}.account-line span{overflow:hidden;text-overflow:ellipsis}
-    .gate-legal{margin:14px 0 0;color:#6f776d;font-size:10px;line-height:1.5;text-align:center}
+    .gate-legal,.auth-legal{margin:14px 0 0;color:#6f776d;font-size:10px;line-height:1.5;text-align:center}.gate-legal a,.auth-legal a{color:#9ba294;text-underline-offset:3px}
     .reset-back{margin-bottom:14px}.map-authorized .access-gate{display:none}
     @media (max-width:760px){
       .access-gate::after{box-shadow:inset 0 0 90px 12px rgba(5,8,5,.2)}
@@ -223,7 +236,7 @@
       .gate-brand{grid-column:1;grid-row:1;margin:0 4px}.gate-brand span{font-size:20px}
       .gate-card{grid-column:1;grid-row:2;width:min(430px,100%);padding:21px;border-radius:19px}.gate-card h2{font-size:27px}
     }
-    @media (prefers-reduced-motion:reduce){.primary-action{transition:none}}
+    @media (prefers-reduced-motion:reduce){.primary-action{transition:none}.access-radar::before,.access-radar::after{animation:none;opacity:.45}}
   </style>
 </head>
 <body>
@@ -234,17 +247,23 @@
         <span>Boletada</span>
       </a>
       <div class="map-preview-credit" id="previewCredit" aria-hidden="true">Mapa © Esri · predicció Boletada</div>
-      <section class="gate-card" id="authView" aria-labelledby="authTitle">
+      <section class="access-loading" id="loadingView" role="status" aria-live="polite">
+        <div class="access-radar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3.5 12.5C3.5 8 7.4 5 12 5s8.5 3 8.5 7.5c0 .8-.7 1.3-1.5 1.3H5c-.8 0-1.5-.5-1.5-1.3Z" fill="#e8722a"/><path d="M10 13.8h4v4.2c0 1.1-.9 2-2 2s-2-.9-2-2v-4.2Z" fill="#d9c9a8"/><circle cx="9" cy="9.2" r="1" fill="#c8451b" opacity=".7"/><circle cx="14" cy="8.4" r=".8" fill="#c8451b" opacity=".6"/></svg>
+        </div>
+        <div><strong>Comprovant l’accés…</strong><span>Preparant el mapa d’avui</span></div>
+      </section>
+      <section class="gate-card" id="authView" aria-labelledby="authTitle" hidden>
         <h2 id="authTitle">Accedeix al compte</h2>
-        <div class="signup-offer" id="signupOffer" hidden><span>Mapa complet de Catalunya</span><strong>29,99 € <span>/ any</span></strong></div>
         <form class="auth-form" id="authForm">
           <label class="auth-field">Correu electrònic<input id="authEmail" name="email" type="email" autocomplete="email" required /></label>
           <label class="auth-field">Contrasenya<input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="8" required /></label>
           <button class="primary-action" id="authSubmit" type="submit">Entrar</button>
-          <div class="form-foot" id="forgotPasswordRow"><button class="text-action" id="forgotPassword" type="button">He oblidat la contrasenya</button></div>
+          <div class="form-foot" id="forgotPasswordRow"><button class="text-action" id="forgotPassword" type="button">He oblidat la contrassenya</button></div>
         </form>
+        <p class="auth-legal" id="authLegal" hidden>En crear el compte acceptes els <a href="https://boletada.cat/legal/#termes" target="_blank" rel="noopener">Termes</a> i confirmes que has llegit la <a href="https://boletada.cat/legal/#privacitat" target="_blank" rel="noopener">Política de privacitat</a>.</p>
         <p class="auth-switch"><span id="authSwitchPrompt">No tens compte?</span><button class="text-action" id="authSwitch" type="button">Crear compte</button></p>
-        <p class="gate-message" id="authMessage"></p>
+        <p class="gate-message" id="authMessage" role="status" aria-live="polite"></p>
       </section>
       <section class="gate-card" id="resetView" aria-labelledby="resetTitle" hidden>
         <button class="text-action reset-back" id="resetBack" type="button">← Tornar</button>
@@ -256,36 +275,36 @@
           <label class="auth-field" id="newPasswordField" hidden>Contrasenya nova<input id="newPassword" type="password" autocomplete="new-password" minlength="8" /></label>
           <button class="primary-action" id="resetSubmit" type="submit">Enviar l’enllaç</button>
         </form>
-        <p class="gate-message" id="resetMessage"></p>
+        <p class="gate-message" id="resetMessage" role="status" aria-live="polite"></p>
       </section>
       <section class="gate-card" id="paywallView" aria-labelledby="paywallTitle" hidden>
-        <div class="card-kicker">Subscripció anual</div>
-        <h2 id="paywallTitle">Tot el mapa, sense zones amagades</h2>
-        <p class="card-copy">Consulta les set espècies i el detall forestal actualitzat.</p>
+        <h2 id="paywallTitle">Accedeix al mapa</h2>
         <ul class="benefits"><li>Predicció actualitzada cada dia</li><li>Humitat, temperatura, altitud i bosc per cel·la</li><li>Accés web i, pròximament, iOS i Android</li></ul>
         <div class="price-line"><span class="price" id="paywallPrice">29,99 €</span><span class="price-period">/ any</span></div>
-        <div class="price-note">Sense prova gratuïta. Renovació anual.</div>
-        <button class="primary-action" id="purchaseButton" type="button">Activar l’accés anual</button>
-        <p class="gate-message" id="billingMessage"></p>
+        <button class="primary-action" id="purchaseButton" type="button">Subscriure'm</button>
+        <p class="gate-message" id="billingMessage" role="status" aria-live="polite"></p>
+        <p class="gate-legal">Pagament segur processat per Stripe a través de RevenueCat.<br><a href="https://boletada.cat/legal/#termes" target="_blank" rel="noopener">Termes</a> · <a href="https://boletada.cat/legal/#privacitat" target="_blank" rel="noopener">Privacitat</a></p>
         <div class="account-line"><span id="accountEmail"></span><button class="text-action" id="signOut" type="button">Tancar sessió</button></div>
-        <p class="gate-legal">Pagament segur processat per Stripe a través de RevenueCat.</p>
+
       </section>
     </div>
   </main>
   <div id="map"></div>
   <div class="panel" id="panel">
     <div class="brand">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-        <path d="M3.5 12.5C3.5 8 7.4 5 12 5s8.5 3 8.5 7.5c0 .8-.7 1.3-1.5 1.3H5c-.8 0-1.5-.5-1.5-1.3Z" fill="#e8722a"/>
-        <path d="M10 13.8h4v4.2c0 1.1-.9 2-2 2s-2-.9-2-2v-4.2Z" fill="#d9c9a8"/>
-        <circle cx="9" cy="9.2" r="1" fill="#c8451b" opacity=".7"/><circle cx="14" cy="8.4" r=".8" fill="#c8451b" opacity=".6"/>
-      </svg>
-      <div><h1>Predictor de bolets</h1><div class="sub" id="meta">Catalunya · dades XEMA</div></div>
-      <button class="collapse" id="collapse" aria-label="Plega/desplega">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <a class="brand-home" href="/" aria-label="Boletada, torna a l’inici">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3.5 12.5C3.5 8 7.4 5 12 5s8.5 3 8.5 7.5c0 .8-.7 1.3-1.5 1.3H5c-.8 0-1.5-.5-1.5-1.3Z" fill="#e8722a"/>
+          <path d="M10 13.8h4v4.2c0 1.1-.9 2-2 2s-2-.9-2-2v-4.2Z" fill="#d9c9a8"/>
+          <circle cx="9" cy="9.2" r="1" fill="#c8451b" opacity=".7"/><circle cx="14" cy="8.4" r=".8" fill="#c8451b" opacity=".6"/>
+        </svg>
+        <div><h1>Boletada</h1><div class="sub" id="meta">Catalunya · dades XEMA</div></div>
+      </a>
+      <button class="collapse" id="collapse" aria-label="Plega el panell" aria-expanded="true" aria-controls="panelBody">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 9l4-4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
-    <div class="body">
+    <div class="body" id="panelBody">
       <select id="species">
         <option value="rovello">Rovelló / pinetell</option><option value="cep">Cep</option>
         <option value="llenega">Llenega</option><option value="trompeta">Trompeta de la mort</option>
@@ -632,13 +651,19 @@
 
     // Col·lapse del panell (arrenca plegat en pantalla estreta)
     const panel = document.getElementById('panel');
+    const collapseButton = document.getElementById('collapse');
     if (window.matchMedia('(max-width: 640px), (max-height: 500px)').matches) panel.classList.add('collapsed');
-    const syncPanelState = () => document.body.classList.toggle('panel-open',!panel.classList.contains('collapsed'));
+    const syncPanelState = () => {
+      const expanded=!panel.classList.contains('collapsed');
+      document.body.classList.toggle('panel-open',expanded);
+      collapseButton.setAttribute('aria-expanded',String(expanded));
+      collapseButton.setAttribute('aria-label',expanded?'Plega el panell':'Desplega el panell');
+    };
     new MutationObserver(syncPanelState).observe(panel,{ attributes:true,attributeFilter:['class'] });
     const syncPanelHeight = () => document.documentElement.style.setProperty('--panel-height',`${panel.offsetHeight}px`);
     if ('ResizeObserver' in window) new ResizeObserver(syncPanelHeight).observe(panel);
     window.addEventListener('resize',syncPanelHeight); syncPanelHeight(); syncPanelState();
-    document.getElementById('collapse').addEventListener('click', () => panel.classList.toggle('collapsed'));
+    collapseButton.addEventListener('click', () => panel.classList.toggle('collapsed'));
 
     map.on('load', () => {
       document.getElementById('previewCredit').hidden=true;
@@ -855,13 +880,21 @@
         msg.innerHTML = `Tot a zero: probablement <b>fora de temporada</b> per aquesta espècie en aquesta data.`; }
     }
 
-    const authView=document.getElementById('authView'), resetView=document.getElementById('resetView');
+    const loadingView=document.getElementById('loadingView'), authView=document.getElementById('authView'), resetView=document.getElementById('resetView');
     const paywallView=document.getElementById('paywallView'), authForm=document.getElementById('authForm');
     const authMessage=document.getElementById('authMessage'), billingMessage=document.getElementById('billingMessage');
     const APP_CALLBACK_URL=DATA_BASE==='.'?`${location.origin}/app/`:location.href.split(/[?#]/)[0];
     let authMode=new URLSearchParams(location.search).get('mode')==='signup'?'signup':'signin', currentUser=null, purchases=null, purchasePackage=null, billingConfig=null;
 
     const setMessage=(element,text,type='')=>{element.textContent=text;element.className=`gate-message ${type}`.trim()};
+    const billingErrorText=(error)=>{
+      if(!(error instanceof PurchasesError))return error.message||'No s’ha pogut completar el pagament.';
+      if(error.errorCode===ErrorCode.NetworkError)return 'No hi ha connexió amb el servei de pagament. Revisa la xarxa i torna-ho a provar.';
+      if(error.errorCode===ErrorCode.ProductNotAvailableForPurchaseError)return 'La subscripció no està disponible ara mateix. Torna-ho a provar en uns instants.';
+      if(error.errorCode===ErrorCode.ProductAlreadyPurchasedError)return 'Aquesta subscripció ja consta com a activa. Recarrega la pàgina per recuperar l’accés.';
+      if(error.errorCode===ErrorCode.PaymentPendingError)return 'El pagament està pendent de confirmació. Actualitzarem l’accés quan es completi.';
+      return 'No s’ha pogut processar el pagament. Torna-ho a provar en uns instants.';
+    };
     const errorText=(payload,fallback)=>{
       const code=payload?.code||payload?.error?.code;
       if(code==='INVALID_EMAIL_OR_PASSWORD')return 'El correu o la contrasenya no són correctes.';
@@ -877,7 +910,7 @@
       return payload;
     }
     function showView(view) {
-      authView.hidden=view!=='auth';resetView.hidden=view!=='reset';paywallView.hidden=view!=='paywall';
+      loadingView.hidden=view!=='loading';authView.hidden=view!=='auth';resetView.hidden=view!=='reset';paywallView.hidden=view!=='paywall';
     }
     function unlockMap() {
       mapUnlocked=true;document.body.classList.add('map-authorized');
@@ -900,7 +933,7 @@
       document.getElementById('authTitle').textContent=signup?'Crea el teu compte':'Accedeix al compte';
       document.getElementById('authPassword').autocomplete=signup?'new-password':'current-password';
       document.getElementById('authSubmit').textContent=signup?'Crear compte':'Entrar';
-      document.getElementById('signupOffer').hidden=!signup;
+      document.getElementById('authLegal').hidden=!signup;
       document.getElementById('forgotPasswordRow').hidden=signup;
       document.getElementById('authSwitchPrompt').textContent=signup?'Ja tens compte?':'No tens compte?';
       document.getElementById('authSwitch').textContent=signup?'Entra':'Crear compte';
@@ -912,17 +945,24 @@
       try { me=await request('/api/me'); }
       catch(error) { if(error.status===401){currentUser=null;showView('auth');return false} throw error; }
       currentUser=me.user;
-      if(me.access?.active){unlockMap();return true}
-      showView('paywall');document.getElementById('accountEmail').textContent=currentUser.email;
-      await prepareBilling(sync);
+      let active=Boolean(me.access?.active);
+      if(sync){
+        try {
+          const result=await request('/api/billing/sync',{method:'POST',body:'{}'});
+          active=Boolean(result.access?.active);
+        } catch(error) {
+          // Si RevenueCat no respon, només conservem un accés local que ja era vigent.
+          console.warn('No s’ha pogut actualitzar l’estat de la subscripció',error);
+        }
+      }
+      if(active){unlockMap();return true}
+      document.getElementById('accountEmail').textContent=currentUser.email;
+      await prepareBilling();
+      showView('paywall');
       return false;
     }
-    async function prepareBilling(sync=false) {
+    async function prepareBilling() {
       setMessage(billingMessage,'');
-      if(sync){
-        try { const result=await request('/api/billing/sync',{method:'POST',body:'{}'}); if(result.access?.active){unlockMap();return} }
-        catch(error) { if(error.status!==503) console.warn(error); }
-      }
       try {
         billingConfig ||= await request('/api/config');
         if(!billingConfig.revenueCatWebPublicApiKey){
@@ -932,10 +972,7 @@
         if(!purchases) purchases=Purchases.configure({apiKey:billingConfig.revenueCatWebPublicApiKey,appUserId:currentUser.id});
         const offerings=await purchases.getOfferings();
         const packages=offerings.current?.availablePackages||[];
-        purchasePackage=billingConfig.revenueCatWebProductId
-          ? packages.find(pkg=>pkg.webBillingProduct.identifier===billingConfig.revenueCatWebProductId)
-          : offerings.current?.annual||packages[0]||null;
-        if(billingConfig.revenueCatWebProductId&&!purchasePackage) throw new Error(`El producte ${billingConfig.revenueCatWebProductId} no és a l’oferta actual.`);
+        purchasePackage=offerings.current?.annual||packages[0]||null;
         if(!purchasePackage) throw new Error('No hi ha cap paquet publicat a l’oferta actual.');
         document.getElementById('paywallPrice').textContent=purchasePackage.webBillingProduct.price.formattedPrice;
         document.getElementById('purchaseButton').disabled=false;
@@ -998,7 +1035,10 @@
         }
         throw new Error('L’accés triga més del previst. Recarrega la pàgina en uns segons.');
       } catch(error) {
-        if(!(error instanceof PurchasesError&&error.errorCode===ErrorCode.UserCancelledError)) setMessage(billingMessage,error.message||'No s’ha pogut completar el pagament.','error');
+        if(!(error instanceof PurchasesError&&error.errorCode===ErrorCode.UserCancelledError)){
+          console.warn('Error de compra',error);
+          setMessage(billingMessage,billingErrorText(error),'error');
+        }
       } finally {button.disabled=false}
     });
     const signOut=async()=>{
@@ -1008,7 +1048,13 @@
     document.getElementById('mapSignOut').addEventListener('click',signOut);
 
     if(resetToken||resetParams.get('error')) openReset();
-    else {setAuthMode(authMode);refreshSession({sync:true}).catch(error=>setMessage(authMessage,error.message,'error'))}
+    else {
+      setAuthMode(authMode);showView('loading');
+      refreshSession({sync:true}).catch(error=>{
+        showView('auth');
+        setMessage(authMessage,error.message||'No s’ha pogut comprovar l’accés. Torna-ho a provar.','error');
+      });
+    }
   </script>
 </body>
 </html>

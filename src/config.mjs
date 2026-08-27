@@ -39,7 +39,6 @@ export const config = {
     apiUrl: process.env.REVENUECAT_API_URL?.trim() || "https://api.revenuecat.com/v1",
     entitlementId: process.env.REVENUECAT_ENTITLEMENT_ID?.trim() || "boletada_pro",
     webPublicApiKey: process.env.REVENUECAT_WEB_PUBLIC_API_KEY?.trim() || "",
-    webProductId: process.env.REVENUECAT_WEB_PRODUCT_ID?.trim() || "",
   },
 };
 

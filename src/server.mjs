@@ -31,7 +31,6 @@ app.get("/readyz", async (c) => {
 
 app.get("/api/config", (c) => c.json({
   revenueCatWebPublicApiKey: config.revenueCat.webPublicApiKey,
-  revenueCatWebProductId: config.revenueCat.webProductId,
   entitlementId: config.revenueCat.entitlementId,
 }));
 
@@ -91,12 +90,20 @@ app.get("/api/predictions/:filename", async (c) => {
 app.use("*", async (c, next) => {
   await next();
   if (c.res.status === 200 && !c.req.path.startsWith("/api/")) {
-    c.header("Cache-Control", c.req.path === "/" || c.req.path.endsWith(".html") ? "no-cache" : "public, max-age=3600");
+    if (c.req.path === "/app" || c.req.path === "/app/") {
+      // L'HTML conté un gate d'autenticació: no reutilitzem una vista anterior
+      // (per exemple, el formulari de login) mentre es resol la sessió actual.
+      c.header("Cache-Control", "no-store");
+    } else {
+      c.header("Cache-Control", c.req.path === "/" || c.req.path.endsWith(".html") ? "no-cache" : "public, max-age=3600");
+    }
   }
 });
 
 app.get("/app", (c) => c.redirect("/app/", 308));
 app.get("/app/", serveStatic({ path: `${config.publicDir}/app/index.html` }));
+app.get("/legal", (c) => c.redirect("/legal/", 308));
+app.get("/legal/", serveStatic({ path: `${config.publicDir}/legal/index.html` }));
 app.use("*", serveStatic({ root: config.publicDir }));
 app.get("/", serveStatic({ path: `${config.publicDir}/index.html` }));
 app.notFound((c) => c.req.path.startsWith("/api/")

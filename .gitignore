@@ -1,4 +1,5 @@
 node_modules/
+.DS_Store
 bolets.*.geojson
 bolets.*.png
 bolets.grid.json

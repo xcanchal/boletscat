@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 400" role="img" aria-labelledby="title desc">
+  <title id="title">Boletada</title>
+  <desc id="desc">Logotip de Boletada amb un bolet taronja.</desc>
+  <defs>
+    <style>
+      @font-face {
+        font-family: "Spectral Brand";
+        font-style: normal;
+        font-weight: 600;
+        src: url("https://fonts.gstatic.com/s/spectral/v15/rnCs-xNNww_2s0amA9vmtl3G.ttf") format("truetype");
+      }
+    </style>
+    <linearGradient id="cap" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f18342"/>
+      <stop offset="1" stop-color="#df5622"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(34 44)">
+    <path d="M119 142h74l14 128c2 16-11 30-27 30h-48c-16 0-29-14-27-30l14-128Z" fill="#e8e3d6"/>
+    <path d="M22 160C28 81 79 30 156 30s128 51 134 130H22Z" fill="url(#cap)"/>
+    <path d="M25 160h262" fill="none" stroke="#f4a369" stroke-width="8" stroke-linecap="round" opacity=".72"/>
+    <circle cx="105" cy="82" r="11" fill="#fac28c" opacity=".72"/>
+    <circle cx="178" cy="63" r="14" fill="#fac28c" opacity=".68"/>
+  </g>
+
+  <text x="374" y="264" fill="#e8e3d6" font-family="Spectral Brand, Spectral, Georgia, serif" font-size="230" font-weight="600" letter-spacing="-8">Boletada</text>
+</svg>

@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Boletada — Surt a buscar bolets on val la pena mirar</title>
+  <desc id="desc">Imatge social de Boletada amb el mapa de predicció i un bolet taronja.</desc>
+  <defs>
+    <style>
+      @font-face {
+        font-family: "Spectral Brand";
+        font-style: normal;
+        font-weight: 600;
+        src: url("https://fonts.gstatic.com/s/spectral/v15/rnCs-xNNww_2s0amA9vmtl3G.ttf") format("truetype");
+      }
+      @font-face {
+        font-family: "Spectral Brand";
+        font-style: italic;
+        font-weight: 500;
+        src: url("https://fonts.gstatic.com/s/spectral/v15/rnCu-xNNww_2s0amA9M8qonFafM.ttf") format("truetype");
+      }
+    </style>
+    <radialGradient id="bg" cx="72%" cy="45%" r="82%">
+      <stop offset="0" stop-color="#253120"/>
+      <stop offset=".55" stop-color="#141b12"/>
+      <stop offset="1" stop-color="#0e130d"/>
+    </radialGradient>
+    <radialGradient id="hot-orange">
+      <stop offset="0" stop-color="#ec6c2c" stop-opacity=".92"/>
+      <stop offset=".46" stop-color="#d95a25" stop-opacity=".43"/>
+      <stop offset="1" stop-color="#d95a25" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="hot-moss">
+      <stop offset="0" stop-color="#a8a943" stop-opacity=".8"/>
+      <stop offset="1" stop-color="#9fa645" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cap" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f18342"/>
+      <stop offset="1" stop-color="#df5622"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g fill="none" stroke="#e8e3d6" stroke-width="2" opacity=".06">
+    <circle cx="926" cy="315" r="92"/>
+    <circle cx="926" cy="315" r="168"/>
+    <circle cx="926" cy="315" r="244"/>
+    <circle cx="926" cy="315" r="320"/>
+    <circle cx="926" cy="315" r="396"/>
+  </g>
+  <ellipse cx="862" cy="392" rx="238" ry="210" fill="url(#hot-orange)"/>
+  <ellipse cx="1020" cy="216" rx="190" ry="158" fill="url(#hot-moss)"/>
+  <ellipse cx="1090" cy="520" rx="150" ry="125" fill="url(#hot-orange)" opacity=".48"/>
+
+  <g transform="translate(60 44) scale(.21)">
+    <path d="M423 475h178l34 310c4 39-27 73-66 73H455c-39 0-70-34-66-73l34-310Z" fill="#e8e3d6"/>
+    <path d="M188 518c14-190 136-312 324-312s310 122 324 312H188Z" fill="url(#cap)"/>
+    <circle cx="391" cy="330" r="26" fill="#fac28c" opacity=".72"/>
+    <circle cx="564" cy="285" r="34" fill="#fac28c" opacity=".68"/>
+  </g>
+  <text x="258" y="138" fill="#e8e3d6" font-family="Spectral Brand, Spectral, Georgia, serif" font-size="78" font-weight="600" letter-spacing="-3">Boletada</text>
+
+  <text x="72" y="300" fill="#e8e3d6" font-family="Spectral Brand, Spectral, Georgia, serif" font-size="70" font-weight="600" letter-spacing="-2">Surt a buscar bolets</text>
+  <text x="72" y="378" fill="#f18342" font-family="Spectral Brand, Spectral, Georgia, serif" font-size="70" font-style="italic" font-weight="500" letter-spacing="-2">on val la pena mirar.</text>
+  <text x="76" y="494" fill="#aeb6a8" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="500">Predicció actualitzada cada dia · Catalunya</text>
+
+  <g transform="translate(922 315)">
+    <circle r="21" fill="#fff" opacity=".2"/>
+    <circle r="11" fill="#10150f" stroke="#fff" stroke-width="5"/>
+  </g>
+</svg>

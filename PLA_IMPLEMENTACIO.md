@@ -1,4 +1,6 @@
-# Pla d'implementació · Bolets.cat
+# Pla d'implementació · Boletada
+
+> Estat actualitzat: **28 d'agost de 2026, després de validar el checkout sandbox**
 
 ## Objectiu
 
@@ -17,6 +19,83 @@ començar la següent.
 
 ---
 
+## Handoff executiu per reprendre en un context nou
+
+### Punt exacte on som
+
+El vertical web ja funciona **de punta a punta en local/sandbox**:
+
+```mermaid
+flowchart LR
+    A[Landing pública] -->|Accedeix al mapa| B{Sessió?}
+    B -->|No| C[Login o registre]
+    C --> B
+    B -->|Sí| D{boletada_pro actiu?}
+    D -->|No| E[Paywall 29,99 €/any]
+    E -->|RevenueCat Billing + Stripe sandbox| F[Checkout completat]
+    F -->|Sincronització servidor| D
+    D -->|Sí| G[Mapa i prediccions privades]
+```
+
+S'ha comprovat manualment un registre, un pagament de prova de **29,99 € / any** i
+el desbloqueig posterior del mapa. El checkout ja mostra EUR i funciona amb
+RevenueCat Billing sobre Stripe sandbox. El mapa vectorial i la resolució de la
+predicció també s'han validat visualment.
+
+El següent objectiu no és afegir funcionalitats: és **substituir sandbox per live,
+validar el correu transaccional, desplegar i fer el smoke test de producció**.
+
+### Estat del repositori en aquest checkpoint
+
+| Element | Estat |
+|---|---|
+| Branca | `main` |
+| Últim commit compartit | `520828c` — `Set annual price to 29.99 EUR` |
+| Relació amb remot | `HEAD`, `origin/main` i `origin/HEAD` coincideixen en aquest commit |
+| Canvis posteriors | **Locals i encara no committejats/pushed** |
+| Fitxers modificats | `.env.example`, `PLA_IMPLEMENTACIO.md`, `app.html`, `favicon.svg`, `index.html`, `scripts/prepare-public.mjs`, `src/config.mjs`, `src/server.mjs` i `.DS_Store` |
+| Fitxers nous | `assets/brand/` i `legal.html` |
+| Fitxers generats | `public/`, `private/`, `.env` i les prediccions estan ignorats per Git |
+
+`.DS_Store` és soroll local i **no s'ha d'incloure al commit**. Abans de publicar,
+cal revisar el diff, preparar `public/`, executar les comprovacions i llavors fer un
+sol commit coherent amb la landing, el flux d'accés, legal i billing.
+
+### Verificat en aquesta sessió
+
+| Flux o peça | Resultat |
+|---|---|
+| `npm run db:migrate` contra Neon de desenvolupament | Correcte; només es va veure l'avís futur de `sslmode` de `pg` |
+| Registre amb correu i contrasenya | Correcte en desenvolupament |
+| RevenueCat Test Store | Correcte abans de passar al provider web sandbox |
+| Producte RevenueCat Billing web | `boletada_annual`, anual, **29,99 EUR** |
+| Offering actual | `default`, paquet `$rc_annual` |
+| Entitlement | `boletada_pro` |
+| Checkout RevenueCat Billing + Stripe sandbox | **Compra completada correctament** |
+| Sincronització després de comprar | Correcta; el mapa queda desbloquejat |
+| Mapa base | MapLibre vectorial, sense la marca d'aigua `API KEY REQUIRED` de CARTO raster |
+| Prediccions | Carregades des de l'API privada; el mapa no rep dades premium abans d'autoritzar |
+| Build públic | `npm run prepare:public` correcte |
+| Sintaxi del mòdul JS d'`app.html` | Correcta |
+| Estat de càrrega d'accés | Implementat: no mostra login/paywall abans de conèixer sessió i subscripció |
+
+### Decisions que no s'han de reobrir ara
+
+- Llançar primer el **web**; iOS i Android vindran després i no bloquegen el llançament.
+- Un sol CTA públic: **«Accedeix al mapa →»**. `/app/` decideix si toca login,
+  registre, paywall o mapa.
+- Un únic pla anual de **29,99 €**, sense prova gratuïta.
+- No demanar el nom en el registre: correu i contrasenya són suficients.
+- RevenueCat Billing gestiona el checkout web i Stripe és la passarel·la connectada.
+- L'estat d'accés es projecta localment a `user_access`; no hi ha una taula ni un
+  endpoint propi de webhooks de RevenueCat. Per a l'MVP es sincronitza després de
+  comprar i cada vegada que s'obre l'app.
+- No migrar el frontend a React/Next ni afegir infraestructura nova abans de sortir.
+- El mapa és una estimació de condicions, mai una garantia de trobar bolets.
+- La marca visible dins del mapa és **Boletada** i enllaça a la homepage.
+
+---
+
 ## Decisions de producte inicials
 
 | Decisió | Proposta inicial |
@@ -25,11 +104,12 @@ començar la següent.
 | Pla | Un únic pla anual |
 | Preu web | **29,99 € / any** |
 | Prova gratuïta | No |
-| Entitlement de RevenueCat | `pro` |
+| Domini i marca | `boletada.cat` · **Boletada** |
+| Entitlement de RevenueCat | `boletada_pro` |
 | Identificador comú | `Better Auth user.id` = `RevenueCat App User ID` |
 | Autenticació MVP | Correu + contrasenya, verificació de correu i recuperació de contrasenya |
 | Social login | Fora de l'MVP; valorar Apple + Google conjuntament més endavant |
-| Web billing | Stripe Billing connectat a RevenueCat Web |
+| Web billing | RevenueCat Billing amb Stripe com a passarel·la |
 | Billing natiu | StoreKit a iOS i Google Play Billing a Android, mitjançant RevenueCat |
 | Ordre de lliurament | Nucli compartit → web → iOS → Android |
 
@@ -40,16 +120,39 @@ la moneda i els impostos de la plataforma.
 
 ## Situació actual
 
-- Frontend: landing pública a `/` i client del predictor a `/app/`, amb HTML, CSS i JavaScript vanilla.
-- Mapa: MapLibre GL.
-- Servidor: Node.js 22 + Hono, amb Better Auth i rutes de billing.
-- Dades: PNG, GeoJSON i JSON generats dins de `private/predictions/`.
-- Mòbil: Capacitor 8, compartint la mateixa interfície web.
-- Desplegament: Docker + Coolify.
-- Base de dades: PostgreSQL local preparat; falta crear el recurs persistent de producció.
-- Autenticació: Better Auth amb correu/contrasenya, verificació, recuperació i rate limiting.
-- Subscripcions: model `pro` i RevenueCat Web implementats; falten claus i catàleg reals.
-- Les URL públiques de predicció retornen `404`; l'API exigeix sessió i `pro`.
+- Domini i marca: **Boletada**, desplegada a `boletada.cat`. El domini live encara
+  no inclou necessàriament tots els canvis locals descrits en aquest handoff.
+- Frontend: landing pública a `/`, predictor protegit a `/app/` i pàgina legal a
+  `/legal/`, amb HTML, CSS i JavaScript vanilla.
+- Landing: disseny, CTA únic, preu anual, vídeo Remotion, favicon, app icon, logo i
+  imatge Open Graph integrats.
+- Mapa: MapLibre GL amb mapa base vectorial, sense la marca d'aigua de la capa CARTO
+  antiga, i predicció forestal superposada.
+- Servidor: Node.js 22 + Hono, amb Better Auth, healthchecks, API privada de
+  prediccions i sincronització de RevenueCat.
+- Dades: PNG, GeoJSON i JSON dins de `private/predictions/`; les antigues URL
+  públiques no exposen les prediccions.
+- Base de dades: PostgreSQL remot de Neon configurat en desenvolupament i migracions
+  aplicades. Falta confirmar backups i entorn definitiu de producció.
+- Autenticació: Better Auth amb correu/contrasenya, verificació, recuperació i rate
+  limiting. El registre només demana correu i contrasenya. A desenvolupament la
+  verificació està desactivada; a producció s'activa per defecte o explícitament amb
+  `REQUIRE_EMAIL_VERIFICATION=true`.
+- Correu: Resend escollit i adaptador implementat; falta validar enviament real de
+  verificació i recuperació amb el domini `boletada.cat` i confirmar que
+  `suport@boletada.cat` rep correu.
+- Subscripcions: RevenueCat Billing sandbox connectat a Stripe sandbox, producte
+  `boletada_annual` a **29,99 € / any**, paquet `$rc_annual`, offering `default` i
+  entitlement `boletada_pro` configurats.
+- Flux web: login, registre, paywall, compra i sincronització implementats. La compra
+  sandbox s'ha completat i ha desbloquejat el mapa. En entrar, una vista de càrrega
+  evita el flaix incorrecte de login/paywall mentre es comproven sessió i accés.
+- Legal: avís legal, privacitat i termes publicats en una pàgina única; contingut
+  funcional amb Xavier Canchal i `xaviercanchal@gmail.com`, avís explícit que no es
+  garanteixen troballes i desistiment de 14 dies. Pendent de revisió jurídica si es
+  vol reforçar abans d'escalar.
+- Mòbil: Capacitor 8 comparteix la interfície, però compres/restauració natives i QA
+  d'iOS/Android continuen pendents.
 
 ---
 
@@ -90,14 +193,14 @@ sessió Better Auth vàlida AND entitlement RevenueCat `boletada_pro` actiu
 
 | Fase | Resultat | Estat |
 |---|---|---|
-| 0 | Baseline, decisions i entorns preparats | En curs: falten serveis externs de producció |
+| 0 | Baseline, decisions i entorns preparats | Desenvolupament preparat; producció pendent |
 | 1 | Backend Hono + PostgreSQL + Better Auth | Web complet; token natiu pendent |
 | 2 | PNG/GeoJSON fora de `public/` i API protegida | Web complet; clients natius pendents |
 | 3 | Login i bloqueig complet al web i a Capacitor | Web complet; Capacitor pendent |
-| 4 | RevenueCat + Stripe: web complet de punta a punta | Codi complet; configuració real pendent |
+| 4 | RevenueCat Billing: web complet de punta a punta | **Sandbox E2E validat**; live pendent |
 | 5A | iOS: compra nativa i restauració | Pendent |
 | 5B | Android: compra nativa i restauració | Pendent |
-| 6 | Landing, paywall i vídeo promocional definitius | Landing i paywall fets; vídeo i pàgines legals pendents |
+| 6 | Landing, paywall i vídeo promocional definitius | Fet per al web; botons de botigues pendents |
 | 7 | Seguretat, observabilitat, desplegament i llançament | Pendent |
 
 ---
@@ -106,15 +209,15 @@ sessió Better Auth vàlida AND entitlement RevenueCat `boletada_pro` actiu
 
 ### Feina
 
-- [ ] Confirmar domini públic i domini de l'API.
-- [ ] Confirmar el nom comercial definitiu de l'app.
+- [x] Confirmar domini públic: `boletada.cat`; API servida al mateix origen.
+- [x] Confirmar el nom comercial definitiu: **Boletada**.
 - [x] Confirmar **29,99 € / any**, sense pla gratuït ni prova.
-- [ ] Crear entorns separats de desenvolupament i producció.
+- [ ] Tancar la separació definitiva entre desenvolupament i producció.
 - [ ] Crear PostgreSQL a Coolify amb volum persistent i còpies de seguretat.
-- [ ] Crear/configurar comptes de RevenueCat, Stripe, App Store Connect i Google Play Console.
-- [ ] Decidir el proveïdor de correu transaccional per verificar correus i recuperar
-  contrasenyes.
-- [ ] Documentar les variables d'entorn necessàries sense versionar cap secret.
+- [ ] RevenueCat i Stripe sandbox configurats; App Store Connect, Google Play i
+  credencials live continuen pendents.
+- [x] Escollir Resend com a proveïdor de correu transaccional.
+- [x] Documentar les variables d'entorn necessàries sense versionar cap secret.
 - [ ] Fer una prova de fum de l'app web, iOS i Android actual abans de modificar-la.
 
 ### Variables previstes
@@ -143,19 +246,19 @@ REVENUECAT_WEB_PUBLIC_API_KEY
 
 ### Implementació
 
-- [ ] Introduir Hono com a router HTTP mantenint Node.js i Docker.
-- [ ] Separar el servidor en mòduls (`server`, `auth`, `database`, `routes`).
-- [ ] Connectar Better Auth a PostgreSQL.
-- [ ] Generar i aplicar les migracions de Better Auth.
-- [ ] Muntar Better Auth a `/api/auth/*`.
-- [ ] Habilitar registre, login, logout, verificació de correu i recuperació de
+- [x] Introduir Hono com a router HTTP mantenint Node.js i Docker.
+- [x] Separar el servidor en mòduls (`server`, `auth`, `database`, accés, correu i billing).
+- [x] Connectar Better Auth a PostgreSQL.
+- [x] Generar i aplicar les migracions de Better Auth i de `user_access`.
+- [x] Muntar Better Auth a `/api/auth/*`.
+- [x] Habilitar registre, login, logout, verificació de correu i recuperació de
   contrasenya.
-- [ ] Usar cookies `HttpOnly`, `Secure` i `SameSite` adequades al web.
+- [x] Usar cookies gestionades per Better Auth amb configuració diferenciada per entorn.
 - [ ] Preparar autenticació amb token per a Capacitor i guardar-lo al magatzem segur
   del sistema, no en text pla ni dins dels fitxers de l'app.
-- [ ] Configurar orígens explícits; eliminar CORS global amb `*`.
-- [ ] Afegir rate limiting als endpoints sensibles d'autenticació.
-- [ ] Crear una ruta autenticada mínima, per exemple `/api/me`.
+- [x] Configurar orígens explícits; eliminar CORS global amb `*`.
+- [x] Afegir rate limiting als endpoints sensibles d'autenticació.
+- [x] Crear `/api/me` amb sessió i estat d'accés.
 
 ### Decisions tècniques
 
@@ -165,9 +268,24 @@ REVENUECAT_WEB_PUBLIC_API_KEY
 - El `user.id` creat per Better Auth serà l'identificador estable compartit amb
   RevenueCat.
 
+### Taules actuals de PostgreSQL
+
+| Taula | Propietari lògic | Per a què serveix |
+|---|---|---|
+| `user` | Better Auth | Identitat mínima: correu, verificació i camps interns |
+| `account` | Better Auth | Credencial/proveïdor associat al compte |
+| `session` | Better Auth | Sessions web actives |
+| `verification` | Better Auth | Tokens temporals de verificació/reset |
+| `rateLimit` | Better Auth | Comptadors persistents contra abús d'auth |
+| `user_access` | Boletada | Projecció mínima de `boletada_pro` i venciment |
+
+No hi ha `revenuecat_webhook_events`: es va descartar perquè l'MVP no consumeix
+webhooks i la taula no aportava valor sense aquest flux.
+
 ### Proves
 
-- [ ] Crear un compte, verificar-lo, iniciar i tancar sessió al web.
+- [x] Crear un compte i iniciar sessió al web de desenvolupament.
+- [ ] Verificar un correu real i tancar/reobrir sessió amb verificació obligatòria.
 - [ ] Recuperar una contrasenya.
 - [ ] Rebutjar una sessió caducada o manipulada.
 - [ ] Autenticar una instal·lació iOS i una Android.
@@ -184,23 +302,23 @@ Encara no hi ha pagaments, però la identitat és estable i persistent.
 
 ### Implementació
 
-- [ ] Crear una carpeta privada, per exemple `data/generated/`, fora de `public/`.
-- [ ] Canviar el procés inicial i el scheduled task perquè el scorer escrigui a la
+- [x] Crear `private/predictions/` fora de `public/`.
+- [x] Canviar el procés inicial perquè el scorer escrigui a la
   carpeta privada.
-- [ ] Deixar dins de `public/` només la landing i els recursos realment públics.
-- [ ] Crear endpoints autenticats per obtenir:
+- [x] Deixar dins de `public/` només la landing i els recursos realment públics.
+- [x] Crear endpoints autenticats per obtenir:
   - metadades i graella;
   - PNG per espècie;
   - GeoJSON per espècie;
   - qualsevol altre fitxer de predicció.
-- [ ] Validar espècie, data i nom de recurs contra una llista permesa; mai concatenar
+- [x] Validar el nom de recurs contra una llista permesa; mai concatenar
   una ruta arbitrària enviada pel client.
-- [ ] Enviar `Cache-Control: private` i evitar que un CDN desi respostes premium com
+- [x] Enviar `Cache-Control: private` i evitar que un CDN desi respostes premium com
   a públiques.
-- [ ] Adaptar MapLibre perquè carregui les dades autenticades.
+- [x] Adaptar MapLibre perquè carregui les dades autenticades.
 - [ ] Evitar URL signades llargues o permanents. Si s'introdueix CDN, fer-les caducar
   al cap de pocs minuts.
-- [ ] Eliminar les antigues URL públiques i comprovar que retornen `404`.
+- [x] Eliminar les antigues URL públiques.
 
 ### Proves
 
@@ -226,7 +344,9 @@ usuari de prova autoritzat manualment; el control de subscripció arriba a la fa
 - [x] Verificació de correu i recuperació de contrasenya.
 - [x] Paywall obligatori per a usuaris sense `pro`.
 - [x] Estat de càrrega mentre es verifica la subscripció.
-- [ ] Pantalla de compte amb estat del pla, tancament de sessió i ajuda.
+- [x] Controls mínims de compte dins del mapa: correu, gestió de subscripció i logout.
+- [ ] Eliminació del compte i canal d'ajuda visible, si es considera imprescindible
+  per al llançament web o abans de publicar les apps natives.
 - [x] Estat d'error o servei no disponible que no desbloquegi contingut per accident.
 
 ### Regla visual i tècnica
@@ -234,11 +354,28 @@ usuari de prova autoritzat manualment; el control de subscripció arriba a la fa
 No n'hi ha prou amb ocultar el mapa amb CSS. El client no ha de demanar ni rebre cap
 dada premium fins que el servidor hagi autoritzat la petició.
 
+### Màquina d'estats actual de `/app/`
+
+| Estat comprovat | Vista | Dades premium |
+|---|---|---|
+| Encara desconegut | Radar de Boletada: «Comprovant l'accés…» | No es demanen |
+| Sense sessió | Login o registre segons `?mode=signup` | No es demanen |
+| Enllaç de recuperació | Formulari de nova contrasenya | No es demanen |
+| Sessió vàlida, sense `boletada_pro` | Paywall anual | No es demanen |
+| Sessió i `boletada_pro` actiu | Mapa complet | Sí, via `/api/predictions/:filename` |
+| Error d'auth o billing | Banner prominent i localitzat dins la vista corresponent | No es desbloquegen |
+
+L'HTML inicial mostra el loader i manté amagats login i paywall. La sincronització
+amb RevenueCat acaba abans de decidir quina vista ensenyar: el paywall no es renderitza
+provisionalment mentre es comprova una subscripció. `/app/` també respon amb
+`Cache-Control: no-store` perquè el navegador no recuperi una captura antiga del
+formulari. El loader respecta `prefers-reduced-motion`.
+
 ### Proves
 
-- [ ] Usuari no autenticat: només veu landing/login.
-- [ ] Usuari autenticat sense `pro`: només veu paywall/compte/restauració.
-- [ ] Usuari `pro`: veu el mapa.
+- [x] Usuari no autenticat: només veu landing/login.
+- [x] Usuari autenticat sense `pro`: només veu paywall/compte.
+- [x] Usuari `pro`: veu el mapa.
 - [ ] Si s'elimina `pro` durant una sessió, el servidor deixa de servir dades.
 
 ### Criteri de sortida
@@ -253,49 +390,73 @@ concedeixin manualment.
 ### Model d'accés local
 
 - [x] Crear l'entitlement únic `boletada_pro`.
-- [ ] Crear una projecció local mínima de l'accés:
+- [x] Crear una projecció local mínima de l'accés:
 
   ```sql
   CREATE TABLE user_access (
     user_id TEXT PRIMARY KEY REFERENCES "user"(id),
-    pro_until TIMESTAMPTZ,
+    entitlement_id TEXT NOT NULL DEFAULT 'boletada_pro',
+    status TEXT NOT NULL DEFAULT 'inactive',
+    expires_at TIMESTAMPTZ,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
   ```
 
-- [ ] Adaptar el tipus de `user_id` al tipus real generat per Better Auth.
-- [ ] Considerar `pro` actiu només quan `pro_until > NOW()`.
+- [x] Adaptar `user_id` al tipus real generat per Better Auth.
+- [x] Considerar l'accés actiu només mentre `expires_at` sigui vigent o estigui en
+  període de gràcia.
 - [x] Sincronitzar l’accés amb l’API de RevenueCat després de comprar i en obrir
   l’app quan l’accés local no sigui vigent.
-- [ ] No exposar mai la clau secreta de RevenueCat al client.
+- [x] No exposar mai la clau secreta de RevenueCat al client.
 
-### Stripe web
+### Sincronització MVP (decisió mínima)
 
-- [ ] Crear a RevenueCat Web el producte anual de **29,99 €** connectat a Stripe.
-- [ ] Connectar Stripe Billing amb RevenueCat Web.
-- [ ] Importar el producte i associar-lo a `pro`.
-- [ ] Crear una offering anual.
-- [ ] Integrar RevenueCat Web SDK després del login amb `Better Auth user.id`.
-- [ ] No permetre compres anònimes en l'MVP.
-- [ ] Afegir compra des del paywall web.
-- [ ] Afegir el portal de Stripe per gestionar targeta, factures i cancel·lació.
-- [ ] Mostrar l'estat resultant de RevenueCat; no desbloquejar només perquè el
+No s'ha implementat un webhook propi ni una taula d'esdeveniments de RevenueCat.
+El servidor consulta RevenueCat i actualitza `user_access` en aquests moments:
+
+| Moment | Acció |
+|---|---|
+| Després d'una compra web | `POST /api/billing/sync` i comprovació de `boletada_pro` |
+| En obrir `/app/` sense accés local actiu | Sincronització abans de deixar l'usuari al paywall |
+| En obrir `/app/` amb accés local actiu | Resincronització per detectar revocacions, expiracions o reemborsaments |
+| Si RevenueCat falla però l'accés local encara és vigent | Es conserva temporalment l'accés local vàlid |
+| Si l'entitlement ja no és actiu | `user_access` passa a `inactive` i es mostra el paywall |
+
+Aquesta solució és suficient per al llançament inicial amb poc volum. Un webhook
+només s'hauria d'afegir si cal retirar accés en temps gairebé real sense esperar que
+l'usuari torni a entrar, o si les mètriques operatives ho justifiquen.
+
+### RevenueCat Billing web
+
+- [x] Crear a RevenueCat Billing sandbox el producte anual de **29,99 €** amb Stripe
+  sandbox com a passarel·la.
+- [x] Associar `boletada_annual` a `boletada_pro`.
+- [x] Afegir-lo com a `$rc_annual` a l'offering `default`.
+- [x] Integrar RevenueCat Web SDK després del login amb `Better Auth user.id`.
+- [x] No permetre compres anònimes en l'MVP.
+- [x] Afegir compra des del paywall web.
+- [x] Mostrar l'enllaç de gestió retornat per RevenueCat quan està disponible.
+- [x] Mostrar l'estat resultant de RevenueCat; no desbloquejar només perquè el
   navegador torna del checkout.
-- [ ] Validar IVA, facturació i textos legals abans de producció.
+- [x] Configurar EUR, Stripe Tax, codi fiscal, consentiment de termes, renovació anual
+  i aparença del checkout sandbox.
+- [ ] Repetir/configurar les credencials i el producte definitius en mode live.
 
 ### Proves
 
-- [ ] Compra Stripe sandbox activa `pro` i desbloqueja el mapa web.
+- [x] Compra RevenueCat Billing + Stripe sandbox activa `pro` i desbloqueja el mapa web.
 - [ ] Un segon navegador amb el mateix compte recupera l'accés.
 - [ ] Una cancel·lació conserva accés fins a la data de venciment.
-- [ ] Una renovació amplia `pro_until`.
+- [ ] Una renovació amplia `expires_at`.
 - [ ] Una expiració o reemborsament bloqueja l'API quan correspon.
-- [ ] Un webhook duplicat no corromp l'estat.
+- [x] La sincronització posterior a la compra reflecteix l'entitlement al servidor.
+- [ ] Repetir la sincronització diverses vegades no corromp l'estat.
 - [ ] Un usuari sense `pro` no pot obtenir cap predicció cridant directament l'API.
 
 ### Criteri de sortida
 
-El web funciona de punta a punta: registre, pagament Stripe, webhook, accés al mapa,
+El web funciona de punta a punta: registre, pagament RevenueCat Billing, sincronització,
+accés al mapa,
 cancel·lació i expiració. Aquest és el primer vertical complet abans d'entrar a les
 botigues natives.
 
@@ -362,9 +523,9 @@ botiga i el país abans de publicar-lo.
 
 ### Landing proposada
 
-- [x] **Hero:** promesa clara i CTA d'accés; el vídeo curt queda pendent.
+- [x] **Hero:** promesa clara, CTA únic i mostra visual del predictor.
 - [x] **Com funciona:** meteorologia, terreny, bosc i lectura del mapa.
-- [ ] **Demostració:** vídeo actualitzat amb domini, nom, interfície i textos finals.
+- [x] **Demostració:** vídeo Remotion integrat amb poster i reproducció en viewport.
 - [x] **Espècies:** resum visual de les espècies disponibles.
 - [x] **Què obtens:** mapa actualitzat, filtre per espècie i lectura de condicions.
 - [x] **Preu:** un sol pla anual, sense falsa complexitat ni pla gratuït.
@@ -373,15 +534,16 @@ botiga i el país abans de publicar-lo.
 - [x] **Limitacions honestes:** és un índex de condicions, no una garantia de trobar
   bolets.
 - [x] **FAQ:** actualització, cobertura, renovació i dispositius; restauració pendent d'apps natives.
-- [ ] **Footer legal:** privacitat, termes, cookies, contacte i gestió de subscripció.
+- [x] **Footer legal:** avís legal, privacitat, termes i contacte.
 
 ### Vídeo
 
-- [ ] Revisar nom, domini, preu i CTA abans de tornar a renderitzar.
-- [ ] Mostrar cel·les de 250 × 250 m i la variació del heatmap.
-- [ ] Evitar afirmar que el valor és una probabilitat estadística calibrada.
-- [ ] Exportar versió hero lleugera i versió promocional completa.
-- [ ] Afegir poster estàtic i comportament correcte amb `prefers-reduced-motion`.
+- [x] Revisar nom, domini i CTA del vídeo.
+- [x] Mostrar l'ús real del mapa i del heatmap sense inventar punts fora de les zones
+  de predicció.
+- [x] Evitar afirmar que el valor és una probabilitat estadística calibrada.
+- [x] Exportar una versió promocional web lleugera.
+- [x] Afegir poster estàtic i comportament respectuós amb `prefers-reduced-motion`.
 
 ### Criteri de sortida
 
@@ -394,7 +556,8 @@ fins a compte, pagament i accés al mapa.
 
 ### Seguretat i privacitat
 
-- [ ] Revisar cookies, CORS, CSP, rate limits i headers HTTP.
+- [x] Orígens explícits, rate limiting d'auth i headers segurs bàsics implementats.
+- [ ] Fer una revisió final de cookies, CSP i headers sobre el domini de producció.
 - [ ] Rotació documentada de secrets.
 - [ ] Política de privacitat i termes revisats.
 - [ ] Exportació i eliminació del compte.
@@ -403,9 +566,9 @@ fins a compte, pagament i accés al mapa.
 
 ### Operacions
 
-- [ ] Healthcheck separat del mapa.
+- [x] Healthchecks `/healthz` i `/readyz`; el segon també comprova PostgreSQL.
 - [ ] Monitoratge de generació diària i antiguitat de les prediccions.
-- [ ] Alertes per errors de webhooks i correu.
+- [ ] Alertes per errors de sincronització de billing, generació i correu.
 - [ ] Backups de PostgreSQL provats amb una restauració real.
 - [ ] Migracions automàtiques o procediment de deploy documentat.
 - [ ] Pla de rollback que no reobri accidentalment els fitxers públics.
@@ -439,7 +602,188 @@ de compra i autorització abans d'acceptar pagaments reals.
    (**fase 6**).
 9. Completar QA, seguretat i llançament (**fase 7**).
 
-No s'ha de publicar el checkout real fins que les fases 1–5 funcionin en sandbox.
+No s'ha de publicar el checkout real fins que el vertical web de la fase 4 funcioni
+de punta a punta en sandbox. iOS i Android es poden completar després del llançament
+web, sense bloquejar-lo.
+
+---
+
+## Següents passos immediats — camí crític de llançament web
+
+La compra sandbox ja està validada. El camí mínim que queda és aquest, en ordre:
+
+### 1. Tancar Resend i el correu real
+
+- [ ] Verificar `boletada.cat` a Resend (DNS SPF/DKIM segons indiqui el dashboard).
+- [ ] Crear una API key de producció restringida a l'enviament de correu.
+- [ ] Fer que `hola@boletada.cat` sigui un remitent vàlid.
+- [ ] Fer que `suport@boletada.cat` rebi correu o redirigeixi a una bústia real.
+- [ ] Posar `REQUIRE_EMAIL_VERIFICATION=true` en un entorn de prova equivalent a pro.
+- [ ] Validar els dos correus: confirmació de compte i recuperació de contrasenya.
+- [ ] Confirmar que els enllaços tornen a `https://boletada.cat/app/` i no a localhost.
+
+### 2. Passar RevenueCat Billing i Stripe a live
+
+- [ ] Connectar el compte Stripe **live** al provider web de RevenueCat Billing.
+- [ ] Confirmar que Stripe té les dades comercials/fiscals necessàries i que pot
+  acceptar cobraments; no copiar claus sandbox a Coolify.
+- [ ] Crear o publicar el producte live anual `boletada_annual` a **29,99 EUR**.
+- [ ] Associar-lo a `boletada_pro` i al paquet `$rc_annual` de l'offering `default`.
+- [ ] Marcar `default` com a current i comprovar que retorna almenys un paquet.
+- [ ] Mantenir EUR com a moneda per defecte, renovació anual, Stripe Tax/codi fiscal
+  configurats i consentiment dels termes amb URL `https://boletada.cat/legal/#termes`.
+- [ ] Copiar només la clau pública web live i la clau secreta correcta del projecte a
+  Coolify. Mai posar la clau secreta al navegador o al repositori.
+
+### 3. Configurar Coolify
+
+Variables mínimes de producció:
+
+| Variable | Valor o criteri de producció | Secreta |
+|---|---|---|
+| `NODE_ENV` | `production` | No |
+| `PORT` | `8080` | No |
+| `DATABASE_URL` | Connexió Neon/PostgreSQL de producció amb SSL | **Sí** |
+| `BETTER_AUTH_URL` | `https://boletada.cat` | No |
+| `BETTER_AUTH_SECRET` | Valor aleatori estable de 32+ caràcters | **Sí** |
+| `TRUSTED_ORIGINS` | `https://boletada.cat` | No |
+| `EMAIL_PROVIDER_API_KEY` | API key live de Resend | **Sí** |
+| `EMAIL_FROM` | `Boletada <hola@boletada.cat>` | No |
+| `EMAIL_PROVIDER_URL` | `https://api.resend.com/emails` | No |
+| `REQUIRE_EMAIL_VERIFICATION` | `true` | No |
+| `REVENUECAT_SECRET_API_KEY` | Clau secreta del projecte/entorn live | **Sí** |
+| `REVENUECAT_API_URL` | `https://api.revenuecat.com/v1` | No |
+| `REVENUECAT_ENTITLEMENT_ID` | `boletada_pro` | No |
+| `REVENUECAT_WEB_PUBLIC_API_KEY` | Clau pública de RevenueCat Billing live | Pública |
+
+No definir `REVENUECAT_WEB_PRODUCT_ID`: el client llegeix l'offering actual i usa
+el paquet `annual` o, com a fallback, el primer paquet publicat. Les variables de
+Coolify s'injecten al contenidor i no competeixen amb el `.env` local, que no es
+versiona.
+
+### 4. Base de dades, build i prediccions en producció
+
+- [ ] Confirmar que la `DATABASE_URL` apunta a la base correcta i té backups.
+- [ ] Desplegar el `Dockerfile`. L'entrypoint executa `npm run db:migrate` abans
+  d'arrencar i reintenta la connexió fins a 15 vegades.
+- [ ] Confirmar `/healthz` = `200` i `/readyz` = `200`.
+- [ ] Confirmar que l'arrencada genera `private/predictions`; si falla, executar
+  manualment `node score_estacions.mjs --all --out=private/predictions`.
+- [ ] Crear a Coolify la tasca diària
+  `node score_estacions.mjs --all --out=private/predictions` amb cron `0 6 * * *`.
+- [ ] Verificar que `public/` no conté PNG, GeoJSON ni JSON premium.
+
+### 5. Smoke test live abans d'anunciar el llançament
+
+| Cas | Resultat esperat |
+|---|---|
+| `/`, `/app/`, `/legal/` | `200`, assets i vídeo carreguen sense errors |
+| Visitant anònim entra a `/app/` | Loader breu i després login, sense flaix de paywall/mapa |
+| Registre amb correu nou | Arriba el correu de verificació i l'enllaç funciona |
+| Login sense subscripció | Es mostra el paywall de 29,99 € / any |
+| Oferta RevenueCat | Offering `default` retorna `$rc_annual`; no apareix «cap paquet publicat» |
+| Pagament real controlat | Checkout en EUR, cobrament correcte i retorn a l'app |
+| Després del pagament | `boletada_pro` actiu, sincronització correcta i mapa desbloquejat |
+| Reobrir en un altre navegador | El mateix compte recupera accés |
+| API sense sessió | `/api/predictions/...` retorna `401` |
+| API amb sessió sense `pro` | Retorna `402` |
+| Mapa amb `pro` | Prediccions, popups, selector, zoom i bases funcionen |
+| Compte actiu | «Gestionar subscripció», logout i enllaç Boletada → homepage funcionen |
+| Recuperació de contrasenya | Correu rebut, contrasenya canviada i sessions antigues revocades |
+| Dispositius | Safari i Chrome en escriptori i iPhone, portrait i landscape |
+
+Per reduir risc, el primer cobrament live pot ser del mateix propietari i es pot
+reemborsar després de comprovar accés, rebut, portal i sincronització.
+
+### 6. Tancar i publicar el codi
+
+- [ ] `npm run prepare:public`.
+- [ ] Comprovar la sintaxi del mòdul d'`app.html` i executar `git diff --check`.
+- [ ] Revisar `git diff`; no incloure `.env`, secrets, `public/`, `private/` ni
+  `.DS_Store`.
+- [ ] Fer commit dels canvis locals de landing, app, legal, marca, config i build.
+- [ ] Fer push a `main` i comprovar el desplegament automàtic/manual a Coolify.
+- [ ] Repetir el smoke test essencial sobre `https://boletada.cat`.
+
+Després del llançament web: iOS (fase 5A) i, tot seguit, Android (fase 5B).
+
+---
+
+## Notes tècniques per continuar sense redescobrir el projecte
+
+### Fitxers clau
+
+| Fitxer | Responsabilitat actual |
+|---|---|
+| `index.html` | Landing pública, SEO/schema, vídeo, preu i CTA `/app/` |
+| `app.html` | Login, registre, reset, paywall, RevenueCat Web SDK i mapa MapLibre |
+| `legal.html` | Avís legal, privacitat i termes; es publica a `/legal/` |
+| `src/server.mjs` | Hono, headers, healthchecks, API auth/billing/prediccions i estàtics |
+| `src/auth.mjs` | Better Auth, correu/contrasenya, verificació, reset i rate limits |
+| `src/access.mjs` | Lectura de `user_access` i decisió d'autorització |
+| `src/revenuecat.mjs` | Consulta del subscriber a RevenueCat i projecció a PostgreSQL |
+| `src/email.mjs` | Adaptador HTTP compatible amb Resend |
+| `src/config.mjs` | Validació i defaults de variables d'entorn |
+| `migrations/001_app.sql` | Taula mínima `user_access`; Better Auth crea la resta d'esquema |
+| `scripts/migrate.mjs` | Migracions Better Auth + migracions pròpies |
+| `scripts/prepare-public.mjs` | Reconstrueix `public/` amb landing, app, legal, marca i vendors |
+| `Dockerfile` | Node 22, build públic, healthcheck i usuari no root |
+| `docker-entrypoint.sh` | Migra DB, genera prediccions inicials i arrenca Hono |
+| `.env.example` | Contracte de configuració, sense secrets |
+
+### Endpoints actuals
+
+| Mètode i ruta | Protecció | Funció |
+|---|---|---|
+| `GET /healthz` | Pública | Procés viu |
+| `GET /readyz` | Pública | Procés i PostgreSQL disponibles |
+| `GET /api/config` | Pública | Només clau pública RevenueCat i entitlement |
+| `* /api/auth/*` | Better Auth | Registre, login, verificació, reset i sessions |
+| `GET /api/me` | Sessió | Usuari i projecció local d'accés |
+| `POST /api/billing/sync` | Sessió | Sincronitza el subscriber de RevenueCat |
+| `GET /api/predictions/:filename` | Sessió + `boletada_pro` | Serveix recursos privats validats per allowlist |
+
+### Ordres habituals
+
+```bash
+npm install
+npm run db:migrate
+node score_estacions.mjs --all --out=private/predictions
+npm run dev                       # http://localhost:8080
+npm run prepare:public            # reconstrueix public/
+git diff --check
+```
+
+Per generar un `BETTER_AUTH_SECRET` nou:
+
+```bash
+openssl rand -base64 32
+```
+
+El secret de producció ha de quedar estable: canviar-lo invalida o pot afectar les
+sessions existents.
+
+### Riscos coneguts abans de cobrar a públic
+
+1. **Resend encara no està verificat E2E**: amb verificació obligatòria, un error de
+   DNS/API key pot impedir que una persona nova entri.
+2. **Billing live no està validat**: sandbox verd no garanteix que el provider live,
+   impostos, payouts i producte publicat estiguin correctes.
+3. **Sense webhook**: una revocació es reflecteix quan l'usuari torna a obrir l'app;
+   és una decisió MVP conscient, no un bug accidental.
+4. **Backups de Neon/producció**: s'han de confirmar abans de cobrar.
+5. **Legal**: el text és funcional però no ha estat revisat per un professional.
+6. **Canvis locals sense commit**: un redeploy des de `origin/main` encara no inclou
+   el loader, la legal, els assets de marca i els darrers ajustos de billing/UI.
+
+### Fora d'abast fins després del llançament web
+
+- StoreKit/App Store Connect i Google Play Billing.
+- Restauració de compres natives.
+- Social login.
+- Webhooks i observabilitat avançada de RevenueCat.
+- CRM/newsletter, analítica comercial complexa o múltiples plans.
+- Reescriptura del frontend o abstraccions noves.
 
 ---
 
@@ -453,7 +797,7 @@ El projecte estarà complet quan:
 - restaurar compres recuperi una subscripció nativa existent sense tornar a cobrar;
 - cancel·lacions, expiracions i reemborsaments retirin l'accés quan correspongui;
 - cap secret estigui dins del frontend ni de les apps;
-- els backups, webhooks i regeneració diària estiguin monitorats;
+- els backups, la sincronització de billing i la regeneració diària estiguin monitorats;
 - landing, vídeo, botigues i producte mostrin el mateix nom, domini, preu i promesa.
 
 ---

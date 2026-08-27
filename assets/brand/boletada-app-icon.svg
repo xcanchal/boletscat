@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Boletada</title>
+  <desc id="desc">Un bolet taronja sobre cercles de lectura del territori.</desc>
+  <defs>
+    <radialGradient id="background" cx="50%" cy="44%" r="72%">
+      <stop offset="0" stop-color="#1c281a"/>
+      <stop offset="1" stop-color="#10150f"/>
+    </radialGradient>
+    <linearGradient id="cap" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f18342"/>
+      <stop offset="1" stop-color="#df5622"/>
+    </linearGradient>
+    <linearGradient id="stem" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2ede2"/>
+      <stop offset="1" stop-color="#d8cbb7"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="28" stdDeviation="24" flood-color="#050805" flood-opacity=".42"/>
+    </filter>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#background)"/>
+
+  <g fill="none" stroke="#e8e3d6" stroke-width="6" opacity=".075">
+    <circle cx="512" cy="486" r="168"/>
+    <circle cx="512" cy="486" r="294"/>
+    <circle cx="512" cy="486" r="420"/>
+    <circle cx="512" cy="486" r="546"/>
+  </g>
+  <circle cx="512" cy="486" r="12" fill="#ec6c2c" opacity=".45"/>
+
+  <g filter="url(#shadow)">
+    <path d="M423 475h178l34 310c4 39-27 73-66 73H455c-39 0-70-34-66-73l34-310Z" fill="url(#stem)"/>
+    <path d="M188 518c14-190 136-312 324-312s310 122 324 312H188Z" fill="url(#cap)"/>
+    <path d="M196 518h632" fill="none" stroke="#f4a369" stroke-width="20" stroke-linecap="round" opacity=".72"/>
+    <circle cx="391" cy="330" r="26" fill="#fac28c" opacity=".72"/>
+    <circle cx="564" cy="285" r="34" fill="#fac28c" opacity=".68"/>
+    <circle cx="690" cy="400" r="22" fill="#fac28c" opacity=".62"/>
+  </g>
+</svg>
