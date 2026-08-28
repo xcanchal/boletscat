@@ -38,7 +38,9 @@ app.all("/api/auth/*", (c) => auth.handler(c.req.raw));
 
 app.get("/api/me", async (c) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
-  if (!session) return c.json({ error: "unauthorized" }, 401);
+  // Consultar l'estat de la sessió és una operació normal en carregar l'app.
+  // Reservem el 401 per a rutes que realment exigeixen autenticació.
+  if (!session) return c.json({ user: null, access: { active: false } });
 
   const access = await getAccessForUser(session.user.id);
 

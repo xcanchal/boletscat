@@ -170,10 +170,10 @@
     .maplibregl-ctrl-attrib{font-size:10px}
 
     [hidden]{display:none!important}
-    /* L'accés passa damunt del mapa real: es pot explorar, però les dades
-       privades no es carreguen fins que la subscripció és activa. */
+    /* El mapa funciona com a previsualització visual fins que l'accés és actiu.
+       El gate captura la interacció perquè no sembli que el producte ja és usable. */
     .access-gate{position:fixed;inset:0;z-index:1000;overflow:auto;color:#f0eee4;background:transparent;
-      font-family:var(--ui);isolation:isolate;pointer-events:none}
+      font-family:var(--ui);isolation:isolate;pointer-events:auto}
     .access-gate::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
       background:rgba(5,9,5,.24);backdrop-filter:blur(.6px)}
     .access-gate::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
@@ -782,11 +782,11 @@
         const res = await fetch(dataUrl(`bolets.${species}.geojson`));
         if (!res.ok) throw new Error();
         geo = await res.json();
-      } catch {
+      } catch(error) {
+        console.error('No s’han pogut carregar les dades de predicció', { species, error });
         map.getSource('estacions').setData({ type:'FeatureCollection', features:[] });
         content.style.display='none'; msg.style.display='block';
-        msg.innerHTML = `No trobo <code>bolets.${species}.geojson</code>. Genera'l:
-          <code>node score_estacions.mjs --all</code> i serveix la carpeta.`;
+        msg.textContent='Les dades d’aquesta espècie no estan disponibles ara mateix. Torna-ho a provar més tard.';
         document.getElementById('meta').innerHTML = 'Catalunya · dades XEMA';
         return;
       }
@@ -888,7 +888,7 @@
 
     const setMessage=(element,text,type='')=>{element.textContent=text;element.className=`gate-message ${type}`.trim()};
     const billingErrorText=(error)=>{
-      if(!(error instanceof PurchasesError))return error.message||'No s’ha pogut completar el pagament.';
+      if(!(error instanceof PurchasesError))return 'No s’ha pogut completar el pagament. Torna-ho a provar en uns instants.';
       if(error.errorCode===ErrorCode.NetworkError)return 'No hi ha connexió amb el servei de pagament. Revisa la xarxa i torna-ho a provar.';
       if(error.errorCode===ErrorCode.ProductNotAvailableForPurchaseError)return 'La subscripció no està disponible ara mateix. Torna-ho a provar en uns instants.';
       if(error.errorCode===ErrorCode.ProductAlreadyPurchasedError)return 'Aquesta subscripció ja consta com a activa. Recarrega la pàgina per recuperar l’accés.';
@@ -901,12 +901,15 @@
       if(code==='USER_ALREADY_EXISTS')return 'Ja hi ha un compte amb aquest correu.';
       if(code==='EMAIL_NOT_VERIFIED')return 'Confirma el correu abans d’entrar.';
       if(code==='PASSWORD_TOO_SHORT')return 'La contrasenya ha de tenir com a mínim 8 caràcters.';
-      return payload?.message||payload?.error?.message||fallback;
+      return fallback;
     };
+    const userSafeText=(error,fallback)=>error?.isUserSafe?error.message:fallback;
     async function request(path,options={}) {
-      const response=await fetch(path,{credentials:'include',...options,headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})}});
+      let response;
+      try { response=await fetch(path,{credentials:'include',...options,headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})}}); }
+      catch(error) { console.error('No s’ha pogut completar la petició', { path, error }); const safeError=new Error('No hi ha connexió amb el servei. Revisa la xarxa i torna-ho a provar.');safeError.isUserSafe=true;throw safeError; }
       const payload=await response.json().catch(()=>({}));
-      if(!response.ok) { const error=new Error(errorText(payload,'No s’ha pogut completar l’operació.')); error.status=response.status; error.payload=payload; throw error; }
+      if(!response.ok) { const error=new Error(errorText(payload,'No s’ha pogut completar l’operació.')); error.status=response.status; error.payload=payload; error.isUserSafe=true; throw error; }
       return payload;
     }
     function showView(view) {
@@ -941,9 +944,8 @@
       setMessage(authMessage,'');
     }
     async function refreshSession({sync=false}={}) {
-      let me;
-      try { me=await request('/api/me'); }
-      catch(error) { if(error.status===401){currentUser=null;showView('auth');return false} throw error; }
+      const me=await request('/api/me');
+      if(!me.user){currentUser=null;showView('auth');return false}
       currentUser=me.user;
       let active=Boolean(me.access?.active);
       if(sync){
@@ -967,7 +969,8 @@
         billingConfig ||= await request('/api/config');
         if(!billingConfig.revenueCatWebPublicApiKey){
           document.getElementById('purchaseButton').disabled=true;
-          setMessage(billingMessage,'Falta activar RevenueCat Web al servidor.','error');return;
+          console.error('La configuració pública de pagament no està disponible');
+          setMessage(billingMessage,'El pagament no està disponible ara mateix. Torna-ho a provar més tard.','error');return;
         }
         if(!purchases) purchases=Purchases.configure({apiKey:billingConfig.revenueCatWebPublicApiKey,appUserId:currentUser.id});
         const offerings=await purchases.getOfferings();
@@ -977,8 +980,9 @@
         document.getElementById('paywallPrice').textContent=purchasePackage.webBillingProduct.price.formattedPrice;
         document.getElementById('purchaseButton').disabled=false;
       } catch(error) {
+        console.error('No s’ha pogut preparar la subscripció',error);
         document.getElementById('purchaseButton').disabled=true;
-        setMessage(billingMessage,error.message||'No s’ha pogut carregar la subscripció.','error');
+        setMessage(billingMessage,'No s’ha pogut carregar la subscripció. Recarrega la pàgina i torna-ho a provar.','error');
       }
     }
 
@@ -993,7 +997,10 @@
         await request(`/api/auth/${authMode==='signup'?'sign-up':'sign-in'}/email`,{method:'POST',body:JSON.stringify(body),headers:{Origin:location.origin}});
         const active=await refreshSession({sync:true});
         if(!active&&authMode==='signup'&&!currentUser) setMessage(authMessage,'T’hem enviat un correu de confirmació.','success');
-      } catch(error) { setMessage(authMessage,error.message,'error'); }
+      } catch(error) {
+        console.error('No s’ha pogut completar l’autenticació',error);
+        setMessage(authMessage,userSafeText(error,'No s’ha pogut completar l’operació. Torna-ho a provar.'),'error');
+      }
       finally {button.disabled=false}
     });
 
@@ -1018,7 +1025,10 @@
           await request('/api/auth/request-password-reset',{method:'POST',body:JSON.stringify({email:document.getElementById('resetEmail').value.trim(),redirectTo:APP_CALLBACK_URL}),headers:{Origin:location.origin}});
           setMessage(document.getElementById('resetMessage'),'Si el correu existeix, rebràs l’enllaç en uns instants.','success');
         }
-      } catch(error){setMessage(document.getElementById('resetMessage'),error.message,'error')}
+      } catch(error){
+        console.error('No s’ha pogut completar la recuperació del compte',error);
+        setMessage(document.getElementById('resetMessage'),userSafeText(error,'No s’ha pogut completar l’operació. Torna-ho a provar.'),'error');
+      }
       finally{button.disabled=false}
     });
     document.getElementById('purchaseButton').addEventListener('click',async()=>{
@@ -1051,8 +1061,9 @@
     else {
       setAuthMode(authMode);showView('loading');
       refreshSession({sync:true}).catch(error=>{
+        console.error('No s’ha pogut comprovar l’accés',error);
         showView('auth');
-        setMessage(authMessage,error.message||'No s’ha pogut comprovar l’accés. Torna-ho a provar.','error');
+        setMessage(authMessage,'No s’ha pogut comprovar l’accés. Recarrega la pàgina i torna-ho a provar.','error');
       });
     }
   </script>
