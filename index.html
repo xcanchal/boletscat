@@ -69,7 +69,7 @@
     .sample{position:absolute;z-index:2;left:22px;right:22px;bottom:20px;padding:16px 17px;border:1px solid var(--line);border-radius:12px;background:rgba(18,24,17,.91);backdrop-filter:blur(9px)}.sample small{display:block;color:#a7afa0;font:10px var(--data);text-transform:uppercase;letter-spacing:.07em}.sample strong{display:flex;justify-content:space-between;gap:15px;margin-top:5px;font:600 18px var(--display)}.sample strong span{color:#f17a38;font:500 12px var(--data);white-space:nowrap;margin-top:5px}
     .forecast-strip{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line)}.forecast-strip div{padding:13px 8px;text-align:center;border-right:1px solid var(--line);font:10px var(--data);color:var(--muted)}.forecast-strip div:last-child{border:0}.forecast-strip b{display:block;color:var(--paper);font-size:13px;margin-top:4px}.forecast-strip .today{background:rgba(236,108,44,.11)}
 
-    .film-block{margin-top:0}.film-stage{position:relative;display:block;aspect-ratio:16/9;overflow:hidden;border-radius:16px;background:#111710 url('./media/boletada-promo-poster.webp?v=soil-20260828') center/cover no-repeat}.product-film{display:block;width:100%;height:100%;object-fit:cover}.film-play{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:10px;border:0;background:linear-gradient(180deg,rgba(5,9,5,.06),rgba(5,9,5,.28));color:#f5f1e6;font:600 14px var(--body);cursor:pointer;text-shadow:0 2px 18px rgba(0,0,0,.75);transition:background .2s ease}.film-play:hover{background:linear-gradient(180deg,rgba(5,9,5,.02),rgba(5,9,5,.2))}.film-play:focus-visible{outline:3px solid #8ab4ff;outline-offset:-6px}.film-play-icon{display:grid;place-items:center;width:74px;height:74px;border:1px solid rgba(255,255,255,.4);border-radius:50%;background:#ec6c2c;box-shadow:0 14px 40px rgba(0,0,0,.38);transition:transform .2s ease}.film-play:hover .film-play-icon{transform:scale(1.06)}.film-play-icon svg{width:25px;height:25px;margin-left:4px}.film-play.is-loading .film-play-icon svg{display:none}.film-play.is-loading .film-play-icon::after{content:"";width:24px;height:24px;border:3px solid rgba(255,255,255,.42);border-top-color:#fff;border-radius:50%;animation:film-spin .75s linear infinite}@keyframes film-spin{to{transform:rotate(360deg)}}.film-stage.is-playing .film-play{display:none}.film-action{display:flex;justify-content:flex-end;margin-top:18px}
+    .film-block{margin-top:0}.film-stage{display:block;aspect-ratio:16/9;overflow:hidden;border-radius:16px;background:#111710 url('./media/boletada-promo-poster.webp?v=final-only-20260828') center/cover no-repeat}.product-film{display:block;width:100%;height:100%;object-fit:cover}.film-action{display:flex;justify-content:flex-end;margin-top:18px}
 
     section{padding:120px 0;border-bottom:1px solid var(--line)}.section-head{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:end;margin-bottom:65px}.kicker{color:var(--orange);font:500 11px var(--data);letter-spacing:.1em;text-transform:uppercase}.section-head h2{max-width:660px;margin:12px 0 0;font:500 clamp(38px,5vw,62px)/1.03 var(--display);letter-spacing:-.035em}.section-head h2.flush{margin-top:0}.section-head p{margin:0;color:var(--muted);max-width:470px;justify-self:end}
     .method-grid{display:grid;grid-template-columns:repeat(3,1fr);margin-top:64px;border:1px solid var(--line);border-radius:16px;overflow:hidden}.method{min-height:280px;padding:30px;border-right:1px solid var(--line);background:linear-gradient(150deg,rgba(38,50,37,.38),transparent)}.method:last-child{border:0}.method .num{color:#6f786c;font:11px var(--data)}.method svg{display:block;width:42px;height:42px;margin:42px 0 25px;color:var(--orange)}.method h3{font:600 24px var(--display);margin-bottom:9px}.method p{color:var(--muted);font-size:14px;margin:0}
@@ -118,13 +118,9 @@
         <div class="section-head reveal"><div><span class="kicker">Com funciona</span><h2>Del territori a una decisió útil.</h2></div><p>Tria l’espècie. Boletada actualitza el mapa cada dia perquè comparis zones i decideixis on començar.</p></div>
         <div class="film-block reveal" id="demo">
           <div class="film-stage" id="filmStage">
-            <video class="product-film" id="productFilm" muted playsinline preload="metadata" poster="./media/boletada-promo-poster.webp?v=soil-20260828" aria-label="Demostració de Boletada">
-              <source src="./media/boletada-promo.mp4?v=soil-20260828" type="video/mp4" />
+            <video class="product-film" id="productFilm" controls playsinline preload="metadata" poster="./media/boletada-promo-poster.webp?v=final-only-20260828" aria-label="Demostració de Boletada">
+              <source src="./media/boletada-promo.mp4?v=final-only-20260828" type="video/mp4" />
             </video>
-            <button class="film-play" id="filmPlay" type="button" aria-label="Reprodueix la demostració de Boletada">
-              <span class="film-play-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m9 6 9 6-9 6V6Z" fill="currentColor"/></svg></span>
-              <span>Veure la demo</span>
-            </button>
           </div>
           <div class="film-action"><a class="button" href="/app/">Accedeix al mapa <span aria-hidden="true">→</span></a></div>
         </div>
@@ -173,18 +169,9 @@
     if(location.protocol==='file:')document.querySelectorAll('a[href^="/app/"]').forEach(link=>{const target=new URL(link.getAttribute('href'),'https://boletada.cat');link.setAttribute('href',`./app.html${target.search}${target.hash}`)});
     const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('seen');observer.unobserve(entry.target)}}),{threshold:.12});
     document.querySelectorAll('.reveal').forEach(element=>observer.observe(element));
-    const productFilm=document.getElementById('productFilm'),filmStage=document.getElementById('filmStage'),filmPlay=document.getElementById('filmPlay');
+    const productFilm=document.getElementById('productFilm'),filmStage=document.getElementById('filmStage');
     const filmPreloader=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){productFilm.preload='auto';productFilm.load();filmPreloader.disconnect()}}),{rootMargin:'500px 0px'});
     filmPreloader.observe(filmStage);
-    filmPlay.addEventListener('click',async()=>{
-      filmPlay.disabled=true;
-      filmPlay.classList.add('is-loading');
-      filmPlay.querySelector('span:not(.film-play-icon)').textContent='Carregant…';
-      try{productFilm.controls=true;await productFilm.play()}
-      catch{filmPlay.disabled=false;filmPlay.classList.remove('is-loading');filmPlay.querySelector('span:not(.film-play-icon)').textContent='Torna-ho a provar'}
-    });
-    productFilm.addEventListener('playing',()=>{filmPlay.classList.remove('is-loading');filmStage.classList.add('is-playing')});
-    productFilm.addEventListener('ended',()=>{filmStage.classList.remove('is-playing');filmPlay.disabled=false;filmPlay.classList.remove('is-loading');filmPlay.querySelector('span:not(.film-play-icon)').textContent='Torna-la a veure'});
   </script>
 </body>
 </html>

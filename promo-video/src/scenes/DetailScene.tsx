@@ -1,6 +1,5 @@
 import {AbsoluteFill, Easing, Interactive, interpolate, useCurrentFrame} from "remotion";
 import {MapPlate} from "../components/MapPlate";
-import {Mushroom} from "../components/Mushroom";
 
 const facts = [
   ["bosc", "pineda"],
@@ -46,8 +45,6 @@ export const DetailScene: React.FC = () => {
         </div>
         <div style={{marginTop: 25, padding: "16px 19px", borderRadius: 14, background: "rgba(242,138,59,.12)", color: "#f4a066", fontSize: 19, lineHeight: 1.3}}>El sòl també compta en la lectura de cada espècie.</div>
       </Interactive.Div>
-
-      <Mushroom x={1145} y={735} size={150} delay={58} flip expression="happy" cap="#d69a3a" />
 
       <div style={{position: "absolute", right: 82, bottom: 46, fontSize: 15, color: "rgba(255,255,255,.55)"}}>Mapa © Esri · Dades Meteocat + ICGC</div>
     </AbsoluteFill>

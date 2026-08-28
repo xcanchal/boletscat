@@ -1,6 +1,6 @@
 import {AbsoluteFill, Easing, Interactive, interpolate, useCurrentFrame} from "remotion";
 import {MapPlate} from "../components/MapPlate";
-import {Mushroom, MushroomMark} from "../components/Mushroom";
+import {MushroomMark} from "../components/Mushroom";
 
 export const MapScene: React.FC = () => {
   const frame = useCurrentFrame();
@@ -27,8 +27,6 @@ export const MapScene: React.FC = () => {
           ))}
         </div>
       </Interactive.Div>
-
-      <Mushroom x={360} y={615} size={145} delay={48} expression="curious" />
 
       <Interactive.Div
         name="Missatge del mapa"
