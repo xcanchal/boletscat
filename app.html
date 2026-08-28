@@ -350,6 +350,8 @@
     const SCALE = [0,'#59665e',0.1,'#747d45',0.25,'#a1a447',0.4,'#c9932f',0.6,'#e2792a',0.8,'#c8451b',1,'#a92e14'];
     const BOSC = { conifer:'pineda (coníferes)', deciduous:'bosc caducifoli', sclerophyll:'alzinar / esclerofil·le', ribera:'bosc de ribera' };
     const HOST_BY_CODE = [null,'conifer','deciduous','sclerophyll','ribera'];
+    const SOIL = { siliceous:'silícic (tendència àcida)', calcareous:'calcari', mixed:'mixt' };
+    const SUBSTRATE_BY_CODE = [null,'siliceous','calcareous','mixed'];
     const RATING = [
       { min:0.6, key:'very-high', nivell:'Molt alta', recomanacio:'Ves-hi' },
       { min:0.4, key:'high',      nivell:'Alta',      recomanacio:'Bona opció' },
@@ -363,11 +365,11 @@
     // temperatura i altitud són el tram pla del trapezoide (encaix = 1), temporada els mesos amb porta oberta.
     const SPECIES_INFO = {
       rovello:   { bosc:'pineda (coníferes)',                temperatura:'8–20°C',  altitud:'200–1500 m',  temporada:'setembre–novembre' },
-      cep:       { bosc:'pineda, caducifoli o alzinar',      temperatura:'8–18°C',  altitud:'800–1600 m',  temporada:'juny · setembre–novembre' },
-      llenega:   { bosc:'pineda (coníferes)',                temperatura:'4–14°C',  altitud:'300–1300 m',  temporada:'octubre–desembre' },
+      cep:       { bosc:'pineda, caducifoli o alzinar',      temperatura:'8–18°C',  altitud:'800–1600 m',  temporada:'juny · setembre–novembre', sol:'preferentment silícic / àcid' },
+      llenega:   { bosc:'pineda (coníferes)',                temperatura:'4–14°C',  altitud:'300–1300 m',  temporada:'octubre–desembre', sol:'preferentment calcari' },
       trompeta:  { bosc:'caducifoli o alzinar',              temperatura:'8–18°C',  altitud:'400–1300 m',  temporada:'setembre–novembre' },
-      rossinyol: { bosc:'pineda, caducifoli o alzinar',      temperatura:'10–22°C', altitud:'400–1500 m',  temporada:'juny–octubre' },
-      camagroc:  { bosc:'pineda (coníferes)',                temperatura:'2–14°C',  altitud:'500–1500 m',  temporada:'octubre–gener' },
+      rossinyol: { bosc:'pineda, caducifoli o alzinar',      temperatura:'10–22°C', altitud:'400–1500 m',  temporada:'juny–octubre', sol:'preferentment silícic / àcid' },
+      camagroc:  { bosc:'pineda (coníferes)',                temperatura:'2–14°C',  altitud:'500–1500 m',  temporada:'octubre–gener', sol:'preferentment calcari' },
       murgola:   { bosc:'bosc de ribera o caducifoli',       temperatura:'8–18°C',  altitud:'300–1200 m',  temporada:'març–maig' },
     };
 
@@ -496,8 +498,8 @@
     const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     // Popup complet, compartit pel clic al mapa i el clic a la llista.
     // El "+" desplega el desglossament: cada factor (0..1) diu com de lluny és de l'ideal de l'espècie.
-    const FACTORS = [['fSeason','temporada'],['fH','humitat'],['fT','temperatura'],['fAlt','altitud'],['fHost','bosc']];
-    const factorsHTML = p => FACTORS.map(([k,label]) => {
+    const FACTORS = [['fSeason','temporada'],['fH','humitat'],['fT','temperatura'],['fAlt','altitud'],['fHost','bosc'],['fSoil','sòl']];
+    const factorsHTML = p => FACTORS.filter(([k]) => p[k] != null).map(([k,label]) => {
       const v = Math.max(0, Math.min(1, +p[k]));
       return `<span class="k">${label}</span>
         <span class="fbar"><i style="width:${Math.round(v*100)}%"></i></span>
@@ -521,6 +523,7 @@
       <div class="pop-index">Probabilitat ${Math.round((+p.score) * 100)}%</div>
       <div class="pop-grid">
         <span class="k">bosc</span><span class="v">${p.host ? (BOSC[p.host] ?? p.host) : '—'}</span>
+        <span class="k">sòl</span><span class="v">${p.substrate ? (SOIL[p.substrate] ?? p.substrate) : 'no classificat'}</span>
         <span class="k">temperatura</span><span class="v">${fmt(p.tMean)} °C</span>
         <span class="k">altitud</span><span class="v">${Math.round(p.alt||0)} m</span>
       </div>
@@ -536,6 +539,7 @@
               k0*(m+n*Math.tan(p)*(A*A/2+(5-t+9*c+4*c*c)*A**4/24+(61-58*t+t*t+600*c-330*ep)*A**6/720))];
     }
     const trapezoid = (x,a,b,c,d) => x<=a||x>=d?0:x<b?(x-a)/(b-a):x<=c?1:(d-x)/(d-c);
+    const substrateFactor = (substrate, wanted) => !wanted?.length||!substrate ? 1 : substrate==='mixed' ? .85 : wanted.includes(substrate) ? 1 : .55;
     function cellAt(lngLat) {
       if (!currentRaster?.pixels) return null;
       const { grid, pixels } = currentRaster, [x,y] = wgs84ToUtm31(lngLat.lng,lngLat.lat);
@@ -550,10 +554,11 @@
       if(!terrain||!weather||!model) return { score:cell.score };
       const p=cell.index*4; if(!terrain[p+3]||!weather[p+3]) return { score:cell.score };
       const host=HOST_BY_CODE[terrain[p]], alt=((terrain[p+1]<<8)|terrain[p+2])-32768;
+      const substrate=currentRaster.grid.substrateVersion?SUBSTRATE_BY_CODE[Math.max(0,terrain[p+3]-252)]:null;
       const tMean=weather[p]/4-20, fH=weather[p+1]/255;
       const fT=trapezoid(tMean,...model.temp), fAlt=trapezoid(alt,...model.alt);
-      const fHost=model.host.includes(host)?1:.25, fSeason=model.season;
-      return { score:fH*fT*fAlt*fSeason*fHost, host, alt, tMean, fH, fT, fAlt, fHost, fSeason };
+      const fHost=model.host.includes(host)?1:.25, fSoil=substrateFactor(substrate,model.substrate), fSeason=model.season;
+      return { score:fH*fT*fAlt*fSeason*fHost*fSoil, host, substrate, alt, tMean, fH, fT, fAlt, fHost, fSoil, fSeason };
     }
     function detailsAt(lngLat) {
       const cell=cellAt(lngLat); return cell?detailsForCell(cell):null;
@@ -842,6 +847,7 @@
           <dt>Temperatura</dt><dd>${info.temperatura}</dd>
           <dt>Altitud</dt><dd>${info.altitud}</dd>
           <dt>Temporada</dt><dd>${info.temporada}</dd>
+          ${info.sol ? `<dt>Sòl</dt><dd>${info.sol}</dd>` : ''}
           <dt>Humitat</dt><dd>sòl humit i pluges recents</dd>
         `;
       }

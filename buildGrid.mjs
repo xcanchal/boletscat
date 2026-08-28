@@ -1,12 +1,18 @@
 #!/usr/bin/env node
-/** Precalcula una graella estàtica de 250 m: coberta forestal + altitud. */
-import { writeFileSync } from "node:fs";
+/** Precalcula una graella estàtica de 250 m: coberta forestal + altitud + substrat. */
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { decodeRgbaPng } from "./raster.mjs";
+import { rasterizeSubstrate } from "./substrate.mjs";
 
 const CELL = 250, X0 = 260000, Y0 = 4484000, X1 = 530000, Y1 = 4760000;
 const WIDTH = (X1 - X0) / CELL, HEIGHT = (Y1 - Y0) / CELL;
 const WMS = "https://geoserveis.icgc.cat/servei/catalunya/cobertes-sol/wms";
 const WCS = "https://geoserveis.icgc.cat/icc_mdt/wcs/service?";
+const GEOLOGY = "https://datacloud.icgc.cat/datacloud/geologia-territorial-250000-geologic/gpkg/geologia-territorial-250000-geologic-v3r0-202312.zip";
 const OUT = process.argv.find((a) => a.startsWith("--out="))?.slice(6) || "graella.bin";
 
 const rgbHost = new Map([
@@ -35,6 +41,43 @@ async function pool(items, n, fn) {
   await Promise.all(Array.from({ length: n }, async () => {
     while (cursor < items.length) { const i = cursor++; await fn(items[i], i); }
   }));
+}
+
+async function buildSubstrate(hosts) {
+  const work = mkdtempSync(join(tmpdir(), "boletada-geology-"));
+  try {
+    const zipPath = join(work, "geology.zip");
+    console.log("Baixant geologia territorial 1:250.000…");
+    const response = await fetchOk(GEOLOGY);
+    writeFileSync(zipPath, Buffer.from(await response.arrayBuffer()));
+    execFileSync("unzip", ["-q", zipPath, "-d", work]);
+    const gpkgName = readdirSync(work).find((name) => name.endsWith(".gpkg"));
+    if (!gpkgName) throw new Error("El paquet geològic no conté cap GeoPackage");
+
+    const db = new DatabaseSync(join(work, gpkgName), { readOnly:true });
+    const rows = db.prepare(`
+      SELECT u.geom AS geometry,
+             u.Descripcio AS description,
+             COALESCE(u.Descripcio_protolit, '') AS protolith,
+             r.minx, r.maxx, r.miny, r.maxy
+        FROM _05_unitats_geologiques_250000 u
+        JOIN rtree__05_unitats_geologiques_250000_geom r ON r.id = u.id
+    `).all().map((row) => ({ ...row, geometry:Buffer.from(row.geometry) }));
+    db.close();
+
+    // La geologia també es desa fora del bosc: moltes estacions XEMA són en una
+    // clariana, però el seu substrat continua sent informatiu per al rànquing.
+    const result = rasterizeSubstrate(rows, { width:WIDTH, height:HEIGHT, cell:CELL, x0:X0, y1:Y1 });
+    const forestCounts = new Uint32Array(4);
+    for (let i = 0; i < result.substrate.length; i++) if (hosts[i]) forestCounts[result.substrate[i]]++;
+    const labels = ["desconegut", "silícic", "calcari", "mixt"];
+    console.log("  Substrat de les cel·les forestals:");
+    for (let code = 0; code < forestCounts.length; code++)
+      console.log(`    ${labels[code].padEnd(11)} ${forestCounts[code].toLocaleString("ca")}`);
+    return result.substrate;
+  } finally {
+    rmSync(work, { recursive:true, force:true });
+  }
 }
 
 async function main() {
@@ -84,10 +127,16 @@ async function main() {
     if (++done % 10 === 0 || done === tiles.length) console.log(`  ${done}/${tiles.length}`);
   });
 
-  const header = Buffer.alloc(24), cells = Buffer.alloc(hosts.length * 3);
-  header.write("BGR1", 0); header.writeUInt16LE(WIDTH, 4); header.writeUInt16LE(HEIGHT, 6);
+  const substrate = await buildSubstrate(hosts);
+
+  const header = Buffer.alloc(24), cells = Buffer.alloc(hosts.length * 4);
+  header.write("BGR2", 0); header.writeUInt16LE(WIDTH, 4); header.writeUInt16LE(HEIGHT, 6);
   header.writeInt32LE(X0, 8); header.writeInt32LE(Y0, 12); header.writeInt32LE(Y1, 16); header.writeUInt16LE(CELL, 20);
-  for (let i = 0; i < hosts.length; i++) { cells[i * 3] = hosts[i]; cells.writeInt16LE(altitude[i], i * 3 + 1); }
+  for (let i = 0; i < hosts.length; i++) {
+    cells[i * 4] = hosts[i];
+    cells.writeInt16LE(altitude[i], i * 4 + 1);
+    cells[i * 4 + 3] = substrate[i];
+  }
   writeFileSync(OUT, Buffer.concat([header, cells]));
   const valid = altitude.reduce((n, v, i) => n + (hosts[i] && v !== -32768 ? 1 : 0), 0);
   console.log(`✓ ${OUT}: ${valid.toLocaleString("ca")} cel·les forestals amb altitud`);

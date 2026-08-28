@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "npm run prepare:public && node --watch src/server.mjs",
     "start": "node src/server.mjs",
+    "test": "node --test",
     "prepare:public": "node scripts/prepare-public.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "db:up": "docker compose up -d db",
