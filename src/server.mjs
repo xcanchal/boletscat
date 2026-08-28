@@ -63,6 +63,63 @@ app.post("/api/billing/sync", async (c) => {
   return c.json({ access });
 });
 
+const parseSingleByteRange = (header, size) => {
+  const match = /^bytes=(\d*)-(\d*)$/.exec(header || "");
+  if (!match || (!match[1] && !match[2])) return null;
+
+  let start;
+  let end;
+  if (!match[1]) {
+    const suffixLength = Number(match[2]);
+    if (!Number.isSafeInteger(suffixLength) || suffixLength <= 0) return null;
+    start = Math.max(size - suffixLength, 0);
+    end = size - 1;
+  } else {
+    start = Number(match[1]);
+    end = match[2] ? Number(match[2]) : size - 1;
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end)) return null;
+    if (start >= size || end < start) return null;
+    end = Math.min(end, size - 1);
+  }
+
+  return { start, end };
+};
+
+// Servim el vídeo de forma explícita i bufferitzada perquè el proxy conservi
+// Content-Length. Això permet que Safari i Cloudflare facin peticions Range i
+// comencin la reproducció sense haver d'esperar tot l'MP4.
+app.get("/media/boletada-promo.mp4", async (c) => {
+  const data = await readFile(join(config.publicDir, "media/boletada-promo.mp4"));
+  const rangeHeader = c.req.header("Range");
+  const commonHeaders = {
+    "Accept-Ranges": "bytes",
+    "Cache-Control": "public, max-age=31536000, immutable",
+    "Content-Type": "video/mp4",
+  };
+
+  if (!rangeHeader) {
+    return c.body(data, 200, {
+      ...commonHeaders,
+      "Content-Length": String(data.byteLength),
+    });
+  }
+
+  const range = parseSingleByteRange(rangeHeader, data.byteLength);
+  if (!range) {
+    return c.body(null, 416, {
+      ...commonHeaders,
+      "Content-Range": `bytes */${data.byteLength}`,
+    });
+  }
+
+  const chunk = data.subarray(range.start, range.end + 1);
+  return c.body(chunk, 206, {
+    ...commonHeaders,
+    "Content-Length": String(chunk.byteLength),
+    "Content-Range": `bytes ${range.start}-${range.end}/${data.byteLength}`,
+  });
+});
+
 const predictionName = /^bolets\.(?:grid\.json|terrain\.png|weather\.png|[a-z0-9-]+\.(?:geojson|png))$/;
 const predictionTypes = {
   ".json": "application/json; charset=utf-8",
