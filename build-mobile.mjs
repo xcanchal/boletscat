@@ -13,6 +13,9 @@ await mkdir(join(OUT, "vendor"), { recursive: true });
 
 let html = await readFile(join(ROOT, "app.html"), "utf8");
 html = html
+  // El manifest i el service worker només tenen sentit a la web instal·lable:
+  // dins del webview de Capacitor apuntarien a rutes que no existeixen.
+  .replace(/[ \t]*<!-- pwa:start[\s\S]*?<!-- pwa:end -->\n/, "")
   .replace(
     'content="width=device-width, initial-scale=1, viewport-fit=cover"',
     'content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"',

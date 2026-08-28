@@ -14,8 +14,12 @@ import { syncRevenueCatCustomer } from "./revenuecat.mjs";
 
 export const app = new Hono();
 
+// Els clients de missatgeria i xarxes carreguen la imatge OG des d'un altre
+// origen: amb `same-origin` el navegador la bloqueja i la previsualització surt
+// trencada. Les prediccions de pagament ja queden protegides per la cookie de
+// sessió (SameSite=Lax), que no viatja en peticions cross-site.
 app.use("*", secureHeaders({
-  crossOriginResourcePolicy: "same-origin",
+  crossOriginResourcePolicy: "cross-origin",
   crossOriginOpenerPolicy: "same-origin-allow-popups",
 }));
 
@@ -96,6 +100,10 @@ app.use("*", async (c, next) => {
       // L'HTML conté un gate d'autenticació: no reutilitzem una vista anterior
       // (per exemple, el formulari de login) mentre es resol la sessió actual.
       c.header("Cache-Control", "no-store");
+    } else if (c.req.path === "/sw.js") {
+      // El service worker ha de poder-se actualitzar (o desactivar) de seguida:
+      // amb `max-age` el CDN el serviria antic durant una hora.
+      c.header("Cache-Control", "no-cache");
     } else {
       c.header("Cache-Control", c.req.path === "/" || c.req.path.endsWith(".html") ? "no-cache" : "public, max-age=3600");
     }

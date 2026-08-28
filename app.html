@@ -9,9 +9,33 @@
   <meta property="og:description" content="Consulta on hi ha les millors condicions per trobar bolets avui a Catalunya." />
   <meta property="og:url" content="https://boletada.cat/app/" />
   <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Boletada" />
+  <meta property="og:locale" content="ca_ES" />
+  <meta property="og:image" content="https://boletada.cat/assets/brand/boletada-og-1200x630.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Boletada: surt a buscar bolets on val la pena mirar." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://boletada.cat/assets/brand/boletada-og-1200x630.png" />
   <title>Boletada · Mapa de bolets</title>
   <link rel="canonical" href="https://boletada.cat/app/" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <!-- pwa:start (build-mobile.mjs treu aquest bloc: les apps natives no el necessiten) -->
+  <meta name="theme-color" content="#10150f" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Boletada" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon-180.png" />
+  <script>
+    if ("serviceWorker" in navigator) {
+      addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js", { scope: "/app/" }).catch(() => {});
+      });
+    }
+  </script>
+  <!-- pwa:end -->
   <link href="/vendor/maplibre-gl.css" rel="stylesheet" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

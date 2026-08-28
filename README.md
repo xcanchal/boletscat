@@ -241,6 +241,7 @@ Mitjana · Alta · Molt alta**. Al detall també dona una recomanació breu (`No
 | `buildHost.mjs` | Precompute de l'hoste (MCSC) → `estacions_host.json` (córrer un cop). |
 | `index.html` | Landing pública de Boletada. |
 | `app.html` | Mapa MapLibre, accés i selector d'espècie. |
+| `manifest.webmanifest` · `sw.js` | PWA instal·lable de `/app/`. El service worker és buit a propòsit: no fa cache. |
 | `src/server.mjs` | Servidor Hono: auth, billing i fitxers privats. |
 | `src/auth.mjs` · `src/db.mjs` | Better Auth i PostgreSQL. |
 | `src/revenuecat.mjs` | Sincronització de l’entitlement amb RevenueCat. |
