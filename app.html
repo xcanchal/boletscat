@@ -484,9 +484,7 @@
       if (rect.top<top) y=rect.top-top; else if (rect.bottom>bottom) y=rect.bottom-bottom;
       if (x||y) map.panBy([x,y],{ duration:250 });
     });
-    let centeringPopup=false;
     const centerPopup = () => {
-      centeringPopup=true;
       requestAnimationFrame(()=>{
       const element=popup.getElement(); if (!element?.isConnected) return;
       const bounds=popupViewport(), content=element.querySelector('.maplibregl-popup-content');
@@ -495,7 +493,6 @@
       const x=(rect.left+rect.right-bounds.left-bounds.right)/2;
       const y=(rect.top+rect.bottom-bounds.top-bounds.bottom)/2;
       if (Math.abs(x)>.5||Math.abs(y)>.5) map.panBy([x,y],{ duration:300 });
-      else centeringPopup=false;
       });
     };
     const showPopup = (lngLat,html,center=false) => {
@@ -503,12 +500,13 @@
       if (center!==null) (center?centerPopup:keepPopupVisible)();
     };
     const updatePopup = (html,center=false) => {
-      popup.setHTML(html); (center?centerPopup:keepPopupVisible)();
+      popup.setHTML(html);
+      if (center!==null) (center?centerPopup:keepPopupVisible)();
     };
-    map.on('moveend',()=>{
-      if (centeringPopup) { centeringPopup=false; return; }
-      if (popup.isOpen()) keepPopupVisible();
-    });
+    let userNavigationRevision=0;
+    const markUserNavigation = () => {
+      userNavigationRevision++;
+    };
     map.getContainer().addEventListener('click',event=>{
       if (event.target.closest('.maplibregl-popup .pop-plus')) setTimeout(centerPopup);
     });
@@ -723,17 +721,20 @@
         areaRequest++;
         showPopup(e.features[0].geometry.coordinates,popHTML(e.features[0].properties,e.features[0].geometry.coordinates),true);
       });
-      map.on('dragstart', () => panel.classList.add('collapsed'));
+      map.on('dragstart', () => { markUserNavigation(); panel.classList.add('collapsed'); });
+      map.on('zoomstart', markUserNavigation);
       map.on('click', async e => {
         panel.classList.add('collapsed');
         if (currentMode==='punts' && map.queryRenderedFeatures(e.point,{ layers:['punt'] }).length) return;
         const mode=currentMode, request=++areaRequest;
+        const navigationAtClick=userNavigationRevision;
         const sample=mode==='detallat'?nearestDetailsAt(e.lngLat):null;
         showPopup(e.lngLat,`<div class="pop-nom">Identificant la zona…</div>`,true);
         const target=sample?.lngLat??e.lngLat,place=await nearestPlace(target);
         if (request!==areaRequest) return;
-        if(mode==='detallat'&&sample) showPopup(target,areaHTML(place,sample.details,target,sample.distance),true);
-        else updatePopup(mode==='detallat'?areaHTML(place,null,e.lngLat):locationHTML(place,e.lngLat),true);
+        const recenter=navigationAtClick===userNavigationRevision?true:null;
+        if(mode==='detallat'&&sample) showPopup(target,areaHTML(place,sample.details,target,sample.distance),recenter);
+        else updatePopup(mode==='detallat'?areaHTML(place,null,e.lngLat):locationHTML(place,e.lngLat),recenter);
       });
       map.on('mouseenter','punt', () => map.getCanvas().style.cursor='pointer');
       map.on('mouseleave','punt', () => map.getCanvas().style.cursor='');
@@ -746,7 +747,6 @@
       const setMode = mode => {
         if (mode!==currentMode) {
           areaRequest++;
-          centeringPopup=false;
           popup.remove();
           map.easeTo({ ...DEFAULT_VIEW, bearing:0, pitch:0, duration:600 });
         }
