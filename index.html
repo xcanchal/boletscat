@@ -117,9 +117,9 @@
       <div class="wrap">
         <div class="section-head reveal"><div><span class="kicker">Com funciona</span><h2>Del territori a una decisió útil.</h2></div><p>Tria l’espècie. Boletada actualitza el mapa cada dia perquè comparis zones i decideixis on començar.</p></div>
         <div class="film-block reveal" id="demo">
-          <div class="film-stage" id="filmStage">
-            <video class="product-film" id="productFilm" controls playsinline preload="metadata" poster="./media/boletada-promo-poster.webp?v=final-only-20260828" aria-label="Demostració de Boletada">
-              <source src="./media/boletada-promo.mp4?v=final-only-20260828" type="video/mp4" />
+          <div class="film-stage">
+            <video class="product-film" controls playsinline preload="metadata" poster="./media/boletada-promo-poster.webp?v=final-only-20260828" aria-label="Demostració de Boletada">
+              <source src="./media/boletada-promo-v2.mp4" type="video/mp4" />
             </video>
           </div>
           <div class="film-action"><a class="button" href="/app/">Accedeix al mapa <span aria-hidden="true">→</span></a></div>
@@ -169,9 +169,6 @@
     if(location.protocol==='file:')document.querySelectorAll('a[href^="/app/"]').forEach(link=>{const target=new URL(link.getAttribute('href'),'https://boletada.cat');link.setAttribute('href',`./app.html${target.search}${target.hash}`)});
     const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('seen');observer.unobserve(entry.target)}}),{threshold:.12});
     document.querySelectorAll('.reveal').forEach(element=>observer.observe(element));
-    const productFilm=document.getElementById('productFilm'),filmStage=document.getElementById('filmStage');
-    const filmPreloader=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){productFilm.preload='auto';productFilm.load();filmPreloader.disconnect()}}),{rootMargin:'500px 0px'});
-    filmPreloader.observe(filmStage);
   </script>
 </body>
 </html>

@@ -476,23 +476,30 @@
       if (bases && getComputedStyle(bases).display!=='none') bottom=Math.min(bottom,bases.getBoundingClientRect().top-12);
       return { left,top,right,bottom };
     };
-    const keepPopupVisible = () => requestAnimationFrame(()=>{
-      const element=popup.getElement(); if (!element?.isConnected) return;
-      const rect=element.getBoundingClientRect(), { left,top,right,bottom }=popupViewport();
-      let x=0,y=0;
-      if (rect.left<left) x=rect.left-left; else if (rect.right>right) x=rect.right-right;
-      if (rect.top<top) y=rect.top-top; else if (rect.bottom>bottom) y=rect.bottom-bottom;
-      if (x||y) map.panBy([x,y],{ duration:250 });
-    });
-    const centerPopup = () => {
+    let userNavigationRevision=0;
+    const keepPopupVisible = () => {
+      const navigationAtSchedule=userNavigationRevision;
       requestAnimationFrame(()=>{
-      const element=popup.getElement(); if (!element?.isConnected) return;
-      const bounds=popupViewport(), content=element.querySelector('.maplibregl-popup-content');
-      if (content) content.style.maxHeight=`${Math.max(120,Math.min(420,bounds.bottom-bounds.top-2))}px`;
-      const rect=element.getBoundingClientRect();
-      const x=(rect.left+rect.right-bounds.left-bounds.right)/2;
-      const y=(rect.top+rect.bottom-bounds.top-bounds.bottom)/2;
-      if (Math.abs(x)>.5||Math.abs(y)>.5) map.panBy([x,y],{ duration:300 });
+        if (navigationAtSchedule!==userNavigationRevision) return;
+        const element=popup.getElement(); if (!element?.isConnected) return;
+        const rect=element.getBoundingClientRect(), { left,top,right,bottom }=popupViewport();
+        let x=0,y=0;
+        if (rect.left<left) x=rect.left-left; else if (rect.right>right) x=rect.right-right;
+        if (rect.top<top) y=rect.top-top; else if (rect.bottom>bottom) y=rect.bottom-bottom;
+        if (x||y) map.panBy([x,y],{ duration:250 });
+      });
+    };
+    const centerPopup = () => {
+      const navigationAtSchedule=userNavigationRevision;
+      requestAnimationFrame(()=>{
+        if (navigationAtSchedule!==userNavigationRevision) return;
+        const element=popup.getElement(); if (!element?.isConnected) return;
+        const bounds=popupViewport(), content=element.querySelector('.maplibregl-popup-content');
+        if (content) content.style.maxHeight=`${Math.max(120,Math.min(420,bounds.bottom-bounds.top-2))}px`;
+        const rect=element.getBoundingClientRect();
+        const x=(rect.left+rect.right-bounds.left-bounds.right)/2;
+        const y=(rect.top+rect.bottom-bounds.top-bounds.bottom)/2;
+        if (Math.abs(x)>.5||Math.abs(y)>.5) map.panBy([x,y],{ duration:300 });
       });
     };
     const showPopup = (lngLat,html,center=false) => {
@@ -503,7 +510,6 @@
       popup.setHTML(html);
       if (center!==null) (center?centerPopup:keepPopupVisible)();
     };
-    let userNavigationRevision=0;
     const markUserNavigation = () => {
       userNavigationRevision++;
     };
@@ -721,7 +727,7 @@
         areaRequest++;
         showPopup(e.features[0].geometry.coordinates,popHTML(e.features[0].properties,e.features[0].geometry.coordinates),true);
       });
-      map.on('dragstart', () => { markUserNavigation(); panel.classList.add('collapsed'); });
+      map.on('dragstart', () => { markUserNavigation(); map.stop(); panel.classList.add('collapsed'); });
       map.on('zoomstart', markUserNavigation);
       map.on('click', async e => {
         panel.classList.add('collapsed');

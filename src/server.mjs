@@ -88,12 +88,12 @@ const parseSingleByteRange = (header, size) => {
 // Servim el vídeo de forma explícita i bufferitzada perquè el proxy conservi
 // Content-Length. Això permet que Safari i Cloudflare facin peticions Range i
 // comencin la reproducció sense haver d'esperar tot l'MP4.
-app.get("/media/boletada-promo.mp4", async (c) => {
-  const data = await readFile(join(config.publicDir, "media/boletada-promo.mp4"));
+const servePromoVideo = async (c) => {
+  const data = await readFile(join(config.publicDir, "media/boletada-promo-v2.mp4"));
   const rangeHeader = c.req.header("Range");
   const commonHeaders = {
     "Accept-Ranges": "bytes",
-    "Cache-Control": "public, max-age=31536000, immutable",
+    "Cache-Control": "public, max-age=31536000, immutable, no-transform",
     "Content-Type": "video/mp4",
   };
 
@@ -118,7 +118,12 @@ app.get("/media/boletada-promo.mp4", async (c) => {
     "Content-Length": String(chunk.byteLength),
     "Content-Range": `bytes ${range.start}-${range.end}/${data.byteLength}`,
   });
-});
+};
+
+app.get("/media/boletada-promo.mp4", servePromoVideo);
+// URL nou i immutable: evita reutilitzar l'objecte antic que Cloudflare havia
+// cachejat sense suport correcte per a peticions Range d'iOS.
+app.get("/media/boletada-promo-v2.mp4", servePromoVideo);
 
 const predictionName = /^bolets\.(?:grid\.json|terrain\.png|weather\.png|[a-z0-9-]+\.(?:geojson|png))$/;
 const predictionTypes = {
