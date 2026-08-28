@@ -727,7 +727,10 @@
         areaRequest++;
         showPopup(e.features[0].geometry.coordinates,popHTML(e.features[0].properties,e.features[0].geometry.coordinates),true);
       });
-      map.on('dragstart', () => { markUserNavigation(); map.stop(); panel.classList.add('collapsed'); });
+      // `map.stop()` aquí també cancel·la el gest tàctil que tot just comença a
+      // MapLibre. La revisió ja invalida qualsevol recentrat pendent sense
+      // interferir amb el drag de l'usuari.
+      map.on('dragstart', () => { markUserNavigation(); panel.classList.add('collapsed'); });
       map.on('zoomstart', markUserNavigation);
       map.on('click', async e => {
         panel.classList.add('collapsed');
