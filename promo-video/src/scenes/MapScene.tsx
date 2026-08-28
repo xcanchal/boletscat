@@ -1,6 +1,6 @@
 import {AbsoluteFill, Easing, Interactive, interpolate, useCurrentFrame} from "remotion";
 import {MapPlate} from "../components/MapPlate";
-import {MushroomMark} from "../components/Mushroom";
+import {Mushroom, MushroomMark} from "../components/Mushroom";
 
 export const MapScene: React.FC = () => {
   const frame = useCurrentFrame();
@@ -21,12 +21,14 @@ export const MapScene: React.FC = () => {
         <div className="heatbar" />
         <div style={{display: "flex", justifyContent: "space-between", color: "#aeb6aa", fontSize: 15}}><span>Molt baixa</span><span>Mitjana</span><span>Molt alta</span></div>
         <div style={{marginTop: 34, paddingTop: 24, borderTop: "1px solid rgba(255,255,255,.1)"}}>
-          <div style={{fontSize: 16, color: "#9aa492", textTransform: "uppercase", letterSpacing: 2}}>Millors zones</div>
-          {["Gisclareny", "Vielha – Elipòrt", "Guixers – Valls"].map((name, index) => (
-            <div key={name} style={{display: "flex", alignItems: "center", gap: 15, fontSize: 21, marginTop: 20}}><span style={{color: "#7e8879", width: 24}}>{index + 1}</span><span style={{flex: 1}}>{name}</span><b style={{color: index === 0 ? "#ef7430" : "#d4a03a"}}>{[85, 69, 67][index]}%</b></div>
+          <div style={{fontSize: 16, color: "#9aa492", textTransform: "uppercase", letterSpacing: 2}}>Exemple de zones</div>
+          {["Pirineu occidental", "Prepirineu", "Pirineu oriental"].map((name, index) => (
+            <div key={name} style={{display: "flex", alignItems: "center", gap: 15, fontSize: 21, marginTop: 20}}><span style={{width: 12, height: 12, borderRadius: "50%", background: index === 0 ? "#ef7430" : index === 1 ? "#d98b31" : "#a7a840"}} /><span style={{flex: 1}}>{name}</span></div>
           ))}
         </div>
       </Interactive.Div>
+
+      <Mushroom x={360} y={615} size={145} delay={48} expression="curious" />
 
       <Interactive.Div
         name="Missatge del mapa"

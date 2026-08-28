@@ -281,7 +281,8 @@
         <h2 id="authTitle">Accedeix al compte</h2>
         <form class="auth-form" id="authForm">
           <label class="auth-field">Correu electrònic<input id="authEmail" name="email" type="email" autocomplete="email" required /></label>
-          <label class="auth-field">Contrasenya<input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="8" required /></label>
+          <label class="auth-field">Contrasenya<input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="10" maxlength="128" required /></label>
+          <label class="auth-field" id="authPasswordConfirmField" hidden>Confirma la contrasenya<input id="authPasswordConfirm" type="password" autocomplete="new-password" minlength="10" maxlength="128" /></label>
           <button class="primary-action" id="authSubmit" type="submit">Entrar</button>
           <div class="form-foot" id="forgotPasswordRow"><button class="text-action" id="forgotPassword" type="button">He oblidat la contrassenya</button></div>
         </form>
@@ -296,14 +297,15 @@
         <p class="card-copy" id="resetCopy">T’enviarem un enllaç segur al correu.</p>
         <form class="auth-form" id="resetForm">
           <label class="auth-field" id="resetEmailField">Correu electrònic<input id="resetEmail" type="email" autocomplete="email" required /></label>
-          <label class="auth-field" id="newPasswordField" hidden>Contrasenya nova<input id="newPassword" type="password" autocomplete="new-password" minlength="8" /></label>
+          <label class="auth-field" id="newPasswordField" hidden>Contrasenya nova<input id="newPassword" type="password" autocomplete="new-password" minlength="10" maxlength="128" /></label>
+          <label class="auth-field" id="newPasswordConfirmField" hidden>Confirma la contrasenya<input id="newPasswordConfirm" type="password" autocomplete="new-password" minlength="10" maxlength="128" /></label>
           <button class="primary-action" id="resetSubmit" type="submit">Enviar l’enllaç</button>
         </form>
         <p class="gate-message" id="resetMessage" role="status" aria-live="polite"></p>
       </section>
       <section class="gate-card" id="paywallView" aria-labelledby="paywallTitle" hidden>
         <h2 id="paywallTitle">Accedeix al mapa</h2>
-        <ul class="benefits"><li>Predicció actualitzada cada dia</li><li>Humitat, temperatura, altitud i bosc per cel·la</li><li>Accés web i, pròximament, iOS i Android</li></ul>
+        <ul class="benefits"><li>Predicció actualitzada cada dia</li><li>Humitat, temperatura, altitud, bosc i sòl per cel·la</li><li>Accés web i, pròximament, iOS i Android</li></ul>
         <div class="price-line"><span class="price" id="paywallPrice">29,99 €</span><span class="price-period">/ any</span></div>
         <button class="primary-action" id="purchaseButton" type="button">Subscriure'm</button>
         <p class="gate-message" id="billingMessage" role="status" aria-live="polite"></p>
@@ -930,7 +932,8 @@
       if(code==='INVALID_EMAIL_OR_PASSWORD')return 'El correu o la contrasenya no són correctes.';
       if(code==='USER_ALREADY_EXISTS')return 'Ja hi ha un compte amb aquest correu.';
       if(code==='EMAIL_NOT_VERIFIED')return 'Confirma el correu abans d’entrar.';
-      if(code==='PASSWORD_TOO_SHORT')return 'La contrasenya ha de tenir com a mínim 8 caràcters.';
+      if(code==='PASSWORD_TOO_SHORT')return 'La contrasenya ha de tenir com a mínim 10 caràcters.';
+      if(code==='PASSWORD_TOO_LONG')return 'La contrasenya no pot superar els 128 caràcters.';
       return fallback;
     };
     const userSafeText=(error,fallback)=>error?.isUserSafe?error.message:fallback;
@@ -965,6 +968,9 @@
       authMode=mode;const signup=mode==='signup';
       document.getElementById('authTitle').textContent=signup?'Crea el teu compte':'Accedeix al compte';
       document.getElementById('authPassword').autocomplete=signup?'new-password':'current-password';
+      document.getElementById('authPasswordConfirmField').hidden=!signup;
+      document.getElementById('authPasswordConfirm').required=signup;
+      if(!signup)document.getElementById('authPasswordConfirm').value='';
       document.getElementById('authSubmit').textContent=signup?'Crear compte':'Entrar';
       document.getElementById('authLegal').hidden=!signup;
       document.getElementById('forgotPasswordRow').hidden=signup;
@@ -1020,6 +1026,9 @@
     authForm.addEventListener('submit',async event=>{
       event.preventDefault();const button=document.getElementById('authSubmit');button.disabled=true;setMessage(authMessage,'');
       const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value;
+      if(authMode==='signup'&&password!==document.getElementById('authPasswordConfirm').value){
+        setMessage(authMessage,'Les contrasenyes no coincideixen.','error');button.disabled=false;return;
+      }
       const body=authMode==='signup'
         ? {name:'',email,password,callbackURL:APP_CALLBACK_URL}
         : {email,password,callbackURL:APP_CALLBACK_URL};
@@ -1037,10 +1046,10 @@
     const resetParams=new URLSearchParams(location.search),resetToken=resetParams.get('token');
     function openReset() {
       showView('reset');const setting=Boolean(resetToken);
-      document.getElementById('resetEmailField').hidden=setting;document.getElementById('newPasswordField').hidden=!setting;
-      document.getElementById('resetEmail').required=!setting;document.getElementById('newPassword').required=setting;
+      document.getElementById('resetEmailField').hidden=setting;document.getElementById('newPasswordField').hidden=!setting;document.getElementById('newPasswordConfirmField').hidden=!setting;
+      document.getElementById('resetEmail').required=!setting;document.getElementById('newPassword').required=setting;document.getElementById('newPasswordConfirm').required=setting;
       document.getElementById('resetTitle').textContent=setting?'Tria una contrasenya nova':'Recupera el compte';
-      document.getElementById('resetCopy').textContent=setting?'Fes servir vuit caràcters o més.':'T’enviarem un enllaç segur al correu.';
+      document.getElementById('resetCopy').textContent=setting?'Fes servir deu caràcters o més.':'T’enviarem un enllaç segur al correu.';
       document.getElementById('resetSubmit').textContent=setting?'Desar la contrasenya':'Enviar l’enllaç';
     }
     document.getElementById('forgotPassword').addEventListener('click',openReset);
@@ -1049,7 +1058,9 @@
       event.preventDefault();const button=document.getElementById('resetSubmit');button.disabled=true;setMessage(document.getElementById('resetMessage'),'');
       try {
         if(resetToken){
-          await request('/api/auth/reset-password',{method:'POST',body:JSON.stringify({newPassword:document.getElementById('newPassword').value,token:resetToken}),headers:{Origin:location.origin}});
+          const newPassword=document.getElementById('newPassword').value;
+          if(newPassword!==document.getElementById('newPasswordConfirm').value){setMessage(document.getElementById('resetMessage'),'Les contrasenyes no coincideixen.','error');return}
+          await request('/api/auth/reset-password',{method:'POST',body:JSON.stringify({newPassword,token:resetToken}),headers:{Origin:location.origin}});
           history.replaceState({},'',location.pathname);setMessage(document.getElementById('resetMessage'),'Contrasenya canviada. Ja pots entrar.','success');setTimeout(()=>showView('auth'),900);
         } else {
           await request('/api/auth/request-password-reset',{method:'POST',body:JSON.stringify({email:document.getElementById('resetEmail').value.trim(),redirectTo:APP_CALLBACK_URL}),headers:{Origin:location.origin}});

@@ -1,5 +1,5 @@
 import {AbsoluteFill, Easing, Interactive, interpolate, useCurrentFrame} from "remotion";
-import {MushroomMark} from "../components/Mushroom";
+import {Mushroom, MushroomMark} from "../components/Mushroom";
 
 export const CtaScene: React.FC = () => {
   const frame = useCurrentFrame();
@@ -18,6 +18,9 @@ export const CtaScene: React.FC = () => {
         La pròxima sortida<br />comença <i style={{color: "#f28a3b"}}>abans de sortir.</i>
       </Interactive.Div>
 
+      <Mushroom x={1390} y={500} size={225} delay={24} flip expression="happy" />
+      <Mushroom x={1605} y={650} size={150} delay={38} expression="curious" cap="#d69a3a" />
+
       <div style={{position: "absolute", left: 94, top: 520, display: "flex", flexWrap: "wrap", gap: 13, width: 1000}}>
         {species.map((name, index) => (
           <div key={name} style={{padding: "12px 20px", borderRadius: 999, border: "1px solid rgba(255,255,255,.16)", background: name === "Rossinyol" ? "#e8722a" : "rgba(255,255,255,.07)", fontSize: 21, opacity: interpolate(frame, [24 + index * 4, 42 + index * 4], [0, 1], {extrapolateRight: "clamp", extrapolateLeft: "clamp"}), translate: interpolate(frame, [24 + index * 4, 42 + index * 4], ["0px 18px", "0px 0px"], {extrapolateRight: "clamp", extrapolateLeft: "clamp"})}}>{name}</div>
@@ -28,7 +31,7 @@ export const CtaScene: React.FC = () => {
         name="Crida a l'acció"
         style={{position: "absolute", left: 90, bottom: 115, display: "flex", alignItems: "center", gap: 26, opacity: interpolate(frame, [62, 86], [0, 1], {extrapolateRight: "clamp", extrapolateLeft: "clamp"}), scale: interpolate(frame, [62, 88], [.92, 1], {extrapolateRight: "clamp", extrapolateLeft: "clamp", easing: Easing.spring({damping: 18}), output: "perceptual-scale"})}}
       >
-        <div style={{padding: "20px 31px", borderRadius: 17, backgroundColor: "#f0ede4", color: "#151a12", fontSize: 27, fontWeight: 800, letterSpacing: -.4}}>Accedeix al mapa ↗</div>
+        <div style={{padding: "20px 31px", borderRadius: 17, backgroundColor: "#f0ede4", color: "#151a12", fontSize: 27, fontWeight: 800, letterSpacing: -.4}}>Accedeix al mapa →</div>
         <div style={{fontSize: 31, fontWeight: 700, color: "#f28a3b"}}>boletada.cat</div>
       </Interactive.Div>
 

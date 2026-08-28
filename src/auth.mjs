@@ -23,15 +23,16 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: config.requireEmailVerification,
-    minPasswordLength: 8,
+    minPasswordLength: 10,
+    maxPasswordLength: 128,
     revokeSessionsOnPasswordReset: true,
-    sendResetPassword: async ({ user, url }) => {
-      await sendTransactionalEmail({
+    sendResetPassword: ({ user, url }) => {
+      void sendTransactionalEmail({
         to: user.email,
         subject: "Restableix la contrasenya de Boletada",
         text: `Obre aquest enllaç per crear una contrasenya nova: ${url}`,
         html: `<p>Obre aquest enllaç per crear una contrasenya nova:</p><p><a href="${url}">Restablir la contrasenya</a></p>`,
-      });
+      }).catch((error) => console.error("No s’ha pogut enviar el correu de recuperació", error));
     },
   },
   emailVerification: {
