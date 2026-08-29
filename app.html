@@ -248,6 +248,7 @@
     .benefits{display:grid;gap:11px;margin:22px 0;padding:0;list-style:none;color:#c8ccbf;font-size:13px}
     .benefits li{display:grid;grid-template-columns:18px 1fr;gap:8px}.benefits li::before{content:"✓";color:#d17a3d;font-weight:800}
     .pioneer-label{display:inline-block;margin-top:14px;color:var(--rovello);font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase}
+    .paywall-regular-price{margin-top:8px;color:#858c80;font-size:11px}.paywall-regular-price s{text-decoration-thickness:1px}
     .price-line{display:flex;align-items:baseline;gap:7px;margin:6px 0 4px}.price{font-family:var(--display);font-size:42px;color:#f1eee3}
     .price-period{color:#888f83;font-size:13px}.price-note{color:#92998d;font-size:11px;line-height:1.45;margin:0 0 18px}.price-note strong{color:#c6cbbf;font-weight:600}
     .account-line{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding-top:16px;
@@ -306,8 +307,9 @@
       </section>
       <section class="gate-card" id="paywallView" aria-labelledby="paywallTitle" hidden>
         <h2 id="paywallTitle">Accedeix al mapa</h2>
-        <ul class="benefits"><li>Predicció actualitzada cada dia</li><li>Humitat, temperatura, altitud, bosc i sòl per cel·la</li><li>Accés web i, pròximament, iOS i Android</li></ul>
+        <ul class="benefits"><li>Predicció actualitzada cada dia</li><li>Condicions meteorològiques i del territori, en un sol mapa</li><li>Accés web i, pròximament, iOS i Android</li></ul>
         <span class="pioneer-label">Preu pioner · primers 100</span>
+        <div class="paywall-regular-price">Preu habitual: <s>29,99 € / any</s></div>
         <div class="price-line"><span class="price" id="paywallPrice">19,99 €</span><span class="price-period">/ any</span></div>
         <p class="price-note"><strong>Mantindràs aquest preu</strong> mentre la subscripció continuï activa.</p>
         <button class="primary-action" id="purchaseButton" type="button">Subscriure'm</button>
