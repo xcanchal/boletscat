@@ -108,6 +108,23 @@ sol commit coherent amb la landing, el flux d'accés, legal i billing.
 | Entitlement de RevenueCat | `boletada_pro` |
 | Identificador comú | `Better Auth user.id` = `RevenueCat App User ID` |
 | Autenticació MVP | Correu + contrasenya, verificació de correu i recuperació de contrasenya |
+
+### Oferta de llançament — cohort pionera
+
+Per validar la sensibilitat al preu sense complicar el checkout, els primers 100
+subscriptors accedeixen a **19,99 € / any** i conserven aquest preu mentre la
+subscripció continuï activa. No s'utilitza cap codi promocional ni cal una migració
+de base de dades.
+
+| Peça | Contracte |
+|---|---|
+| Producte pioner RevenueCat Billing | `boletada_annual_pioneers`, anual, 19,99 EUR |
+| Producte estàndard | `boletada_annual`, anual, 29,99 EUR |
+| Entitlement compartit | `boletada_pro` |
+| Paquet publicat durant el llançament | `$rc_annual` → `boletada_annual_pioneers` |
+| Tall als 100 | Manual al dashboard de RevenueCat |
+| Després del tall | `$rc_annual` → `boletada_annual`; no eliminar ni desassociar el producte pioner |
+| Persistència local | Cap canvi; `user_access` continua reflectint l'entitlement actiu |
 | Social login | Fora de l'MVP; valorar Apple + Google conjuntament més endavant |
 | Web billing | RevenueCat Billing amb Stripe com a passarel·la |
 | Billing natiu | StoreKit a iOS i Google Play Billing a Android, mitjançant RevenueCat |
