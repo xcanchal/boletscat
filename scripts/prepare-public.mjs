@@ -2,6 +2,7 @@
 import { cp, mkdir, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildContentPages } from "./generate-content.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const out = join(root, "public");
@@ -30,5 +31,7 @@ await Promise.all([
   cp(join(root, "node_modules/maplibre-gl/dist/maplibre-gl.js"), join(out, "vendor/maplibre-gl.js")),
   cp(join(root, "node_modules/@revenuecat/purchases-js/dist/Purchases.es.js"), join(out, "vendor/purchases.es.js")),
 ]);
+
+await buildContentPages({ root, out });
 
 console.log("Client web preparat a public/");

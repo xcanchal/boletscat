@@ -4,6 +4,10 @@ Producte web de pagament que, a partir de **dades obertes** (Meteocat + ICGC), p
 on hi ha millors condicions per trobar bolets, **per espècie**. El mapa requereix
 compte i entitlement `boletada_pro`; les prediccions no són fitxers públics.
 
+El pla del directori públic d'espècies, temporada i hàbitats viu a
+[`PLA_CONTINGUT.md`](PLA_CONTINGUT.md). El contingut editorial canònic es manté
+separat del model predictiu a [`content/catalog.json`](content/catalog.json).
+
 ---
 
 ## Com funciona, en una frase
@@ -110,6 +114,34 @@ mateixes etiquetes vectorials.
 | **MET 5 m** | WCS ICGC `icc_mdt` | Altitud agregada a la graella de 250 m |
 | **Geologia territorial 1:250.000** | [GeoPackage ICGC](https://www.icgc.cat/ca/Geoinformacio-i-mapes/Dades-i-productes/Geoinformacio-geologica-i-geofisica/Cartografia-geologica/Mapa-geologic-de-Catalunya-1250000) | Proxy conservador de substrat silícic/calcari/mixt |
 | **Geocodificador ICGC** | API REST `geocodificador/invers` | Topònim més proper quan es clica el mapa |
+
+### Fonts del directori públic
+
+Les fitxes d'espècies i d'hàbitats són contingut editorial: no es copien de
+Boletaires.cat ni es dedueixen automàticament del score. La dada canònica i les
+referències concretes de cada fitxa viuen a [`content/catalog.json`](content/catalog.json).
+
+| Font | Ús editorial | Precaució |
+|---|---|---|
+| [Societat Catalana de Micologia](https://ichn.iec.cat/societats/societat-catalana-de-micologia/) | Noms, taxonomia, descripció i revisió micològica | Una fitxa no es publica fins que el nom i la descripció s'han revisat |
+| [Generalitat · Productes del bosc](https://agricultura.gencat.cat/ca/ambits/medi-natural/gestio-forestal/dar_funcions_boscos/dar_funcio_productiva/dar_productes_bosc/) | Context ecològic, recol·lecció i seguretat | Informació general; no determina una predicció local |
+| [Generalitat · Guia de l'Alt Pallars](https://agricultura.gencat.cat/web/.content/06-medi-natural/caca/terrenys-cinegetics/reserves-nacionals-caca/alt-pallars/Guia_completa_RNC_Alt_Pallars.pdf) | Espècies i hàbitats documentats en boscos de muntanya | És una font territorial, no un calendari universal per a tot Catalunya |
+| [Generalitat · Guia de pràctiques per a bolets i tòfones](https://agricultura.gencat.cat/web/.content/de_departament/de10_publicacions_dar/de10_a02_02_guies_de_practiques_correctes/documents/fitxers_estatics/gpch_bolet_tofones.pdf) | Nomenclatura i espècies comercialitzables | No substitueix la identificació experta d'un exemplar |
+| [Canal Salut · Intoxicacions per bolets](https://canalsalut.gencat.cat/ca/detalls/article/Intoxicacions_per_bolets) | Toxicitat i prevenció d'intoxicacions | Font sanitària per als avisos de seguretat |
+| [UPC · Visor web dels bolets de Catalunya](https://upcommons.upc.edu/bitstreams/52167ef6-4eb6-4f3b-b1d1-04842fec7a2b/download) | Hàbitat i temporada del moixernó | Font acadèmica de suport; la fitxa continua pendent de revisió micològica |
+| [Enciclopèdia Catalana · Les agaricàcies](https://www.enciclopedia.cat/historia-natural-dels-paisos-catalans/les-agaricacies-camperols-xampinyons-pentinelles-i-afins) | Nomenclatura i hàbitat del xampinyó silvestre | Cal remarcar les possibles confusions dins del gènere `Agaricus` |
+| [bolets.info · Mataparent](https://bolets.info/fitxa-bolet/mataparentboletus-satanas/) | Hàbitat, temporada i toxicitat del mataparent | Font secundària; es contrasta amb Canal Salut i revisió micològica |
+| [ICGC · Cobertes del sòl](https://www.icgc.cat/ca/Geoinformacio-i-mapes/Mapes/Cobertes-del-sol) | Definició dels grans tipus de bosc i hàbitat | La coberta del sòl no identifica per si sola una espècie de bolet |
+| [MycoBank](https://www.mycobank.org/) / [Index Fungorum](https://www.indexfungorum.org/) | Comprovar noms científics i sinònims | La taxonomia pot canviar; cal registrar la data de revisió |
+| [GBIF](https://www.gbif.org/) | Contrastar presència documentada a Catalunya | Una observació no equival a abundància ni revela una zona recomanada |
+| Fotografies pròpies o [Wikimedia Commons](https://commons.wikimedia.org/) | Imatges de les fitxes | Cal guardar autoria, llicència i URL d'origen per a cada imatge |
+
+Les vint-i-tres entrades inicials del catàleg estan publicades amb la data i l’equip
+de revisió registrats. Els mesos, hàbitats, altituds i categories de comestibilitat
+parteixen dels paràmetres actuals i de les fonts anteriors; una actualització de la
+fitxa ha de renovar també la seva revisió editorial. Boletaires.cat només serveix
+com a referència d'arquitectura de contingut —catàleg, temporada i hàbitat—, mai com
+a font de textos, dades o fotografies.
 
 ---
 

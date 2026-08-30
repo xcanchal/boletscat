@@ -1,0 +1,768 @@
+{
+  "schemaVersion": 2,
+  "species": [
+    {
+      "slug": "rovello",
+      "kind": "group",
+      "names": {
+        "ca": "Rovelló / pinetell",
+        "scientific": "Lactarius deliciosus group",
+        "aliases": ["rovelló", "pinetell"]
+      },
+      "summary": "Grup de lactaris associats sobretot als pins i molt arrelats a la cultura boletaire catalana.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "good", "label": "Bo", "preparation": "Neteja’l sense amarar-lo i cuina’l completament. Tria exemplars ferms i descarta els que estiguin passats o parasitats." },
+      "lookalikes": [
+        { "name": "Lleterola de bedoll", "scientific": "Lactarius torminosus", "slug": null, "risk": "Tòxic", "note": "Pot recordar un rovelló, però té el marge molt pelut i no presenta el mateix patró de coloració. No et refiïs només del color o del làtex." }
+      ],
+      "season": { "typicalMonths": [9, 10, 11], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["pinedes"],
+        "altitudeM": { "min": 0, "max": 1700 },
+        "soilPreferences": []
+      },
+      "prediction": { "available": true, "key": "rovello" },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/rovello-ai.webp",
+          "alt": "Rovelló o pinetell entre molsa i pinassa",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["gencat-productes-bosc", "gencat-alt-pallars", "scm"]
+    },
+    {
+      "slug": "cep",
+      "kind": "group",
+      "names": {
+        "ca": "Cep",
+        "scientific": "Boletus edulis group",
+        "aliases": ["cep", "sureny"]
+      },
+      "summary": "Grup de bolets carnosos que fructifiquen en boscos madurs de coníferes i planifolis.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "Neteja’l amb cura, elimina les parts toves o parasitades i cuina’l completament. També es pot assecar per concentrar-ne l’aroma." },
+      "lookalikes": [
+        { "name": "Mataparent", "scientific": "Rubroboletus satanas", "slug": "mataparent", "risk": "Tòxic", "note": "Sol tenir porus vermellosos i un peu robust amb tons vermells. El canvi de color de la carn, tot sol, no és una prova suficient." },
+        { "name": "Bolet amarg", "scientific": "Tylopilus felleus", "slug": "bolet-amarg", "risk": "No comestible", "note": "Pot assemblar-se als ceps, però els porus tendeixen al rosat i la carn és intensament amarga." }
+      ],
+      "season": { "typicalMonths": [6, 9, 10, 11], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["pinedes", "boscos-caducifolis", "alzinars"],
+        "altitudeM": { "min": 400, "max": 1900 },
+        "soilPreferences": ["siliceous"]
+      },
+      "prediction": { "available": true, "key": "cep" },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/cep-ai.webp",
+          "alt": "Cep en un bosc humit amb molsa i fullaraca",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["gencat-alt-pallars", "scm"]
+    },
+    {
+      "slug": "llenega",
+      "kind": "group",
+      "names": {
+        "ca": "Llenega",
+        "scientific": "Hygrophorus spp.",
+        "aliases": ["llenega", "mocosa"]
+      },
+      "summary": "Nom popular aplicat a diversos higròfors viscosos, habituals de boscos frescos i tardorencs.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "Retira amb cura la terra i la pinassa adherides a la superfície viscosa i cuina-la completament. La textura gelatinosa es conserva bé en guisats." },
+      "lookalikes": [],
+      "season": { "typicalMonths": [10, 11, 12], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["pinedes"],
+        "altitudeM": { "min": 100, "max": 1500 },
+        "soilPreferences": ["calcareous"]
+      },
+      "prediction": { "available": true, "key": "llenega" },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/llenega-ai.webp",
+          "alt": "Llenega de barret viscós entre molsa i fullaraca humida",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["gencat-alt-pallars", "scm"]
+    },
+    {
+      "slug": "trompeta-de-la-mort",
+      "kind": "species",
+      "names": {
+        "ca": "Trompeta de la mort",
+        "scientific": "Craterellus cornucopioides",
+        "aliases": ["trompeta", "trompeta de la mort"]
+      },
+      "summary": "Bolet fosc i embudat que es confon fàcilment amb la fullaraca dels boscos humits de planifolis.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "Obre-la i neteja bé l’interior de l’embut abans de cuinar-la. També es pot assecar i moldre per utilitzar-la com a condiment." },
+      "lookalikes": [],
+      "season": { "typicalMonths": [9, 10, 11], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["boscos-caducifolis", "alzinars"],
+        "altitudeM": { "min": 200, "max": 1500 },
+        "soilPreferences": []
+      },
+      "prediction": { "available": true, "key": "trompeta" },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/trompeta-de-la-mort-ai.webp",
+          "alt": "Grup de trompetes de la mort entre molsa i fullaraca",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["scm"]
+    },
+    {
+      "slug": "rossinyol",
+      "kind": "species",
+      "names": {
+        "ca": "Rossinyol",
+        "scientific": "Cantharellus cibarius",
+        "aliases": ["rossinyol"]
+      },
+      "summary": "Bolet groc de boscos humits que pot aparèixer des de l'estiu fins a la tardor segons l'altitud i les pluges.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "Retira la terra dels plecs i cuina’l completament. Evita deixar-lo en remull perquè absorbeix aigua amb facilitat." },
+      "lookalikes": [
+        { "name": "Gírgola d’olivera", "scientific": "Omphalotus olearius", "slug": "girgola-olivera", "risk": "Tòxic", "note": "Té làmines veritables i acostuma a créixer en grups sobre fusta o arrels; el rossinyol presenta plecs gruixuts i ramificats." }
+      ],
+      "season": { "typicalMonths": [6, 7, 8, 9, 10], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["pinedes", "boscos-caducifolis", "alzinars"],
+        "altitudeM": { "min": 200, "max": 1700 },
+        "soilPreferences": ["siliceous"]
+      },
+      "prediction": { "available": true, "key": "rossinyol" },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/rossinyol-ai.webp",
+          "alt": "Grup de rossinyols grocs en un bosc humit",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": {
+          "src": "/media/bolets/rossinyol-ai.webp",
+          "alt": "Grup de rossinyols grocs en un bosc humit",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        }
+      },
+      "sourceIds": ["gencat-alt-pallars", "scm"]
+    },
+    {
+      "slug": "camagroc",
+      "kind": "species",
+      "names": {
+        "ca": "Camagroc",
+        "scientific": "Craterellus lutescens",
+        "aliases": ["camagroc"]
+      },
+      "summary": "Bolet esvelt i tardorenc, associat especialment a pinedes humides i molsoses.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "Neteja amb cura els plecs i el peu buit i cuina’l completament. També s’asseca bé i recupera l’aroma quan es rehidrata." },
+      "lookalikes": [],
+      "season": { "typicalMonths": [1, 10, 11, 12], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["pinedes"],
+        "altitudeM": { "min": 300, "max": 1700 },
+        "soilPreferences": ["calcareous"]
+      },
+      "prediction": { "available": true, "key": "camagroc" },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/camagroc-ai.webp",
+          "alt": "Grup de camagrocs entre molsa i fullaraca humida",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["gencat-alt-pallars", "scm"]
+    },
+    {
+      "slug": "murgola",
+      "kind": "group",
+      "names": {
+        "ca": "Múrgola",
+        "scientific": "Morchella spp.",
+        "aliases": ["múrgola", "múrgola negra"]
+      },
+      "summary": "Grup de bolets primaverals de barret alveolat que apareixen en hàbitats molt diversos i sovint alterats.",
+      "edibility": { "category": "conditional", "label": "Requereix cocció" },
+      "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "No la consumeixis mai crua o poc cuita: requereix una cocció completa. Obre-la per retirar terra i petits invertebrats i consulta una persona experta si tens cap dubte." },
+      "lookalikes": [
+        { "name": "Múrgola borda", "scientific": "Gyromitra esculenta", "slug": null, "risk": "Tòxic", "note": "El barret forma plecs cerebriformes, no els alvèols profunds i regulars d’una múrgola. La confusió pot ser greu." }
+      ],
+      "season": { "typicalMonths": [3, 4, 5], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["boscos-ribera", "boscos-caducifolis"],
+        "altitudeM": { "min": 100, "max": 1500 },
+        "soilPreferences": []
+      },
+      "prediction": { "available": true, "key": "murgola" },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/murgola-ai.webp",
+          "alt": "Grup de múrgoles entre molsa i vegetació primaveral",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["gencat-alt-pallars", "gencat-bolets-comercialitzables", "scm"]
+    },
+    {
+      "slug": "moixerno",
+      "kind": "species",
+      "names": {
+        "ca": "Moixernó",
+        "scientific": "Calocybe gambosa",
+        "aliases": ["moixernó", "bolet de Sant Jordi", "moixeró"]
+      },
+      "summary": "Bolet robust i blanquinós de primavera que forma erols entre l’herba de prats i pastures de muntanya.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "Neteja’l, descarta exemplars envellits i cuina’l completament. L’olor farinosa és característica, però no permet identificar-lo tota sola." },
+      "lookalikes": [
+        { "name": "Entoloma lividum", "scientific": "Entoloma sinuatum", "slug": null, "risk": "Tòxic", "note": "Pot coincidir en prats i clarianes i causar intoxicacions greus. Cal comprovar el conjunt de caràcters, no només el color blanc." }
+      ],
+      "season": { "typicalMonths": [4, 5, 6], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["clarianes-i-prats"],
+        "altitudeM": { "min": 400, "max": 2000 },
+        "soilPreferences": []
+      },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/moixerno-ai.webp",
+          "alt": "Grup de moixernons en un prat de muntanya a la primavera",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["upc-visor-bolets-catalunya", "gencat-bolets-comercialitzables", "scm"]
+    },
+    {
+      "slug": "xampinyo-silvestre",
+      "kind": "species",
+      "names": {
+        "ca": "Xampinyó silvestre",
+        "scientific": "Agaricus campestris",
+        "aliases": ["xampinyó silvestre", "camperol", "rubiol"]
+      },
+      "summary": "Xampinyó blanc de prats i pastures, amb làmines que passen del rosat al marró fosc a mesura que madura.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "good", "label": "Bo", "preparation": "Consumeix només exemplars frescos, inequívocament identificats i ben cuits. Descarta’ls si provenen de vorals, jardins tractats o zones contaminades." },
+      "lookalikes": [
+        { "name": "Xampinyó groguenc", "scientific": "Agaricus xanthodermus", "slug": "xampinyo-groguenc", "risk": "Tòxic", "note": "Grogueja intensament, sobretot a la base del peu, i sol fer una olor desagradable quan es cuina." }
+      ],
+      "season": { "typicalMonths": [4, 5, 6, 9, 10, 11], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["clarianes-i-prats"],
+        "altitudeM": { "min": 0, "max": 1600 },
+        "soilPreferences": []
+      },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/xampinyo-silvestre-ai.webp",
+          "alt": "Xampinyons silvestres blancs en un prat, un d’ells amb les làmines rosades visibles",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["enciclopedia-agaricacies", "gencat-bolets-comercialitzables", "scm"]
+    },
+    {
+      "slug": "ou-de-reig",
+      "kind": "species",
+      "names": {
+        "ca": "Ou de reig",
+        "scientific": "Amanita caesarea",
+        "aliases": ["ou de reig", "reig"]
+      },
+      "summary": "Amanita de barret taronja i peu groc que apareix sobretot en boscos mediterranis i caducifolis.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "Per prudència, consumeix-lo cuinat i només després d’una identificació experta. Els exemplars encara tancats dins la volva són especialment fàcils de confondre." },
+      "lookalikes": [
+        { "name": "Reig bord", "scientific": "Amanita muscaria", "slug": "reig-bord", "risk": "Tòxic", "note": "El reig bord té peu i làmines blancs, mentre que l’ou de reig madur els té grocs. La pluja pot esborrar les berrugues del barret." },
+        { "name": "Farinera borda", "scientific": "Amanita phalloides", "slug": "farinera-borda", "risk": "Mortal", "note": "Quan encara són dins la volva, diverses amanites poden semblar un ou blanc. No consumeixis exemplars tancats sense revisió experta." }
+      ],
+      "season": { "typicalMonths": [7, 8, 9, 10], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["boscos-caducifolis", "alzinars"],
+        "altitudeM": { "min": 100, "max": 1400 },
+        "soilPreferences": ["siliceous"]
+      },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/ou-de-reig-ai.webp",
+          "alt": "Ou de reig de barret taronja en un bosc mediterrani",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["gencat-productes-bosc", "gencat-bolets-comercialitzables", "scm"]
+    },
+    {
+      "slug": "fredolic",
+      "kind": "species",
+      "names": {
+        "ca": "Fredolic",
+        "scientific": "Tricholoma terreum",
+        "aliases": ["fredolic", "negrentí"]
+      },
+      "summary": "Bolet petit i grisenc de final de tardor, molt vinculat a les pinedes i capaç de suportar el fred.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "good", "label": "Bo", "preparation": "Tria exemplars joves i sencers, neteja’ls amb cura i cuina’ls completament. Es deterioren ràpidament i cal descartar els exemplars passats." },
+      "lookalikes": [
+        { "name": "Fredolic metzinós", "scientific": "Tricholoma pardinum", "slug": "fredolic-metzinos", "risk": "Tòxic", "note": "És més gros i molsut i presenta un barret marcadament escamós. S’associa especialment a zones amb avets." }
+      ],
+      "season": { "typicalMonths": [1, 10, 11, 12], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["pinedes"],
+        "altitudeM": { "min": 0, "max": 1500 },
+        "soilPreferences": ["calcareous"]
+      },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/fredolic-ai.webp",
+          "alt": "Fredolics grisos entre pinassa i molsa",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["gencat-bolets-comercialitzables", "scm"]
+    },
+    {
+      "slug": "apagallums",
+      "kind": "species",
+      "names": {
+        "ca": "Apagallums",
+        "scientific": "Macrolepiota procera",
+        "aliases": ["apagallums", "paloma", "cogomella"]
+      },
+      "summary": "Bolet alt i esvelt, de barret ample i escamós, habitual en clarianes, marges i prats propers al bosc.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "good", "label": "Bo", "preparation": "Consumeix només exemplars grans, madurs i inequívocament identificats; cuina bé el barret. No recullis petites lepiotes semblants, algunes de les quals són molt tòxiques." },
+      "lookalikes": [
+        { "name": "Lepiotes petites", "scientific": "Lepiota spp.", "slug": null, "risk": "Algunes són mortals", "note": "La mida és un senyal important: no tractis cap lepiota petita com un apagallums i evita identificacions basades només en les escames del barret." }
+      ],
+      "season": { "typicalMonths": [8, 9, 10, 11], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["clarianes-i-prats", "boscos-caducifolis"],
+        "altitudeM": { "min": 0, "max": 1600 },
+        "soilPreferences": ["mixed"]
+      },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/apagallums-ai.webp",
+          "alt": "Apagallums de barret escamós en una clariana",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["gencat-bolets-comercialitzables", "scm"]
+    },
+    {
+      "slug": "mataparent",
+      "kind": "species",
+      "names": {
+        "ca": "Mataparent",
+        "scientific": "Rubroboletus satanas",
+        "aliases": ["mataparent", "matagent", "bolet de Satanàs"]
+      },
+      "summary": "Bolet gros de barret pàl·lid, porus vermellosos i peu inflat; és tòxic i pot provocar trastorns gastrointestinals intensos.",
+      "edibility": { "category": "toxic", "label": "Tòxic" },
+      "lookalikes": [
+        { "name": "Cep", "scientific": "Boletus edulis group", "slug": "cep", "risk": "Comestible", "note": "Els ceps no presenten els porus vermells característics del mataparent. Davant qualsevol dubte, no el consumeixis." }
+      ],
+      "season": { "typicalMonths": [8, 9, 10], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["boscos-caducifolis", "alzinars"],
+        "altitudeM": { "min": 0, "max": 1200 },
+        "soilPreferences": ["calcareous"]
+      },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/mataparent-ai.webp",
+          "alt": "Dos mataparents de barret pàl·lid i peu vermellós en un bosc de planifolis",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["bolets-info-mataparent", "canal-salut-intoxicacions", "scm"]
+    },
+    {
+      "slug": "reig-bord",
+      "kind": "species",
+      "names": {
+        "ca": "Reig bord",
+        "scientific": "Amanita muscaria",
+        "aliases": ["reig bord", "matamosques"]
+      },
+      "summary": "Amanita vermella amb berrugues blanques, molt vistosa i tòxica, present en diversos boscos de muntanya.",
+      "edibility": { "category": "toxic", "label": "Tòxic" },
+      "lookalikes": [
+        { "name": "Ou de reig", "scientific": "Amanita caesarea", "slug": "ou-de-reig", "risk": "Comestible", "note": "L’ou de reig té el peu i les làmines grocs. La pluja pot fer desaparèixer part de les berrugues blanques del reig bord." }
+      ],
+      "season": { "typicalMonths": [8, 9, 10, 11], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["pinedes", "boscos-caducifolis"],
+        "altitudeM": { "min": 300, "max": 2000 },
+        "soilPreferences": ["siliceous"]
+      },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/reig-bord-ai.webp",
+          "alt": "Reig bord vermell amb berrugues blanques al bosc",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["gencat-productes-bosc", "gencat-alt-pallars", "canal-salut-intoxicacions", "scm"]
+    },
+    {
+      "slug": "farinera-borda",
+      "kind": "species",
+      "names": {
+        "ca": "Farinera borda",
+        "scientific": "Amanita phalloides",
+        "aliases": ["farinera borda", "oronja verda"]
+      },
+      "summary": "Amanita de tons verdosos responsable d'intoxicacions molt greus; pot aparèixer en boscos de planifolis.",
+      "edibility": { "category": "deadly", "label": "Mortal" },
+      "lookalikes": [
+        { "name": "Ou de reig jove", "scientific": "Amanita caesarea", "slug": "ou-de-reig", "risk": "Comestible", "note": "Els exemplars tancats dins la volva poden confondre persones no expertes. La farinera borda és mortal i no s’ha d’identificar només pel color del barret." }
+      ],
+      "season": { "typicalMonths": [7, 8, 9, 10, 11], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["boscos-caducifolis", "alzinars"],
+        "altitudeM": { "min": 0, "max": 1400 },
+        "soilPreferences": ["mixed"]
+      },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/farinera-borda-ai.webp",
+          "alt": "Farinera borda de barret verdós entre fullaraca",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["gencat-productes-bosc", "canal-salut-intoxicacions", "scm"]
+    },
+    {
+      "slug": "carlet",
+      "kind": "species",
+      "names": { "ca": "Carlet", "scientific": "Hygrophorus russula", "aliases": ["carlet", "carlí"] },
+      "summary": "Higròfor robust de tons blancs i vinacis, habitual en alzinars i rouredes a la tardor.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "good", "label": "Bo", "preparation": "Neteja bé la cutícula i cuina’l completament. Els exemplars joves i ferms són els més adequats per a la cuina." },
+      "lookalikes": [],
+      "season": { "typicalMonths": [9, 10, 11, 12], "peakMonths": [] },
+      "ecology": { "habitatSlugs": ["alzinars", "boscos-caducifolis"], "altitudeM": { "min": 100, "max": 1400 }, "soilPreferences": ["calcareous"] },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": { "card": { "src": "/media/bolets/carlet-ai.webp", "alt": "Carlets de tons blancs i vinacis entre fullaraca d’alzinar", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
+      "sourceIds": ["parcs-poblet-bolets", "gencat-bolets-comercialitzables", "scm"]
+    },
+    {
+      "slug": "llengua-de-bou",
+      "kind": "species",
+      "names": { "ca": "Llengua de bou", "scientific": "Hydnum repandum", "aliases": ["llengua de bou", "agulletes"] },
+      "summary": "Bolet carnós de color crema amb agulletes sota el barret, present en pinedes i boscos de planifolis.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "good", "label": "Bo", "preparation": "Retira les agulletes si són molt madures i cou-lo bé; els exemplars vells poden resultar amargants." },
+      "lookalikes": [],
+      "season": { "typicalMonths": [9, 10, 11, 12], "peakMonths": [] },
+      "ecology": { "habitatSlugs": ["pinedes", "boscos-caducifolis"], "altitudeM": { "min": 100, "max": 1800 }, "soilPreferences": ["mixed"] },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": { "card": { "src": "/media/bolets/llengua-de-bou-ai.webp", "alt": "Llengua de bou de color crema amb les agulletes visibles sota el barret", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
+      "sourceIds": ["parcs-poblet-bolets", "parcs-ports-bolets", "gencat-bolets-comercialitzables", "scm"]
+    },
+    {
+      "slug": "bolet-de-tinta",
+      "kind": "species",
+      "names": { "ca": "Bolet de tinta", "scientific": "Coprinus comatus", "aliases": ["bolet de tinta", "coprí comat"] },
+      "summary": "Bolet blanc, cilíndric i esquamós de prats i marges, que s’ennegreix i es desfà quan madura.",
+      "edibility": { "category": "conditional", "label": "Només jove" },
+      "culinary": { "rating": "good", "label": "Bo", "preparation": "Consumeix únicament exemplars molt joves, encara blancs i abans que comencin a ennegrir. Cuina’ls poc després de collir-los." },
+      "lookalikes": [],
+      "season": { "typicalMonths": [3, 4, 5, 6, 9, 10, 11], "peakMonths": [] },
+      "ecology": { "habitatSlugs": ["clarianes-i-prats"], "altitudeM": { "min": 0, "max": 1500 }, "soilPreferences": [] },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": { "card": { "src": "/media/bolets/bolet-de-tinta-ai.webp", "alt": "Bolets de tinta joves, blancs i cilíndrics en un prat humit", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
+      "sourceIds": ["parcs-aiguestortes-bolet-tinta", "parcs-poblet-bolets", "gencat-bolets-comercialitzables", "scm"]
+    },
+    {
+      "slug": "pebras",
+      "kind": "species",
+      "names": { "ca": "Pebràs", "scientific": "Russula delica group", "aliases": ["pebràs", "pebrassa"] },
+      "summary": "Russulàcia robusta i blanquinosa que emergeix sovint mig enterrada i pot acumular molta terra al barret.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "low", "label": "Interès baix", "preparation": "Neteja’l a fons i cuina’l completament. La textura i el gust són modestos i els exemplars vells es deterioren amb facilitat." },
+      "lookalikes": [],
+      "season": { "typicalMonths": [6, 7, 8, 9, 10], "peakMonths": [] },
+      "ecology": { "habitatSlugs": ["pinedes", "boscos-caducifolis", "alzinars"], "altitudeM": { "min": 0, "max": 1600 }, "soilPreferences": ["mixed"] },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": { "card": { "src": "/media/bolets/pebras-ai.webp", "alt": "Pebràs blanc i robust mig enterrat entre fullaraca", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
+      "sourceIds": ["parcs-poblet-bolets", "parcs-ports-bolets", "scm"]
+    },
+    {
+      "slug": "bolet-amarg",
+      "kind": "species",
+      "names": { "ca": "Bolet amarg", "scientific": "Tylopilus felleus", "aliases": ["bolet amarg"] },
+      "summary": "Bolet de porus semblant a un cep, però de gust extremadament amarg i sense interès culinari.",
+      "edibility": { "category": "not-edible", "label": "No comestible" },
+      "lookalikes": [
+        { "name": "Cep", "scientific": "Boletus edulis group", "slug": "cep", "risk": "Comestible", "note": "Els porus del bolet amarg tendeixen al rosat amb l’edat i el reticle del peu sol ser més fosc." }
+      ],
+      "season": { "typicalMonths": [7, 8, 9, 10], "peakMonths": [] },
+      "ecology": { "habitatSlugs": ["pinedes", "boscos-caducifolis"], "altitudeM": { "min": 200, "max": 1800 }, "soilPreferences": ["siliceous"] },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": { "card": { "src": "/media/bolets/bolet-amarg-ai.webp", "alt": "Bolet amarg de barret marró i porus rosats sobre sòl forestal", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
+      "sourceIds": ["ichn-conservacio-fongs", "scm"]
+    },
+    {
+      "slug": "fredolic-metzinos",
+      "kind": "species",
+      "names": { "ca": "Fredolic metzinós", "scientific": "Tricholoma pardinum", "aliases": ["fredolic metzinós"] },
+      "summary": "Tricoloma gros, gris i escamós d’ambients de muntanya; és tòxic i es pot confondre amb fredolics comestibles.",
+      "edibility": { "category": "toxic", "label": "Tòxic" },
+      "lookalikes": [
+        { "name": "Fredolic", "scientific": "Tricholoma terreum", "slug": "fredolic", "risk": "Comestible", "note": "El fredolic metzinós és més gros i robust, amb escames marcades al barret, i s’associa especialment a zones amb avets." }
+      ],
+      "season": { "typicalMonths": [8, 9, 10, 11], "peakMonths": [] },
+      "ecology": { "habitatSlugs": ["avetoses-i-boscos-subalpins"], "altitudeM": { "min": 800, "max": 2100 }, "soilPreferences": ["calcareous"] },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": { "card": { "src": "/media/bolets/fredolic-metzinos-ai.webp", "alt": "Fredolic metzinós gros de barret gris i escamós en un bosc d’avets", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
+      "sourceIds": ["parcs-cadi-fredolic", "canal-salut-intoxicacions", "scm"]
+    },
+    {
+      "slug": "girgola-olivera",
+      "kind": "species",
+      "names": { "ca": "Gírgola d’olivera", "scientific": "Omphalotus olearius", "aliases": ["gírgola d’olivera", "bolet d’olivera"] },
+      "summary": "Bolet taronja que creix en grups sobre fusta o arrels enterrades; és tòxic i pot recordar un rossinyol.",
+      "edibility": { "category": "toxic", "label": "Tòxic" },
+      "lookalikes": [
+        { "name": "Rossinyol", "scientific": "Cantharellus cibarius", "slug": "rossinyol", "risk": "Comestible", "note": "La gírgola d’olivera té làmines fines i veritables i creix agrupada sobre fusta; el rossinyol té plecs gruixuts i ramificats." }
+      ],
+      "season": { "typicalMonths": [8, 9, 10, 11], "peakMonths": [] },
+      "ecology": { "habitatSlugs": ["alzinars"], "altitudeM": { "min": 0, "max": 1000 }, "soilPreferences": [] },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": { "card": { "src": "/media/bolets/girgola-olivera-ai.webp", "alt": "Grup de gírgoles d’olivera taronges creixent sobre fusta", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
+      "sourceIds": ["parcs-ports-bolets", "gencat-bolets-comercialitzables", "canal-salut-intoxicacions", "scm"]
+    },
+    {
+      "slug": "xampinyo-groguenc",
+      "kind": "species",
+      "names": { "ca": "Xampinyó groguenc", "scientific": "Agaricus xanthodermus", "aliases": ["xampinyó groguenc"] },
+      "summary": "Xampinyó blanc que grogueja intensament en tocar-lo, sobretot a la base del peu; és tòxic.",
+      "edibility": { "category": "toxic", "label": "Tòxic" },
+      "lookalikes": [
+        { "name": "Xampinyó silvestre", "scientific": "Agaricus campestris", "slug": "xampinyo-silvestre", "risk": "Comestible", "note": "El groguejament intens a la base del peu i l’olor desagradable són senyals d’alerta, però cal una identificació completa." }
+      ],
+      "season": { "typicalMonths": [5, 6, 7, 8, 9, 10, 11], "peakMonths": [] },
+      "ecology": { "habitatSlugs": ["clarianes-i-prats", "boscos-caducifolis"], "altitudeM": { "min": 0, "max": 1400 }, "soilPreferences": [] },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": { "card": { "src": "/media/bolets/xampinyo-groguenc-ai.webp", "alt": "Xampinyó groguenc blanc amb coloració groga visible a la base del peu", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
+      "sourceIds": ["gencat-bolets-comercialitzables", "canal-salut-intoxicacions", "scm"]
+    }
+  ],
+  "habitats": [
+    {
+      "slug": "pinedes",
+      "name": "Pinedes",
+      "summary": "Boscos dominats per pins, des de les pinedes mediterrànies fins a les de muntanya.",
+      "treeExamples": ["pi blanc", "pinassa", "pi roig", "pi negre"],
+      "sourceIds": ["icgc-cobertes-sol"]
+    },
+    {
+      "slug": "boscos-caducifolis",
+      "name": "Boscos caducifolis",
+      "summary": "Fagedes, rouredes i altres boscos de planifolis que perden la fulla.",
+      "treeExamples": ["faig", "roure", "castanyer", "bedoll"],
+      "sourceIds": ["icgc-cobertes-sol"]
+    },
+    {
+      "slug": "alzinars",
+      "name": "Alzinars i suredes",
+      "summary": "Boscos mediterranis de fulla perenne dominats per alzines o sureres.",
+      "treeExamples": ["alzina", "surera"],
+      "sourceIds": ["icgc-cobertes-sol"]
+    },
+    {
+      "slug": "boscos-ribera",
+      "name": "Boscos de ribera",
+      "summary": "Boscos humits vinculats a rius, rieres i fondalades.",
+      "treeExamples": ["pollancre", "salze", "freixe", "bedoll"],
+      "sourceIds": ["icgc-cobertes-sol"]
+    },
+    {
+      "slug": "clarianes-i-prats",
+      "name": "Clarianes i prats",
+      "summary": "Espais oberts, marges i herbassars vinculats a zones forestals.",
+      "treeExamples": [],
+      "sourceIds": ["icgc-cobertes-sol"]
+    },
+    {
+      "slug": "avetoses-i-boscos-subalpins",
+      "name": "Avetoses i boscos subalpins",
+      "summary": "Boscos freds de muntanya dominats per avets o coníferes subalpines.",
+      "treeExamples": ["avet", "pi negre"],
+      "sourceIds": ["icgc-cobertes-sol"]
+    }
+  ],
+  "sources": [
+    {
+      "id": "gencat-productes-bosc",
+      "name": "Generalitat de Catalunya · Productes del bosc: els bolets",
+      "url": "https://agricultura.gencat.cat/ca/ambits/medi-natural/gestio-forestal/dar_funcions_boscos/dar_funcio_productiva/dar_productes_bosc/",
+      "role": "context ecològic i recol·lecció"
+    },
+    {
+      "id": "gencat-alt-pallars",
+      "name": "Generalitat de Catalunya · Guia de la Reserva Nacional de Caça de l'Alt Pallars",
+      "url": "https://agricultura.gencat.cat/web/.content/06-medi-natural/caca/terrenys-cinegetics/reserves-nacionals-caca/alt-pallars/Guia_completa_RNC_Alt_Pallars.pdf",
+      "role": "presència i hàbitats de bolets de muntanya"
+    },
+    {
+      "id": "icgc-cobertes-sol",
+      "name": "ICGC · Mapa de cobertes del sòl de Catalunya",
+      "url": "https://www.icgc.cat/ca/Geoinformacio-i-mapes/Mapes/Cobertes-del-sol",
+      "role": "tipus de coberta i hàbitat forestal"
+    },
+    {
+      "id": "scm",
+      "name": "Societat Catalana de Micologia",
+      "url": "https://ichn.iec.cat/societats/societat-catalana-de-micologia/",
+      "role": "nomenclatura, descripció i revisió micològica"
+    },
+    {
+      "id": "gencat-bolets-comercialitzables",
+      "name": "Generalitat de Catalunya · Guia de pràctiques correctes d'higiene per a bolets i tòfones",
+      "url": "https://agricultura.gencat.cat/web/.content/de_departament/de10_publicacions_dar/de10_a02_02_guies_de_practiques_correctes/documents/fitxers_estatics/gpch_bolet_tofones.pdf",
+      "role": "nomenclatura i espècies comercialitzables"
+    },
+    {
+      "id": "canal-salut-intoxicacions",
+      "name": "Canal Salut · Intoxicacions per bolets",
+      "url": "https://canalsalut.gencat.cat/ca/detalls/article/Intoxicacions_per_bolets",
+      "role": "toxicitat i prevenció d'intoxicacions"
+    },
+    {
+      "id": "upc-visor-bolets-catalunya",
+      "name": "UPC · Visor web dels bolets de Catalunya",
+      "url": "https://upcommons.upc.edu/bitstreams/52167ef6-4eb6-4f3b-b1d1-04842fec7a2b/download",
+      "role": "hàbitat i temporada del moixernó"
+    },
+    {
+      "id": "enciclopedia-agaricacies",
+      "name": "Enciclopèdia Catalana · Les agaricàcies",
+      "url": "https://www.enciclopedia.cat/historia-natural-dels-paisos-catalans/les-agaricacies-camperols-xampinyons-pentinelles-i-afins",
+      "role": "nomenclatura i hàbitat del xampinyó silvestre"
+    },
+    {
+      "id": "bolets-info-mataparent",
+      "name": "bolets.info · Mataparent",
+      "url": "https://bolets.info/fitxa-bolet/mataparentboletus-satanas/",
+      "role": "hàbitat, temporada i toxicitat del mataparent"
+    },
+    {
+      "id": "parcs-poblet-bolets",
+      "name": "Parcs naturals de Catalunya · Bolets del bosc de Poblet",
+      "url": "https://parcsnaturals.gencat.cat/web/.content/Xarxa-de-parcs/paratge-poblet/coneix_la_nostra_feina/centre_documentacio/fons_documental/4a-jornades/137-194.pdf",
+      "role": "presència i diversitat d’espècies al bosc de Poblet"
+    },
+    {
+      "id": "parcs-ports-bolets",
+      "name": "Parcs naturals de Catalunya · Els bolets dels Ports",
+      "url": "https://parcsnaturals.gencat.cat/web/.content/Xarxa-de-parcs/ports/coneix-la-nostra-feina/centre-de-documentacio/cingles/Butlletins/2012_feb_cingles_n2_-_digital.pdf",
+      "role": "espècies i hàbitats forestals dels Ports"
+    },
+    {
+      "id": "parcs-aiguestortes-bolet-tinta",
+      "name": "Parcs naturals de Catalunya · El bolet de tinta",
+      "url": "https://parcsnaturals.gencat.cat/web/.content/Xarxa-de-parcs/aiguestortes/Coneix-nostra-feina/Centre-documentacio/Fons-documental/Revistes-butlletins/portarro/PDF/el-portarro-37-web.pdf",
+      "role": "hàbitat i consum del bolet de tinta jove"
+    },
+    {
+      "id": "parcs-cadi-fredolic",
+      "name": "Parc Natural del Cadí-Moixeró · Fredolic",
+      "url": "https://parcsnaturals.gencat.cat/web/.content/Xarxa-de-parcs/Cadi/coneix_la_nostra_feina/centre-de-documentacio/fons_documental/publicacions_del_parc/revistes_i_butlletins/elpicotnegre_34/Fredolic.pdf",
+      "role": "fredolic i confusió amb el fredolic metzinós"
+    },
+    {
+      "id": "ichn-conservacio-fongs",
+      "name": "Institució Catalana d’Història Natural · Fongs que requereixen mesures de conservació",
+      "url": "https://ichn.iec.cat/fongs-liquens-i-briofits-que-requereixen-mesures-de-conservacio-a-catalunya/",
+      "role": "nomenclatura i presència de Tylopilus felleus"
+    }
+  ]
+}
