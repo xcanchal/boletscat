@@ -165,7 +165,13 @@
       border-radius:12px;color:var(--text);font-family:var(--ui);padding:12px 14px;max-height:min(70dvh,420px);
       overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
     .maplibregl-popup-tip{display:none}
-    .pop-nom{font-family:var(--display);font-weight:600;font-size:16px;margin-bottom:2px}
+    .maplibregl-popup-close-button{position:absolute;top:6px;right:6px;display:grid;place-items:center;
+      width:34px;height:34px;padding:0;border:1px solid transparent;border-radius:9px;
+      background:rgba(232,226,214,.06);color:var(--muted);font:400 22px/1 var(--ui);cursor:pointer;
+      touch-action:manipulation;transition:background .15s,color .15s,border-color .15s}
+    .maplibregl-popup-close-button:hover{background:rgba(232,226,214,.11);color:var(--text);border-color:var(--edge)}
+    .maplibregl-popup-close-button:focus-visible{outline:2px solid var(--rovello);outline-offset:2px}
+    .pop-nom{font-family:var(--display);font-weight:600;font-size:16px;margin-bottom:2px;padding-right:38px}
     .pop-score{color:var(--rovello);font-weight:600;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px}
     .quality{display:inline-flex;align-items:center;border:1px solid currentColor;border-radius:999px;
       padding:2px 7px;font-size:11px;line-height:1.2;letter-spacing:.15px}
@@ -433,7 +439,7 @@
       center:DEFAULT_VIEW.center, zoom:DEFAULT_VIEW.zoom,
     });
     let labelsBeforeLayer=null, vectorLabelLayers=[];
-    const popup = new maplibregl.Popup({ closeButton:false, offset:12 });
+    const popup = new maplibregl.Popup({ closeButton:true, closeOnClick:false, focusAfterOpen:false, offset:12 });
 
     // El control natiu amplia respecte del centre del mapa. Si el popup és lluny
     // del centre, diversos clics el fan sortir de pantalla. Aquest control conserva
@@ -507,12 +513,20 @@
         if (Math.abs(x)>.5||Math.abs(y)>.5) map.panBy([x,y],{ duration:300 });
       });
     };
+    const preparePopupCloseButton = () => {
+      const button=popup.getElement()?.querySelector('.maplibregl-popup-close-button');
+      if (!button) return;
+      button.setAttribute('aria-label','Tanca el detall');
+      button.addEventListener('click',()=>{ areaRequest++; },{ once:true });
+    };
     const showPopup = (lngLat,html,center=false) => {
       popup.setLngLat(lngLat).setHTML(html).addTo(map);
+      preparePopupCloseButton();
       if (center!==null) (center?centerPopup:keepPopupVisible)();
     };
     const updatePopup = (html,center=false) => {
       popup.setHTML(html);
+      preparePopupCloseButton();
       if (center!==null) (center?centerPopup:keepPopupVisible)();
     };
     const markUserNavigation = () => {
@@ -528,6 +542,12 @@
       if (savedIntensity!==null) predictionIntensity=Math.max(0,Math.min(1,+savedIntensity/100));
     } catch {}
     let currentRaster = null, areaRequest = 0;
+    const dismissOpenPopup = () => {
+      if (!popup.isOpen()) return false;
+      areaRequest++;
+      popup.remove();
+      return true;
+    };
     const placeCache = new Map();
     const fmt = v => (v==null ? '—' : (+v).toFixed(1));
     const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -729,6 +749,7 @@
         'circle-stroke-width':1.2,'circle-stroke-color':'rgba(0,0,0,.45)' }, layout:{ visibility:'none' } },labelsBeforeLayer??undefined);
 
       map.on('click','punt', e => {
+        if (dismissOpenPopup()) return;
         areaRequest++;
         showPopup(e.features[0].geometry.coordinates,popHTML(e.features[0].properties,e.features[0].geometry.coordinates),true);
       });
@@ -740,6 +761,7 @@
       map.on('click', async e => {
         panel.classList.add('collapsed');
         if (currentMode==='punts' && map.queryRenderedFeatures(e.point,{ layers:['punt'] }).length) return;
+        if (dismissOpenPopup()) return;
         const mode=currentMode, request=++areaRequest;
         const navigationAtClick=userNavigationRevision;
         const sample=mode==='detallat'?nearestDetailsAt(e.lngLat):null;
