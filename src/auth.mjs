@@ -1,7 +1,13 @@
 import { betterAuth } from "better-auth";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { config } from "./config.mjs";
 import { pool } from "./db.mjs";
 import { sendTransactionalEmail } from "./email.mjs";
+import {
+  isPasswordValid,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from "./password-policy.mjs";
 
 export const auth = betterAuth({
   appName: "Boletada",
@@ -23,8 +29,8 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: config.requireEmailVerification,
-    minPasswordLength: 10,
-    maxPasswordLength: 128,
+    minPasswordLength: PASSWORD_MIN_LENGTH,
+    maxPasswordLength: PASSWORD_MAX_LENGTH,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: ({ user, url }) => {
       void sendTransactionalEmail({
@@ -34,6 +40,22 @@ export const auth = betterAuth({
         html: `<p>Obre aquest enllaç per crear una contrasenya nova:</p><p><a href="${url}">Restablir la contrasenya</a></p>`,
       }).catch((error) => console.error("No s’ha pogut enviar el correu de recuperació", error));
     },
+  },
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      const password = ctx.path === "/sign-up/email"
+        ? ctx.body?.password
+        : ["/reset-password", "/change-password", "/set-password"].includes(ctx.path)
+          ? ctx.body?.newPassword
+          : undefined;
+
+      if (password !== undefined && !isPasswordValid(password)) {
+        throw new APIError("BAD_REQUEST", {
+          code: "PASSWORD_REQUIREMENTS_NOT_MET",
+          message: "La contrasenya no compleix els requisits de seguretat.",
+        });
+      }
+    }),
   },
   emailVerification: {
     sendOnSignUp: true,

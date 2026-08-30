@@ -235,9 +235,20 @@
     .gate-card h2{font-family:var(--display);font-size:32px;line-height:1.08;margin:8px 0 9px;letter-spacing:-.025em}
     .card-copy{color:#9fa598;font-size:14px;line-height:1.5;margin:0 0 22px}
     .auth-form{display:grid;gap:14px}.auth-field{display:grid;gap:6px;color:#aeb3a7;font-size:12px;font-weight:600}
+    .auth-label{display:block}
+    .password-control{position:relative;display:block}
     .auth-field input{width:100%;border:1px solid rgba(223,226,210,.15);border-radius:10px;background:#10150f;color:#f0eee4;
       padding:12px 13px;font:15px var(--ui);outline:none;transition:border-color .15s,box-shadow .15s}
+    .password-control input{padding-right:50px}.password-control input::-ms-reveal,.password-control input::-ms-clear{display:none}
     .auth-field input:focus{border-color:#d16b2c;box-shadow:0 0 0 3px rgba(209,107,44,.13)}
+    .password-toggle{position:absolute;right:3px;top:50%;display:grid;place-items:center;width:40px;height:40px;padding:0;transform:translateY(-50%);
+      border:0;border-radius:8px;background:transparent;color:#7f887c;cursor:pointer;touch-action:manipulation;transition:color .15s,background .15s}
+    .password-toggle:hover{background:rgba(232,226,214,.06);color:#d6d8cc}.password-toggle:focus-visible{outline:2px solid var(--rovello);outline-offset:1px}
+    .password-toggle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.7}
+    .password-toggle[aria-pressed="false"] .eye-slash{display:none}
+    .password-rules{display:grid;gap:7px;margin:0;padding:2px 0 0;list-style:none;color:#737c70;font-size:11px;font-weight:500;line-height:1.35}
+    .password-rules li{display:grid;grid-template-columns:16px 1fr;gap:7px;align-items:start}.password-rules li::before{content:"·";color:#646d61;font-size:18px;line-height:12px;text-align:center}
+    .password-rules li[data-valid="true"]{color:#bccb84}.password-rules li[data-valid="true"]::before{content:"✓";color:#b9c875;font-size:12px;font-weight:800;line-height:1.35}
     .primary-action{width:100%;border:0;border-radius:11px;background:#e1722d;color:#17120d;padding:13px 16px;
       font:750 14px var(--ui);cursor:pointer;transition:transform .15s,filter .15s;margin-top:3px}
     .primary-action:hover{filter:brightness(1.08);transform:translateY(-1px)}.primary-action:disabled{opacity:.55;cursor:wait;transform:none}
@@ -288,11 +299,12 @@
       <section class="gate-card" id="authView" aria-labelledby="authTitle" hidden>
         <h2 id="authTitle">Accedeix al compte</h2>
         <form class="auth-form" id="authForm">
-          <label class="auth-field">Correu electrònic<input id="authEmail" name="email" type="email" autocomplete="email" required /></label>
-          <label class="auth-field">Contrasenya<input id="authPassword" name="password" type="password" autocomplete="current-password" minlength="10" maxlength="128" required /></label>
-          <label class="auth-field" id="authPasswordConfirmField" hidden>Confirma la contrasenya<input id="authPasswordConfirm" type="password" autocomplete="new-password" minlength="10" maxlength="128" /></label>
+          <label class="auth-field"><span class="auth-label">Correu electrònic</span><input id="authEmail" name="email" type="email" autocomplete="email" required /></label>
+          <div class="auth-field"><label class="auth-label" for="authPassword">Contrasenya</label><div class="password-control"><input id="authPassword" name="password" type="password" autocomplete="current-password" maxlength="128" required /><button class="password-toggle" type="button" data-password-toggle="authPassword" aria-label="Mostra la contrasenya" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/><path class="eye-slash" d="m4 4 16 16"/></svg></button></div></div>
+          <div class="auth-field" id="authPasswordConfirmField" hidden><label class="auth-label" for="authPasswordConfirm">Confirma la contrasenya</label><div class="password-control"><input id="authPasswordConfirm" type="password" autocomplete="new-password" minlength="8" maxlength="20" /><button class="password-toggle" type="button" data-password-toggle="authPasswordConfirm" aria-label="Mostra la contrasenya" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/><path class="eye-slash" d="m4 4 16 16"/></svg></button></div></div>
+          <ul class="password-rules" id="authPasswordRules" hidden aria-live="polite"><li data-rule="length">Entre 8 i 20 caràcters</li><li data-rule="composition">Una lletra, un número i un símbol</li><li data-rule="match">Les contrasenyes coincideixen</li></ul>
           <button class="primary-action" id="authSubmit" type="submit">Entrar</button>
-          <div class="form-foot" id="forgotPasswordRow"><button class="text-action" id="forgotPassword" type="button">He oblidat la contrassenya</button></div>
+          <div class="form-foot" id="forgotPasswordRow"><button class="text-action" id="forgotPassword" type="button">He oblidat la contrasenya</button></div>
         </form>
         <p class="auth-legal" id="authLegal" hidden>En crear el compte acceptes els <a href="https://boletada.cat/legal/#termes" target="_blank" rel="noopener">Termes</a> i confirmes que has llegit la <a href="https://boletada.cat/legal/#privacitat" target="_blank" rel="noopener">Política de privacitat</a>.</p>
         <p class="auth-switch"><span id="authSwitchPrompt">No tens compte?</span><button class="text-action" id="authSwitch" type="button">Crear compte</button></p>
@@ -304,9 +316,10 @@
         <h2 id="resetTitle">Nova contrasenya</h2>
         <p class="card-copy" id="resetCopy">T’enviarem un enllaç segur al correu.</p>
         <form class="auth-form" id="resetForm">
-          <label class="auth-field" id="resetEmailField">Correu electrònic<input id="resetEmail" type="email" autocomplete="email" required /></label>
-          <label class="auth-field" id="newPasswordField" hidden>Contrasenya nova<input id="newPassword" type="password" autocomplete="new-password" minlength="10" maxlength="128" /></label>
-          <label class="auth-field" id="newPasswordConfirmField" hidden>Confirma la contrasenya<input id="newPasswordConfirm" type="password" autocomplete="new-password" minlength="10" maxlength="128" /></label>
+          <label class="auth-field" id="resetEmailField"><span class="auth-label">Correu electrònic</span><input id="resetEmail" type="email" autocomplete="email" required /></label>
+          <div class="auth-field" id="newPasswordField" hidden><label class="auth-label" for="newPassword">Contrasenya nova</label><div class="password-control"><input id="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="20" /><button class="password-toggle" type="button" data-password-toggle="newPassword" aria-label="Mostra la contrasenya" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/><path class="eye-slash" d="m4 4 16 16"/></svg></button></div></div>
+          <div class="auth-field" id="newPasswordConfirmField" hidden><label class="auth-label" for="newPasswordConfirm">Confirma la contrasenya</label><div class="password-control"><input id="newPasswordConfirm" type="password" autocomplete="new-password" minlength="8" maxlength="20" /><button class="password-toggle" type="button" data-password-toggle="newPasswordConfirm" aria-label="Mostra la contrasenya" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/><path class="eye-slash" d="m4 4 16 16"/></svg></button></div></div>
+          <ul class="password-rules" id="resetPasswordRules" hidden aria-live="polite"><li data-rule="length">Entre 8 i 20 caràcters</li><li data-rule="composition">Una lletra, un número i un símbol</li><li data-rule="match">Les contrasenyes coincideixen</li></ul>
           <button class="primary-action" id="resetSubmit" type="submit">Enviar l’enllaç</button>
         </form>
         <p class="gate-message" id="resetMessage" role="status" aria-live="polite"></p>
@@ -953,6 +966,25 @@
     const authMessage=document.getElementById('authMessage'), billingMessage=document.getElementById('billingMessage');
     const APP_CALLBACK_URL=DATA_BASE==='.'?`${location.origin}/app/`:location.href.split(/[?#]/)[0];
     let authMode=new URLSearchParams(location.search).get('mode')==='signup'?'signup':'signin', currentUser=null, purchases=null, purchasePackage=null, billingConfig=null;
+    const PASSWORD_MIN_LENGTH=8,PASSWORD_MAX_LENGTH=20;
+
+    const passwordRequirements=password=>({
+      length:password.length>=PASSWORD_MIN_LENGTH&&password.length<=PASSWORD_MAX_LENGTH,
+      composition:/\p{L}/u.test(password)&&/\p{N}/u.test(password)&&/[^\p{L}\p{N}\s]/u.test(password),
+    });
+    function renderPasswordRules(list,password,confirmation){
+      const requirements=passwordRequirements(password);
+      list.querySelector('[data-rule="length"]').dataset.valid=String(requirements.length);
+      list.querySelector('[data-rule="composition"]').dataset.valid=String(requirements.composition);
+      list.querySelector('[data-rule="match"]').dataset.valid=String(Boolean(confirmation)&&password===confirmation);
+    }
+    function passwordValidationMessage(password,confirmation){
+      const requirements=passwordRequirements(password);
+      if(!requirements.length)return 'La contrasenya ha de tenir entre 8 i 20 caràcters.';
+      if(!requirements.composition)return 'Afegeix almenys una lletra, un número i un símbol.';
+      if(password!==confirmation)return 'Les contrasenyes no coincideixen.';
+      return '';
+    }
 
     const setMessage=(element,text,type='')=>{element.textContent=text;element.className=`gate-message ${type}`.trim()};
     const billingErrorText=(error)=>{
@@ -968,8 +1000,8 @@
       if(code==='INVALID_EMAIL_OR_PASSWORD')return 'El correu o la contrasenya no són correctes.';
       if(code==='USER_ALREADY_EXISTS')return 'Ja hi ha un compte amb aquest correu.';
       if(code==='EMAIL_NOT_VERIFIED')return 'Confirma el correu abans d’entrar.';
-      if(code==='PASSWORD_TOO_SHORT')return 'La contrasenya ha de tenir com a mínim 10 caràcters.';
-      if(code==='PASSWORD_TOO_LONG')return 'La contrasenya no pot superar els 128 caràcters.';
+      if(code==='PASSWORD_TOO_SHORT'||code==='PASSWORD_TOO_LONG')return 'La contrasenya ha de tenir entre 8 i 20 caràcters.';
+      if(code==='PASSWORD_REQUIREMENTS_NOT_MET')return 'Afegeix almenys una lletra, un número i un símbol.';
       return fallback;
     };
     const userSafeText=(error,fallback)=>error?.isUserSafe?error.message:fallback;
@@ -1003,10 +1035,15 @@
     function setAuthMode(mode,{updateUrl=false}={}) {
       authMode=mode;const signup=mode==='signup';
       document.getElementById('authTitle').textContent=signup?'Crea el teu compte':'Accedeix al compte';
-      document.getElementById('authPassword').autocomplete=signup?'new-password':'current-password';
+      const password=document.getElementById('authPassword');
+      password.autocomplete=signup?'new-password':'current-password';
+      password.maxLength=signup?PASSWORD_MAX_LENGTH:128;
+      if(signup)password.minLength=PASSWORD_MIN_LENGTH;else password.removeAttribute('minlength');
       document.getElementById('authPasswordConfirmField').hidden=!signup;
       document.getElementById('authPasswordConfirm').required=signup;
+      document.getElementById('authPasswordRules').hidden=!signup;
       if(!signup)document.getElementById('authPasswordConfirm').value='';
+      renderPasswordRules(document.getElementById('authPasswordRules'),password.value,document.getElementById('authPasswordConfirm').value);
       document.getElementById('authSubmit').textContent=signup?'Crear compte':'Entrar';
       document.getElementById('authLegal').hidden=!signup;
       document.getElementById('forgotPasswordRow').hidden=signup;
@@ -1058,12 +1095,38 @@
       }
     }
 
-    document.getElementById('authSwitch').addEventListener('click',()=>setAuthMode(authMode==='signup'?'signin':'signup',{updateUrl:true}));
+    const setPasswordVisibility=(button,show)=>{
+      const input=document.getElementById(button.dataset.passwordToggle);
+      input.type=show?'text':'password';
+      button.setAttribute('aria-pressed',String(show));
+      button.setAttribute('aria-label',show?'Amaga la contrasenya':'Mostra la contrasenya');
+    };
+    document.querySelectorAll('[data-password-toggle]').forEach(button=>button.addEventListener('click',()=>{
+      const input=document.getElementById(button.dataset.passwordToggle);
+      setPasswordVisibility(button,input.type==='password');
+      input.focus({preventScroll:true});
+    }));
+    const hidePasswords=(...inputIds)=>inputIds.forEach(inputId=>{
+      const button=document.querySelector(`[data-password-toggle="${inputId}"]`);
+      if(button)setPasswordVisibility(button,false);
+    });
+    const authPassword=document.getElementById('authPassword'),authPasswordConfirm=document.getElementById('authPasswordConfirm'),authPasswordRules=document.getElementById('authPasswordRules');
+    const updateAuthPasswordRules=()=>renderPasswordRules(authPasswordRules,authPassword.value,authPasswordConfirm.value);
+    authPassword.addEventListener('input',updateAuthPasswordRules);authPasswordConfirm.addEventListener('input',updateAuthPasswordRules);
+    const newPasswordInput=document.getElementById('newPassword'),newPasswordConfirmInput=document.getElementById('newPasswordConfirm'),resetPasswordRules=document.getElementById('resetPasswordRules');
+    const updateResetPasswordRules=()=>renderPasswordRules(resetPasswordRules,newPasswordInput.value,newPasswordConfirmInput.value);
+    newPasswordInput.addEventListener('input',updateResetPasswordRules);newPasswordConfirmInput.addEventListener('input',updateResetPasswordRules);
+
+    document.getElementById('authSwitch').addEventListener('click',()=>{
+      hidePasswords('authPassword','authPasswordConfirm');
+      setAuthMode(authMode==='signup'?'signin':'signup',{updateUrl:true});
+    });
     authForm.addEventListener('submit',async event=>{
       event.preventDefault();const button=document.getElementById('authSubmit');button.disabled=true;setMessage(authMessage,'');
       const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value;
-      if(authMode==='signup'&&password!==document.getElementById('authPasswordConfirm').value){
-        setMessage(authMessage,'Les contrasenyes no coincideixen.','error');button.disabled=false;return;
+      if(authMode==='signup'){
+        const validationMessage=passwordValidationMessage(password,document.getElementById('authPasswordConfirm').value);
+        if(validationMessage){setMessage(authMessage,validationMessage,'error');button.disabled=false;return}
       }
       const body=authMode==='signup'
         ? {name:'',email,password,callbackURL:APP_CALLBACK_URL}
@@ -1083,10 +1146,13 @@
     function openReset() {
       showView('reset');const setting=Boolean(resetToken);
       document.getElementById('resetEmailField').hidden=setting;document.getElementById('newPasswordField').hidden=!setting;document.getElementById('newPasswordConfirmField').hidden=!setting;
+      document.getElementById('resetPasswordRules').hidden=!setting;
       document.getElementById('resetEmail').required=!setting;document.getElementById('newPassword').required=setting;document.getElementById('newPasswordConfirm').required=setting;
       document.getElementById('resetTitle').textContent=setting?'Tria una contrasenya nova':'Recupera el compte';
-      document.getElementById('resetCopy').textContent=setting?'Fes servir deu caràcters o més.':'T’enviarem un enllaç segur al correu.';
+      document.getElementById('resetCopy').textContent=setting?'Tria una contrasenya segura i fàcil de recordar.':'T’enviarem un enllaç segur al correu.';
       document.getElementById('resetSubmit').textContent=setting?'Desar la contrasenya':'Enviar l’enllaç';
+      hidePasswords('newPassword','newPasswordConfirm');
+      updateResetPasswordRules();
     }
     document.getElementById('forgotPassword').addEventListener('click',openReset);
     document.getElementById('resetBack').addEventListener('click',()=>{history.replaceState({},'',location.pathname);showView('auth')});
@@ -1095,7 +1161,8 @@
       try {
         if(resetToken){
           const newPassword=document.getElementById('newPassword').value;
-          if(newPassword!==document.getElementById('newPasswordConfirm').value){setMessage(document.getElementById('resetMessage'),'Les contrasenyes no coincideixen.','error');return}
+          const validationMessage=passwordValidationMessage(newPassword,document.getElementById('newPasswordConfirm').value);
+          if(validationMessage){setMessage(document.getElementById('resetMessage'),validationMessage,'error');return}
           await request('/api/auth/reset-password',{method:'POST',body:JSON.stringify({newPassword,token:resetToken}),headers:{Origin:location.origin}});
           history.replaceState({},'',location.pathname);setMessage(document.getElementById('resetMessage'),'Contrasenya canviada. Ja pots entrar.','success');setTimeout(()=>showView('auth'),900);
         } else {
