@@ -348,7 +348,7 @@
           <path d="M10 13.8h4v4.2c0 1.1-.9 2-2 2s-2-.9-2-2v-4.2Z" fill="#d9c9a8"/>
           <circle cx="9" cy="9.2" r="1" fill="#c8451b" opacity=".7"/><circle cx="14" cy="8.4" r=".8" fill="#c8451b" opacity=".6"/>
         </svg>
-        <div><h1>Boletada</h1><div class="sub" id="meta">Catalunya · dades XEMA</div></div>
+        <div><h1>Boletada</h1><div class="sub" id="meta">Catalunya</div></div>
       </a>
       <button class="collapse" id="collapse" aria-label="Plega el panell" aria-expanded="true" aria-controls="panelBody">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 9l4-4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -867,7 +867,7 @@
         map.getSource('estacions').setData({ type:'FeatureCollection', features:[] });
         content.style.display='none'; msg.style.display='block';
         msg.textContent='Les dades d’aquesta espècie no estan disponibles ara mateix. Torna-ho a provar més tard.';
-        document.getElementById('meta').innerHTML = 'Catalunya · dades XEMA';
+        document.getElementById('meta').textContent = 'Catalunya';
         return;
       }
       msg.style.display='none';
