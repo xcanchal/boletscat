@@ -60,8 +60,9 @@
     .brand-home>div{min-width:0}
     .brand h1{font-family:var(--display);font-weight:600;font-size:21px;margin:0;line-height:1.05}
     .brand-home h1{transition:color .15s}.brand-home:hover h1{color:#f08a49}
-    .brand .sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .brand .sub{display:grid;gap:2px;margin-top:3px;font-size:12px;color:var(--muted);line-height:1.25}
     .brand .sub b{color:var(--text);font-weight:500}
+    .brand .sub time{color:#7f887a;font-size:11px}
     /* Botó de col·lapse */
     .collapse{margin-left:auto;flex:none;width:30px;height:30px;border:1px solid var(--edge);
       background:rgba(232,226,214,.05);color:var(--muted);border-radius:8px;cursor:pointer;
@@ -348,7 +349,7 @@
           <path d="M10 13.8h4v4.2c0 1.1-.9 2-2 2s-2-.9-2-2v-4.2Z" fill="#d9c9a8"/>
           <circle cx="9" cy="9.2" r="1" fill="#c8451b" opacity=".7"/><circle cx="14" cy="8.4" r=".8" fill="#c8451b" opacity=".6"/>
         </svg>
-        <div><h1>Boletada</h1><div class="sub" id="meta">Catalunya</div></div>
+        <div><h1>Boletada</h1><div class="sub"><b id="metaSpecies">Catalunya</b><time id="metaDate"></time></div></div>
       </a>
       <button class="collapse" id="collapse" aria-label="Plega el panell" aria-expanded="true" aria-controls="panelBody">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 9l4-4 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -397,6 +398,13 @@
       ? `/api/predictions/${encodeURIComponent(path)}`
       : new URL(`api/predictions/${encodeURIComponent(path)}`, DATA_BASE).href;
     let mapReady=false, mapUnlocked=false, initialMapLoaded=false;
+    const formatGeneratedDate = value => {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return '';
+      const options = { timeZone:'UTC', day:'numeric', month:'long' };
+      if (date.getUTCFullYear() !== new Date().getUTCFullYear()) options.year = 'numeric';
+      return new Intl.DateTimeFormat('ca-ES', options).format(date);
+    };
     const SCALE = [0,'#59665e',0.1,'#747d45',0.25,'#a1a447',0.4,'#c9932f',0.6,'#e2792a',0.8,'#c8451b',1,'#a92e14'];
     const BOSC = { conifer:'pineda (coníferes)', deciduous:'bosc caducifoli', sclerophyll:'alzinar / esclerofil·le', ribera:'bosc de ribera' };
     const HOST_BY_CODE = [null,'conifer','deciduous','sclerophyll','ribera'];
@@ -867,7 +875,9 @@
         map.getSource('estacions').setData({ type:'FeatureCollection', features:[] });
         content.style.display='none'; msg.style.display='block';
         msg.textContent='Les dades d’aquesta espècie no estan disponibles ara mateix. Torna-ho a provar més tard.';
-        document.getElementById('meta').textContent = 'Catalunya';
+        document.getElementById('metaSpecies').textContent = 'Catalunya';
+        document.getElementById('metaDate').textContent = '';
+        document.getElementById('metaDate').removeAttribute('datetime');
         return;
       }
       msg.style.display='none';
@@ -912,7 +922,12 @@
         for (const layer of ['prediccio']) if (map.getLayer(layer)) map.setLayoutProperty(layer,'visibility','none');
         if (map.getLayer('cobertura')) map.setLayoutProperty('cobertura','visibility','none');
       }
-      document.getElementById('meta').innerHTML = `<b>${geo.speciesNom ?? species}</b> · ${geo.generated ?? ''}`;
+      const metaSpecies = document.getElementById('metaSpecies');
+      const metaDate = document.getElementById('metaDate');
+      metaSpecies.textContent = geo.speciesNom ?? species;
+      metaDate.textContent = formatGeneratedDate(geo.generated);
+      if (geo.generated) metaDate.dateTime = geo.generated;
+      else metaDate.removeAttribute('datetime');
 
       const info = SPECIES_INFO[species];
       const infoBody = document.getElementById('infoBody');
