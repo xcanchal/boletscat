@@ -22,10 +22,8 @@ test("el popup concentra les xifres útils i no publica els factors interns", ()
   assert.match(app, /Condicions del punt/);
   assert.match(app, /\$\{percentage\}% · \$\{r\.nivell\}/);
   assert.match(app, /°C · \$\{direction\}/);
-  assert.match(app, /Adequació de \$\{label\}: \$\{level\}/);
-  assert.match(app, /class="pop-fit unknown"/);
-  assert.match(app, /grid-template-columns:repeat\(4,10px\)/);
-  assert.match(app, /Math\.ceil\(fit\*4\)/);
+  assert.doesNotMatch(app, /class="pop-fit/);
+  assert.doesNotMatch(app, /fitBarHTML/);
   assert.doesNotMatch(app, /<details class="pop-environment"/);
   assert.doesNotMatch(app, /const FACTORS/);
   assert.doesNotMatch(app, /class="fbar"/);

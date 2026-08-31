@@ -188,11 +188,7 @@
     .pop-condition .k,.pop-context .k{color:var(--muted)}
     .pop-condition .v,.pop-context .v{min-width:0;text-align:right;font-variant-numeric:tabular-nums}
     .pop-condition .qualifier{color:#b8beaf}
-    .pop-fit{grid-column:2;justify-self:end;display:grid;grid-template-columns:repeat(4,10px);gap:3px;height:4px}
-    .pop-fit i{display:block;height:4px;border-radius:999px;background:rgba(232,226,214,.11)}
-    .pop-fit i.on{background:var(--rovello)}
-    .pop-fit.unknown i{background:repeating-linear-gradient(90deg,rgba(154,163,155,.36) 0 5px,transparent 5px 8px)}
-    .pop-context{display:grid;grid-template-columns:72px minmax(0,1fr);gap:4px 10px;margin-top:3px;padding-top:8px;border-top:1px solid var(--edge);font-size:11.5px}
+    .pop-context{display:grid;grid-template-columns:72px minmax(0,1fr);gap:4px 10px;margin-top:3px;padding-top:3px;font-size:11.5px}
     .unknown-value{color:var(--muted);font-style:italic}
     .pop-map-footer{flex:none;margin:8px -14px -12px;padding:9px 14px 12px;border-top:1px solid var(--edge);background:#131b12}
     .pop-map{display:inline-flex;align-items:center;padding:5px 8px;border:1px solid var(--edge);
@@ -590,15 +586,6 @@
       const direction=delta<=-.3?'refredant-se':delta>=.3?'escalfant-se':'estable';
       return `${delta>0?'+':''}${fmt(delta)} °C · ${direction}`;
     });
-    const fitBarHTML = (value,label,known=true) => {
-      const segments=Array.from({ length:4 },()=>'<i></i>').join('');
-      if (!known || value == null || Number.isNaN(+value)) return `<span class="pop-fit unknown" role="img" aria-label="Adequació de ${label}: desconeguda">${segments}</span>`;
-      const fit=Math.max(0,Math.min(1,+value));
-      const level=fit>=.8?'alta':fit>=.45?'mitjana':'baixa';
-      const active=Math.max(1,Math.ceil(fit*4));
-      const meter=Array.from({ length:4 },(_,index)=>`<i${index<active?' class="on"':''}></i>`).join('');
-      return `<span class="pop-fit" role="img" aria-label="Adequació de ${label}: ${level}">${meter}</span>`;
-    };
     const mapLinkHTML = lngLat => {
       const [lng,lat]=Array.isArray(lngLat)?lngLat:[lngLat.lng,lngLat.lat];
       const destination=encodeURIComponent(`${(+lat).toFixed(6)},${(+lng).toFixed(6)}`);
@@ -624,9 +611,9 @@
       </div>
       <div class="pop-conditions">
         <div class="pop-conditions-title">Condicions del punt</div>
-        <div class="pop-condition"><span class="k">Bosc</span><span class="v">${forest}</span>${fitBarHTML(p.fHost,'bosc',p.host!=null)}</div>
-        <div class="pop-condition"><span class="k">Temperatura</span><span class="v">${temperature}</span>${fitBarHTML(p.fT,'temperatura',p.tMean!=null)}</div>
-        <div class="pop-condition"><span class="k">Sòl</span><span class="v">${soil}</span>${fitBarHTML(p.fSoil,'sòl',p.substrate!=null)}</div>
+        <div class="pop-condition"><span class="k">Bosc</span><span class="v">${forest}</span></div>
+        <div class="pop-condition"><span class="k">Temperatura</span><span class="v">${temperature}</span></div>
+        <div class="pop-condition"><span class="k">Sòl</span><span class="v">${soil}</span></div>
         <div class="pop-context">
           <span class="k">Altitud</span><span class="v">${knownHTML(p.alt,value => `${Math.round(value).toLocaleString('ca-ES')} m`)}</span>
           <span class="k">Tendència</span><span class="v">${trendDetailHTML(p.tTrend)}</span>
