@@ -360,7 +360,8 @@
         <option value="rovello">Rovelló / pinetell</option><option value="cep">Cep</option>
         <option value="llenega">Llenega</option><option value="trompeta">Trompeta de la mort</option>
         <option value="rossinyol">Rossinyol</option><option value="camagroc">Camagroc</option>
-        <option value="murgola">Múrgola</option>
+        <option value="murgola">Múrgola</option><option value="ou_de_reig">Ou de reig</option>
+        <option value="fredolic">Fredolic</option>
       </select>
       <div class="info-section" id="infoSection">
         <dl class="info-body" id="infoBody"></dl>
@@ -420,7 +421,8 @@
     const rating = score => RATING.find(x => +score >= x.min) ?? RATING.at(-1);
 
     // Condicions ideals per espècie — mirall dels paràmetres del model (score_estacions.mjs):
-    // temperatura i altitud són el tram pla del trapezoide (encaix = 1), temporada els mesos amb porta oberta.
+    // Temperatura i altitud són el tram pla del trapezoide (encaix = 1).
+    // La temporada és informació orientativa i no participa en el score.
     const SPECIES_INFO = {
       rovello:   { bosc:'pineda (coníferes)',                temperatura:'8–20°C',  altitud:'200–1500 m',  temporada:'setembre–novembre' },
       cep:       { bosc:'pineda, caducifoli o alzinar',      temperatura:'8–18°C',  altitud:'800–1600 m',  temporada:'juny · setembre–novembre', sol:'preferentment silícic / àcid' },
@@ -429,6 +431,8 @@
       rossinyol: { bosc:'pineda, caducifoli o alzinar',      temperatura:'10–22°C', altitud:'400–1500 m',  temporada:'juny–octubre', sol:'preferentment silícic / àcid' },
       camagroc:  { bosc:'pineda (coníferes)',                temperatura:'2–14°C',  altitud:'500–1500 m',  temporada:'octubre–gener', sol:'preferentment calcari' },
       murgola:   { bosc:'bosc de ribera o caducifoli',       temperatura:'8–18°C',  altitud:'300–1200 m',  temporada:'març–maig' },
+      ou_de_reig:{ bosc:'bosc caducifoli o alzinar',         temperatura:'14–28°C', altitud:'100–1400 m',  temporada:'juliol–octubre', sol:'preferentment silícic / àcid' },
+      fredolic:  { bosc:'pineda (coníferes)',                temperatura:'0–12°C',  altitud:'100–1500 m',  temporada:'octubre–gener', sol:'preferentment calcari' },
     };
 
     // CARTO vectorial dona un mapa fosc nítid i etiquetes compartides. Relleu i
@@ -574,7 +578,7 @@
     const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     // Popup complet, compartit pel clic al mapa i el clic a la llista.
     // El "+" desplega el desglossament: cada factor (0..1) diu com de lluny és de l'ideal de l'espècie.
-    const FACTORS = [['fSeason','temporada'],['fH','humitat'],['fT','temperatura'],['fAlt','altitud'],['fHost','bosc'],['fSoil','sòl']];
+    const FACTORS = [['fH','humitat'],['fT','temperatura'],['fTrend','tendència tèrmica'],['fAlt','altitud'],['fHost','bosc'],['fSoil','sòl']];
     const factorsHTML = p => FACTORS.filter(([k]) => p[k] != null).map(([k,label]) => {
       const v = Math.max(0, Math.min(1, +p[k]));
       return `<span class="k">${label}</span>
@@ -601,6 +605,7 @@
         <span class="k">bosc</span><span class="v">${p.host ? (BOSC[p.host] ?? p.host) : '—'}</span>
         <span class="k">sòl</span><span class="v">${p.substrate ? (SOIL[p.substrate] ?? p.substrate) : 'no classificat'}</span>
         <span class="k">temperatura</span><span class="v">${fmt(p.tMean)} °C</span>
+        ${p.tTrend == null ? '' : `<span class="k">tendència tèrmica</span><span class="v">${p.tTrend > 0 ? '+' : ''}${fmt(p.tTrend)} °C</span>`}
         <span class="k">altitud</span><span class="v">${Math.round(p.alt||0)} m</span>
       </div>
       ${p.fH != null ? `<div class="pop-factors">${factorsHTML(p)}</div>` : ''}
@@ -616,6 +621,11 @@
     }
     const trapezoid = (x,a,b,c,d) => x<=a||x>=d?0:x<b?(x-a)/(b-a):x<=c?1:(d-x)/(d-c);
     const substrateFactor = (substrate, wanted) => !wanted?.length||!substrate ? 1 : substrate==='mixed' ? .85 : wanted.includes(substrate) ? 1 : .55;
+    const temperatureTrendFactor = (delta, preference='neutral') => {
+      if(preference==='neutral'||delta==null||Number.isNaN(delta))return 1;
+      const aligned=preference==='cooling'?-delta:delta;
+      return .95+.05*Math.max(-1,Math.min(1,aligned/3));
+    };
     function cellAt(lngLat) {
       if (!currentRaster?.pixels) return null;
       const { grid, pixels } = currentRaster, [x,y] = wgs84ToUtm31(lngLat.lng,lngLat.lat);
@@ -631,10 +641,10 @@
       const p=cell.index*4; if(!terrain[p+3]||!weather[p+3]) return { score:cell.score };
       const host=HOST_BY_CODE[terrain[p]], alt=((terrain[p+1]<<8)|terrain[p+2])-32768;
       const substrate=currentRaster.grid.substrateVersion?SUBSTRATE_BY_CODE[Math.max(0,terrain[p+3]-252)]:null;
-      const tMean=weather[p]/4-20, fH=weather[p+1]/255;
+      const tMean=weather[p]/4-20, tTrend=currentRaster.grid.weatherVersion>=2?weather[p+2]/8-16:null, fH=weather[p+1]/255;
       const fT=trapezoid(tMean,...model.temp), fAlt=trapezoid(alt,...model.alt);
-      const fHost=model.host.includes(host)?1:.25, fSoil=substrateFactor(substrate,model.substrate), fSeason=model.season;
-      return { score:fH*fT*fAlt*fSeason*fHost*fSoil, host, substrate, alt, tMean, fH, fT, fAlt, fHost, fSoil, fSeason };
+      const fHost=model.host.includes(host)?1:.25, fSoil=substrateFactor(substrate,model.substrate), fTrend=temperatureTrendFactor(tTrend,model.trend);
+      return { score:cell.score, host, substrate, alt, tMean, tTrend, fH, fT, fTrend, fAlt, fHost, fSoil };
     }
     function detailsAt(lngLat) {
       const cell=cellAt(lngLat); return cell?detailsForCell(cell):null;
@@ -973,7 +983,7 @@
       });
       content.style.display='block';
       if (!anyScore) { msg.style.display='block';
-        msg.innerHTML = `Tot a zero: probablement <b>fora de temporada</b> per aquesta espècie en aquesta data.`; }
+        msg.innerHTML = `Tot a zero: les <b>condicions observades</b> no són favorables per aquesta espècie.`; }
     }
 
     const loadingView=document.getElementById('loadingView'), authView=document.getElementById('authView'), resetView=document.getElementById('resetView');

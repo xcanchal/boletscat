@@ -13,13 +13,13 @@ separat del model predictiu a [`content/catalog.json`](content/catalog.json).
 ## Com funciona, en una frase
 
 Per a **una espècie concreta**, calculem un **índex de 0 a 1** que combina humitat,
-temperatura, altitud, temporada, **tipus de bosc** i, quan està ben documentat,
+temperatura recent i la seva tendència, altitud, **tipus de bosc** i, quan està ben documentat,
 **substrat geològic**. La meteorologia de la XEMA
 s'interpola sobre una graella forestal de 250 m; el terreny es precalcula un cop.
 
 ```
-score = humitat × temperatura × altitud × estació × hoste × substrat
-                                                              (cada factor 0..1)
+score = humitat × temperatura × tendència × altitud × hoste × substrat
+                                                                (cada factor 0..1)
 ```
 
 ---
@@ -37,6 +37,8 @@ Paràmetres = **priors ecològics raonables, no òptims** (sense ground truth no
 | **Rossinyol** (*C. cibarius*) | conifer/deciduous/sclerophyll | silícic | Jun–Oct | 300–1600 m | Generalista forestal, preferència àcida |
 | **Camagroc** (*C. lutescens*) | conifer | calcari | Oct–Gen | 400–1600 m | Molt tardà, fred |
 | **Múrgola** (*Morchella*) | ribera/deciduous | neutre | **Mar–Maig** | 200–1400 m | **Primavera!** Sapròfit |
+| **Ou de reig** (*A. caesarea*) | deciduous/sclerophyll | silícic | Jul–Oct | 100–1400 m | Mediterrani, termòfil |
+| **Fredolic** (*T. terreum*) | conifer | calcari | Oct–Gen | 0–1500 m | Tardà i associat sobretot a pins |
 
 ---
 
@@ -55,8 +57,11 @@ Cada senyal arriba exactament a `1` quan assoleix el seu llindar ideal provision
 (`TRIGGER_IDEAL` / `RESERVE_IDEAL`). Així un lloc realment ideal pot puntuar `1`,
 però el millor lloc d'un dia dolent no es normalitza artificialment.
 
-### Temperatura · Altitud · Estació — per espècie
-Trapezis de finestra ideal (temperatura, altitud) i **porta temporal** (fora de mesos → ~0).
+### Temperatura · Tendència · Altitud — per espècie
+La temperatura recent i l'altitud utilitzen finestres trapezoidals per espècie.
+La tendència compara els últims 5 dies amb els 9 anteriors i només pot ajustar el
+resultat un màxim del 10%. Els mesos habituals es conserven per al calendari i les
+fitxes, però no participen en el score.
 
 ### Hoste (`hostFactor`) — via MCSC
 Es precalcula un cop (`buildHost.mjs`): per a cada estació, mostrejant una **graella de
@@ -229,7 +234,8 @@ No hi ha ground truth ("on he trobat X"). Validem per:
 4. **Comparació abans/després del substrat**: el nou factor ha de retallar terreny
    incompatible, no inventar noves zones favorables.
 
-*Fora de temporada o en sec, tot surt zero: és correcte.*
+*En sec o fora de les finestres de temperatura, el resultat ha de ser molt baix.
+El calendari no substitueix les condicions observades.*
 
 El mapa tradueix l'índex tècnic a cinc nivells ordenats: **Molt baixa · Baixa ·
 Mitjana · Alta · Molt alta**. Al detall també dona una recomanació breu (`No hi vagis`,
@@ -290,6 +296,6 @@ Mitjana · Alta · Molt alta**. Al detall també dona una recomanació breu (`No
 
 `score_estacions.mjs`: `CAP`, `LAG_RISE`/`LAG_FALL`, `RESERVE_FALL`,
 `TRIGGER_IDEAL`/`RESERVE_IDEAL` (humitat) · el bloc `SPECIES`
-(temporada, altitud, temperatura, bosc i substrat per espècie) · els factors dins
+(mesos informatius, altitud, temperatura, tendència tèrmica, bosc i substrat per espècie) · els factors dins
 `hostFactor` i `substrateFactor` (duresa de cada penalització).
 `buildHost.mjs`: `GRID`/`STEP` (radi i densitat del mostreig).

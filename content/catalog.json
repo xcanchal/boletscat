@@ -329,7 +329,7 @@
         "altitudeM": { "min": 100, "max": 1400 },
         "soilPreferences": ["siliceous"]
       },
-      "prediction": { "available": false, "key": null },
+      "prediction": { "available": true, "key": "ou_de_reig" },
       "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
       "media": {
         "card": {
@@ -363,7 +363,7 @@
         "altitudeM": { "min": 0, "max": 1500 },
         "soilPreferences": ["calcareous"]
       },
-      "prediction": { "available": false, "key": null },
+      "prediction": { "available": true, "key": "fredolic" },
       "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
       "media": {
         "card": {

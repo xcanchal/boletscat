@@ -99,12 +99,28 @@ test("les fitxes publicades apareixen al sitemap i robots el declara", () => {
 });
 
 test("una espècie fora del predictor conserva la fitxa però no promet predicció pròpia", () => {
-  const ouDeReig = catalog.species.find((species) => species.slug === "ou-de-reig");
-  const html = renderSpeciesPage(ouDeReig, catalog);
-  assert.match(html, /Amanita caesarea/);
+  const apagallums = catalog.species.find((species) => species.slug === "apagallums");
+  const html = renderSpeciesPage(apagallums, catalog);
+  assert.match(html, /Macrolepiota procera/);
   assert.match(html, /Mapa de predicció/);
   assert.match(html, /espècies disponibles al predictor/);
-  assert.doesNotMatch(html, /condicions actuals de l’ou de reig/);
+  assert.doesNotMatch(html, /condicions actuals de l’apagallums/);
+});
+
+test("l’ou de reig i el fredolic tenen predicció pròpia", () => {
+  for (const slug of ["ou-de-reig", "fredolic"]) {
+    const species = catalog.species.find((entry) => entry.slug === slug);
+    const html = renderSpeciesPage(species, catalog);
+    assert.match(html, /Predicció d’avui/);
+    assert.match(html, new RegExp(`condicions actuals (?:de l’|del )${species.names.ca.toLowerCase()}`));
+  }
+});
+
+test("la fitxa de l’ou de reig contrau correctament l’article", () => {
+  const ouDeReig = catalog.species.find((species) => species.slug === "ou-de-reig");
+  const html = renderSpeciesPage(ouDeReig, catalog);
+  assert.match(html, /L’ou de reig creix/);
+  assert.match(html, /condicions actuals de l’ou de reig/);
 });
 
 test("les fitxes tòxiques mostren el nivell de risc i un avís específic", () => {

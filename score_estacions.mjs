@@ -12,12 +12,12 @@
  *  Escriu un bolets.<espècie>.geojson per espècie (el mapa el llegeix).
  *
  *  ── MODEL ────────────────────────────────────────────────────────────────
- *    score = humitat × temperatura × altitud × estació × HOSTE × SUBSTRAT
+ *    score = humitat × temperatura × tendència tèrmica × altitud × HOSTE × SUBSTRAT
  *      · humitat    : combina l'impuls de fructificació (pic ~8 dies després
  *                     de la pluja) amb la reserva hídrica dels últims 30 dies.
- *      · temperatura: finestra ideal per espècie.
+ *      · temperatura: finestra ideal per espècie i ajust petit segons la
+ *                     tendència recent (refredament o escalfament).
  *      · altitud    : banda per espècie.
- *      · estació    : porta temporal — fora de temporada, ~0.
  *      · hoste      : tipus de bosc dominant a l'entorn de l'estació (del MCSC,
  *                     precalculat a estacions_host.json amb buildHost.mjs) comparat
  *                     amb l'arbre que vol cada espècie. AQUÍ ceps i rovellons es
@@ -39,11 +39,12 @@ import { writeFileSync, readFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { encodeRgbaPng } from "./raster.mjs";
 import { SUBSTRATE_BY_CODE } from "./substrate.mjs";
+import { temperatureTrendFactor } from "./src/temperature-trend.mjs";
 
 const BASE = "https://analisi.transparenciacatalunya.cat/resource";
 const DS_MESURES = `${BASE}/nzvn-apee.json`, DS_ESTACIONS = `${BASE}/yqwd-vj5e.json`;
 const V_PLUJA = "35", V_TEMP = "32";
-const DIES = 30, DIES_TEMP = 5, CAP = 30;
+const DIES = 30, DIES_TEMP = 14, DIES_TEMP_RECENT = 5, CAP = 30;
 // L'impuls de fructificació puja lentament després de ploure i té el màxim
 // aproximadament al cap de 8 dies. La reserva sí que compta la pluja d'avui.
 const LAG_RISE = 6, LAG_FALL = 16, RESERVE_FALL = 14;
@@ -57,20 +58,24 @@ const COLOR_STOPS = [[0,[89,102,94]],[.1,[116,125,69]],[.25,[161,164,71]],[.4,[2
 // host = categories de bosc del MCSC: conifer (pins) · deciduous (roure/faig/castanyer)
 //        · sclerophyll (alzina/surera) · ribera (bosc de ribera).
 const SPECIES = {
-  rovello:   { nom: "Rovelló / pinetell",               mesos:[9,10,11],    host:["conifer"],
+  rovello:   { nom: "Rovelló / pinetell",               mesos:[9,10,11],    host:["conifer"], trend:"cooling",
                alt:[0,200,1500,1700],   temp:[2,8,20,26] },
-  cep:       { nom: "Cep (grup Boletus edulis)",        mesos:[6,9,10,11],  host:["conifer","deciduous","sclerophyll"],
+  cep:       { nom: "Cep (grup Boletus edulis)",        mesos:[6,9,10,11],  host:["conifer","deciduous","sclerophyll"], trend:"cooling",
                substrate:["siliceous"], alt:[400,800,1600,1900], temp:[2,8,18,24] },
-  llenega:   { nom: "Llenega (Hygrophorus)",            mesos:[10,11,12],   host:["conifer"],
+  llenega:   { nom: "Llenega (Hygrophorus)",            mesos:[10,11,12],   host:["conifer"], trend:"cooling",
                substrate:["calcareous"], alt:[100,300,1300,1500], temp:[0,4,14,20] },
-  trompeta:  { nom: "Trompeta de la mort (Craterellus)",mesos:[9,10,11],    host:["deciduous","sclerophyll"],
+  trompeta:  { nom: "Trompeta de la mort (Craterellus)",mesos:[9,10,11],    host:["deciduous","sclerophyll"], trend:"cooling",
                alt:[200,400,1300,1500], temp:[2,8,18,24] },
-  rossinyol: { nom: "Rossinyol (Cantharellus cibarius)",mesos:[6,7,8,9,10], host:["conifer","deciduous","sclerophyll"],
+  rossinyol: { nom: "Rossinyol (Cantharellus cibarius)",mesos:[6,7,8,9,10], host:["conifer","deciduous","sclerophyll"], trend:"neutral",
                substrate:["siliceous"], alt:[200,400,1500,1700], temp:[4,10,22,28] },
-  camagroc:  { nom: "Camagroc (Cantharellus lutescens)",mesos:[10,11,12,1], host:["conifer"],
+  camagroc:  { nom: "Camagroc (Cantharellus lutescens)",mesos:[10,11,12,1], host:["conifer"], trend:"cooling",
                substrate:["calcareous"], alt:[300,500,1500,1700], temp:[-2,2,14,20] },
-  murgola:   { nom: "Múrgola (Morchella)",              mesos:[3,4,5],      host:["ribera","deciduous"],
+  murgola:   { nom: "Múrgola (Morchella)",              mesos:[3,4,5],      host:["ribera","deciduous"], trend:"warming",
                alt:[100,300,1200,1500], temp:[2,8,18,24] },
+  ou_de_reig:{ nom: "Ou de reig (Amanita caesarea)",    mesos:[7,8,9,10],   host:["deciduous","sclerophyll"], trend:"neutral",
+               substrate:["siliceous"], alt:[0,100,1400,1600], temp:[8,14,28,32] },
+  fredolic:  { nom: "Fredolic (Tricholoma terreum)",     mesos:[1,10,11,12], host:["conifer"], trend:"cooling",
+               substrate:["calcareous"], alt:[0,100,1500,1700], temp:[-5,0,12,18] },
 };
 
 // ── Hoste: carreguem el precompute del MCSC (si hi és) ──────────────────────
@@ -128,12 +133,6 @@ function humidityFactor(trigger, reserve) {
   return 0.8 * smoothRamp(trigger, TRIGGER_IDEAL) +
          0.2 * smoothRamp(reserve, RESERVE_IDEAL);
 }
-function seasonFactor(month, mesos) {
-  if (mesos.includes(month)) return 1;
-  const dist = Math.min(...mesos.map((m) => { const d = Math.abs(m - month); return Math.min(d, 12 - d); }));
-  return dist === 1 ? 0.35 : 0;
-}
-
 function readGrid(path = "graella.bin") {
   if (!existsSync(path)) return null;
   const b = readFileSync(path);
@@ -185,7 +184,7 @@ function scoreColor(score) {
 }
 
 function interpolateGrid(grid, signals) {
-  const n=grid.width*grid.height, outH=new Float32Array(n), outR=new Float32Array(n), outT=new Float32Array(n);
+  const n=grid.width*grid.height, outH=new Float32Array(n), outR=new Float32Array(n), outT=new Float32Array(n), outTrend=new Float32Array(n);
   const tempSignals=signals.filter(s=>s.t!=null);
   const meanAlt=tempSignals.reduce((a,s)=>a+s.alt,0)/tempSignals.length, meanT=tempSignals.reduce((a,s)=>a+s.t,0)/tempSignals.length;
   let cov=0, variance=0;
@@ -205,12 +204,15 @@ function interpolateGrid(grid, signals) {
       let p=K-1; while(p>0&&d<bestD[p-1]) { bestD[p]=bestD[p-1]; bestI[p]=bestI[p-1]; p--; }
       bestD[p]=d; bestI[p]=j;
     }
-    let wh=0,h=0,r=0,res=0;
-    for(let k=0;k<K&&bestI[k]>=0;k++) { const s=tempSignals[bestI[k]], w=1/Math.max(bestD[k],4e6); wh+=w; h+=w*s.h; r+=w*s.reserve; res+=w*s.residual; }
-    outH[i]=h/wh; outR[i]=r/wh; outT[i]=intercept+lapse*alt+res/wh; processed++;
+    let wh=0,h=0,r=0,res=0,wt=0,trend=0;
+    for(let k=0;k<K&&bestI[k]>=0;k++) {
+      const s=tempSignals[bestI[k]], w=1/Math.max(bestD[k],4e6); wh+=w; h+=w*s.h; r+=w*s.reserve; res+=w*s.residual;
+      if (s.tTrend != null) { wt+=w; trend+=w*s.tTrend; }
+    }
+    outH[i]=h/wh; outR[i]=r/wh; outT[i]=intercept+lapse*alt+res/wh; outTrend[i]=wt ? trend/wt : 0; processed++;
   }
   console.log(`Interpolació: ${processed.toLocaleString("ca")} cel·les · gradient tèrmic ${(lapse*1000).toFixed(1)} °C/km`);
-  return { outH, outR, outT };
+  return { outH, outR, outT, outTrend };
 }
 async function diari(variable, desdeISO, finsISO, agg) {
   return soda(DS_MESURES, {
@@ -235,7 +237,9 @@ async function main() {
 
   const refArg = args.find((a) => a.startsWith("--date="));
   const ref = refArg ? new Date(refArg.slice(7) + "T23:59:59") : new Date();
-  const refISO = ref.toISOString().slice(0, 19), month = ref.getMonth() + 1;
+  const refISO = ref.toISOString().slice(0, 19);
+  const refDay = Date.parse(`${refISO.slice(0, 10)}T00:00:00Z`) / 864e5;
+  const daysAgo = (value) => refDay - Date.parse(`${String(value).slice(0, 10)}T00:00:00Z`) / 864e5;
   const desdePluja = new Date(ref - DIES * 864e5).toISOString().slice(0, 19);
   const desdeTemp  = new Date(ref - DIES_TEMP * 864e5).toISOString().slice(0, 19);
   console.log(`Data de referència: ${refISO.slice(0, 10)}\n`);
@@ -250,7 +254,7 @@ async function main() {
   const temp  = await diari(V_TEMP,  desdeTemp,  refISO, "avg");
   const H = new Map(), R = new Map(), recentRain = new Map();
   for (const r of pluja) {
-    const d = Math.round((ref - new Date(r.dia)) / 864e5);
+    const d = daysAgo(r.dia);
     if (d < 0 || d >= DIES) continue;
     const mm = parseFloat(r.v);
     if (Number.isNaN(mm)) continue;
@@ -259,12 +263,19 @@ async function main() {
     R.set(r.codi_estacio, (R.get(r.codi_estacio) ?? 0) + useful * reserveWeight(d));
     if (d <= 2) recentRain.set(r.codi_estacio, (recentRain.get(r.codi_estacio) ?? 0) + mm);
   }
-  const Tsum = new Map(), Tn = new Map();
+  const Tsum = new Map(), Tn = new Map(), TpreviousSum = new Map(), TpreviousN = new Map();
   for (const r of temp) {
     const t = parseFloat(r.v); if (Number.isNaN(t)) continue;
-    Tsum.set(r.codi_estacio, (Tsum.get(r.codi_estacio) ?? 0) + t);
-    Tn.set(r.codi_estacio, (Tn.get(r.codi_estacio) ?? 0) + 1);
+    const age = daysAgo(r.dia);
+    if (age < 0 || age >= DIES_TEMP) continue;
+    const sums = age < DIES_TEMP_RECENT ? Tsum : TpreviousSum;
+    const counts = age < DIES_TEMP_RECENT ? Tn : TpreviousN;
+    sums.set(r.codi_estacio, (sums.get(r.codi_estacio) ?? 0) + t);
+    counts.set(r.codi_estacio, (counts.get(r.codi_estacio) ?? 0) + 1);
   }
+  const temperatureTrend = (codi) => Tn.has(codi) && TpreviousN.has(codi)
+    ? Tsum.get(codi) / Tn.get(codi) - TpreviousSum.get(codi) / TpreviousN.get(codi)
+    : null;
 
   const gridPath = args.find((a) => a.startsWith("--grid="))?.slice(7) || "graella.bin";
   const grid = readGrid(gridPath);
@@ -274,11 +285,11 @@ async function main() {
     for (const [codi,m] of meta) {
       if (!m.lat||!m.lon||!Tn.has(codi)) continue;
       const [x,y]=wgs84ToUtm31(m.lon,m.lat);
-      signals.push({x,y,alt:m.alt||0,t:Tsum.get(codi)/Tn.get(codi),h:H.get(codi)??0,reserve:R.get(codi)??0});
+      signals.push({x,y,alt:m.alt||0,t:Tsum.get(codi)/Tn.get(codi),tTrend:temperatureTrend(codi),h:H.get(codi)??0,reserve:R.get(codi)??0});
     }
     gridWeather=interpolateGrid(grid,signals);
     writeFileSync(join(OUT,"bolets.grid.json"),JSON.stringify({
-      width:grid.width,height:grid.height,cell:grid.cell,x0:grid.x0,y0:grid.y0,y1:grid.y1,substrateVersion:grid.substrateVersion,
+      width:grid.width,height:grid.height,cell:grid.cell,x0:grid.x0,y0:grid.y0,y1:grid.y1,substrateVersion:grid.substrateVersion,weatherVersion:2,
       coordinates:[utm31ToLngLat(grid.x0,grid.y1),utm31ToLngLat(grid.x1,grid.y1),utm31ToLngLat(grid.x1,grid.y0),utm31ToLngLat(grid.x0,grid.y0)],
     }));
 
@@ -292,6 +303,7 @@ async function main() {
       terrain[p]=host; terrain[p+1]=encodedAlt>>8; terrain[p+2]=encodedAlt&255; terrain[p+3]=252+substrate;
       weather[p]=Math.max(0,Math.min(255,Math.round((gridWeather.outT[i]+20)*4)));
       weather[p+1]=Math.round(humidityFactor(gridWeather.outH[i],gridWeather.outR[i])*255);
+      weather[p+2]=Math.max(0,Math.min(255,Math.round((gridWeather.outTrend[i]+16)*8)));
       weather[p+3]=255;
     }
     writeFileSync(join(OUT,"bolets.terrain.png"),encodeRgbaPng(grid.width,grid.height,terrain));
@@ -300,24 +312,25 @@ async function main() {
 
   // ── Puntuem cada espècie ─────────────────────────────────────────────────
   for (const spKey of spKeys) {
-    const sp = SPECIES[spKey], gate = seasonFactor(month, sp.mesos);
+    const sp = SPECIES[spKey];
     const files = [];
     for (const [codi, m] of meta) {
       if (!m.lat || !m.lon) continue;
       const h = H.get(codi) ?? 0, reserve = R.get(codi) ?? 0;
       const hScore = humidityFactor(h, reserve);
       const tMean = Tn.has(codi) ? Tsum.get(codi) / Tn.get(codi) : null;
+      const tTrend = temperatureTrend(codi), fTrend = temperatureTrendFactor(tTrend, sp.trend);
       const substrateCode=grid ? (terrainAt(grid,m.lon,m.lat)?.substrate ?? 0) : 0;
       const substrate=SUBSTRATE_BY_CODE[substrateCode], fSoil=substrateFactor(substrateCode,sp);
       const fT = trapezoid(tMean, ...sp.temp), fAlt = trapezoid(m.alt, ...sp.alt), fHost = hostFactor(codi, sp);
-      const score = hScore * fT * fAlt * gate * fHost * fSoil;
+      const score = hScore * fT * fTrend * fAlt * fHost * fSoil;
       files.push({ codi, ...m, h, reserve, recentRain: recentRain.get(codi) ?? 0,
-                   tMean, host: HOST?.[codi]?.host ?? null, substrate, score,
-                   fH: hScore, fT, fAlt, fSeason: gate, fHost, fSoil });
+                   tMean, tTrend, host: HOST?.[codi]?.host ?? null, substrate, score,
+                   fH: hScore, fT, fTrend, fAlt, fHost, fSoil });
     }
     files.sort((a, b) => b.score - a.score);
 
-    console.log(`── ${sp.nom}  (bosc: ${sp.host.join("/")} · estació: ${gate}${gate === 0 ? " · FORA DE TEMPORADA" : ""})`);
+    console.log(`── ${sp.nom}  (bosc: ${sp.host.join("/")} · tendència: ${sp.trend})`);
     for (const f of files.slice(0, all ? 5 : 15))
       console.log(`   ${(f.codi ?? "").padEnd(4)} ${(f.nom ?? "").slice(0,22).padEnd(23)} ` +
         `${String(Math.round(f.alt||0)).padStart(4)}m ${(f.host ?? "—").padEnd(10)} ` +
@@ -325,13 +338,13 @@ async function main() {
 
     const geojson = {
       type: "FeatureCollection", species: spKey, speciesNom: sp.nom, generated: refISO.slice(0, 10),
-      model: { host:sp.host, substrate:sp.substrate ?? [], alt:sp.alt, temp:sp.temp, season:gate },
+      model: { scoreVersion:2, host:sp.host, substrate:sp.substrate ?? [], alt:sp.alt, temp:sp.temp, trend:sp.trend, typicalMonths:sp.mesos },
       features: files.map((f) => ({
         type: "Feature", geometry: { type: "Point", coordinates: [f.lon, f.lat] },
         properties: { codi:f.codi, nom:f.nom, alt:f.alt, host:f.host, substrate:f.substrate,
                       H:+f.h.toFixed(1), reserve:+f.reserve.toFixed(1), recentRain:+f.recentRain.toFixed(1),
-                      tMean:f.tMean, score:+f.score.toFixed(3),
-                      fH:+f.fH.toFixed(2), fT:+f.fT.toFixed(2), fAlt:+f.fAlt.toFixed(2), fSeason:+f.fSeason.toFixed(2), fHost:+f.fHost.toFixed(2), fSoil:+f.fSoil.toFixed(2) },
+                      tMean:f.tMean, tTrend:f.tTrend, score:+f.score.toFixed(3),
+                      fH:+f.fH.toFixed(2), fT:+f.fT.toFixed(2), fTrend:+f.fTrend.toFixed(2), fAlt:+f.fAlt.toFixed(2), fHost:+f.fHost.toFixed(2), fSoil:+f.fSoil.toFixed(2) },
       })),
     };
     writeFileSync(join(OUT, `bolets.${spKey}.geojson`), JSON.stringify(geojson));
@@ -339,8 +352,8 @@ async function main() {
       const rgba=new Uint8Array(grid.width*grid.height*4), wanted=new Set(sp.host.map(h=>HOST_CODE[h]));
       for(let i=0;i<grid.width*grid.height;i++) {
         const {host,alt,substrate}=terrainCell(grid,i); if(!host||alt===-32768) continue;
-        const fH=humidityFactor(gridWeather.outH[i],gridWeather.outR[i]), fT=trapezoid(gridWeather.outT[i],...sp.temp), fAlt=trapezoid(alt,...sp.alt);
-        const fHost=wanted.has(host)?1:.25, fSoil=substrateFactor(substrate,sp), score=fH*fT*fAlt*gate*fHost*fSoil, [red,green,blue]=scoreColor(score), p=i*4;
+        const fH=humidityFactor(gridWeather.outH[i],gridWeather.outR[i]), fT=trapezoid(gridWeather.outT[i],...sp.temp), fTrend=temperatureTrendFactor(gridWeather.outTrend[i],sp.trend), fAlt=trapezoid(alt,...sp.alt);
+        const fHost=wanted.has(host)?1:.25, fSoil=substrateFactor(substrate,sp), score=fH*fT*fTrend*fAlt*fHost*fSoil, [red,green,blue]=scoreColor(score), p=i*4;
         rgba[p]=red; rgba[p+1]=green; rgba[p+2]=blue; rgba[p+3]=score<.01?35:Math.round(105+Math.min(1,score)*125);
       }
       writeFileSync(join(OUT,`bolets.${spKey}.png`),encodeRgbaPng(grid.width,grid.height,rgba));

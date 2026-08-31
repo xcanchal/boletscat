@@ -5,6 +5,11 @@ import test from "node:test";
 const catalog = JSON.parse(
   await readFile(new URL("../content/catalog.json", import.meta.url), "utf8"),
 );
+const predictorSource = await readFile(
+  new URL("../score_estacions.mjs", import.meta.url),
+  "utf8",
+);
+const appSource = await readFile(new URL("../app.html", import.meta.url), "utf8");
 
 const MODEL_SPECIES = new Set([
   "rovello",
@@ -14,6 +19,8 @@ const MODEL_SPECIES = new Set([
   "rossinyol",
   "camagroc",
   "murgola",
+  "ou_de_reig",
+  "fredolic",
 ]);
 
 test("el catàleg editorial té identificadors i referències consistents", () => {
@@ -83,6 +90,13 @@ test("el catàleg inicial cobreix totes les espècies disponibles al predictor",
   );
 
   assert.deepEqual(predictionKeys, MODEL_SPECIES);
+});
+
+test("el motor i el selector cobreixen totes les espècies predictives del catàleg", () => {
+  for (const key of MODEL_SPECIES) {
+    assert.match(predictorSource, new RegExp(`\\b${key}\\s*:`), `${key}: falta al motor`);
+    assert.match(appSource, new RegExp(`<option value="${key}">`), `${key}: falta al selector`);
+  }
 });
 
 test("el directori també cobreix espècies informatives fora del predictor", () => {
