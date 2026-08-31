@@ -240,7 +240,7 @@ El calendari no substitueix les condicions observades.*
 El mapa tradueix l'índex tècnic a cinc nivells ordenats: **Molt baixa · Baixa ·
 Mitjana · Alta · Molt alta**. `Molt alta` exigeix com a mínim `0,80` i que siguin
 coneguts el tipus i l'estructura del bosc i el substrat. Si falta alguna d'aquestes
-dades, l'índex queda limitat a `0,79` i el popup ho identifica com a `Desconegut (?)`.
+dades, l'índex queda limitat a `0,79` i el popup ho identifica com a `Desconegut`.
 Al detall també dona una recomanació breu (`No hi vagis`, `Pots provar`, `Ves-hi`...).
 El valor `0..1` es manté per poder auditar el model; és un índex de condicions, no
 una probabilitat estadística de trobar bolets.
