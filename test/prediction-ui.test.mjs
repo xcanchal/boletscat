@@ -27,3 +27,13 @@ test("el popup concentra les xifres útils i no publica els factors interns", ()
   assert.doesNotMatch(app, /const FACTORS/);
   assert.doesNotMatch(app, /class="fbar"/);
 });
+
+test("el popup és ample, responsive i manté visible el botó de ruta", () => {
+  assert.match(app, /width:min\(340px,calc\(100vw - 24px\)\)/);
+  assert.match(app, /grid-template-columns:minmax\(0,1fr\) auto/);
+  assert.match(app, /\.pop-grid \.v\{[^}]*white-space:nowrap/);
+  assert.match(app, /\.maplibregl-popup-content\{display:flex;flex-direction:column/);
+  assert.match(app, /\.pop-scroll\{min-height:0;[^}]*overflow-y:auto/);
+  assert.match(app, /\.pop-map-footer\{flex:none/);
+  assert.match(app, /<div class="pop-map-footer"><a class="pop-map"/);
+});

@@ -159,9 +159,10 @@
     .maplibregl-ctrl-bottom-right{right:env(safe-area-inset-right);bottom:env(safe-area-inset-bottom)}
     .maplibregl-ctrl-group button{touch-action:manipulation}
 
-    .maplibregl-popup-content{background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--edge);
+    .maplibregl-popup{width:min(340px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)!important}
+    .maplibregl-popup-content{display:flex;flex-direction:column;width:100%;background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--edge);
       border-radius:12px;color:var(--text);font-family:var(--ui);padding:12px 14px;max-height:min(70dvh,420px);
-      overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+      overflow:hidden}.pop-scroll{min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
     .maplibregl-popup-tip{display:none}
     .maplibregl-popup-close-button{position:absolute;top:6px;right:6px;display:grid;place-items:center;
       width:34px;height:34px;padding:0;border:1px solid transparent;border-radius:9px;
@@ -171,7 +172,7 @@
     .maplibregl-popup-close-button:focus-visible{outline:2px solid var(--rovello);outline-offset:2px}
     .pop-nom{font-family:var(--display);font-weight:600;font-size:16px;margin-bottom:2px;padding-right:38px}
     .pop-score{margin-top:9px;font-variant-numeric:tabular-nums}.pop-score-line{display:flex;align-items:baseline;justify-content:space-between;gap:18px;font-size:11px}
-    .pop-score-line span{color:var(--muted)}.pop-score-line strong{font-size:12px;font-weight:700;white-space:nowrap}
+    .pop-score-line span{color:var(--muted);white-space:nowrap}.pop-score-line strong{font-size:12px;font-weight:700;white-space:nowrap}
     .pop-probability{height:6px;margin-top:6px;overflow:hidden;border-radius:999px;background:rgba(232,226,214,.09)}
     .pop-probability i{display:block;height:100%;border-radius:inherit;background:currentColor}
     .q-very-low,.q-low{color:#9aa39b}.q-medium{color:#b6b94f}
@@ -181,15 +182,16 @@
     .pop-index{color:var(--muted);font-size:11px;margin-top:4px;font-variant-numeric:tabular-nums}
     .pop-nearby{margin:8px 0 3px;padding:6px 8px;border-left:2px solid var(--rovello);
       background:rgba(232,114,42,.08);color:#c5c9bb;font-size:11px;line-height:1.4}
-    .pop-summary{display:grid;gap:3px;margin-top:11px;font-size:12.5px;line-height:1.35}.pop-summary-line{display:flex;flex-wrap:wrap;gap:0 5px}.pop-summary-line .dot{color:#697064}
+    .pop-summary{display:grid;gap:3px;margin-top:11px;font-size:12.5px;line-height:1.35}.pop-summary-line{display:flex;flex-wrap:wrap;gap:0 5px}.pop-summary-line>span:not(.dot){white-space:nowrap}.pop-summary-line .dot{color:#697064}
     .pop-summary .qualifier{color:#b8beaf}.pop-environment{margin-top:10px;padding-top:8px;border-top:1px solid var(--edge)}
     .pop-environment summary{display:flex;align-items:center;justify-content:space-between;color:#bbc1b5;font-size:11.5px;font-weight:650;cursor:pointer;list-style:none}
     .pop-environment summary::-webkit-details-marker{display:none}.pop-environment summary::after{content:'⌄';color:var(--muted);font-size:15px;line-height:1;transition:transform .15s}.pop-environment[open] summary::after{transform:rotate(180deg)}
-    .pop-grid{display:grid;grid-template-columns:auto auto;gap:4px 14px;margin-top:8px;font-size:12px}
-    .pop-grid .k{color:var(--muted)} .pop-grid .v{text-align:right;font-variant-numeric:tabular-nums}
+    .pop-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;margin-top:8px;font-size:12px}
+    .pop-grid .k{min-width:0;color:var(--muted)} .pop-grid .v{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
     .pop-method{margin:7px 0 0;color:#788074;font-size:9.5px;line-height:1.4}
     .unknown-value{color:var(--muted);font-style:italic}
-    .pop-map{display:inline-flex;align-items:center;margin-top:10px;padding:5px 8px;border:1px solid var(--edge);
+    .pop-map-footer{flex:none;margin:8px -14px -12px;padding:9px 14px 12px;border-top:1px solid var(--edge);background:#131b12}
+    .pop-map{display:inline-flex;align-items:center;padding:5px 8px;border:1px solid var(--edge);
       border-radius:7px;color:var(--text);font-size:11.5px;font-weight:600;text-decoration:none;transition:all .15s}
     .pop-map:hover{border-color:var(--rovello);color:var(--rovello);background:rgba(232,114,42,.07)}
     .maplibregl-ctrl-attrib{font-size:10px}
@@ -591,8 +593,8 @@
     const mapLinkHTML = lngLat => {
       const [lng,lat]=Array.isArray(lngLat)?lngLat:[lngLat.lng,lngLat.lat];
       const destination=encodeURIComponent(`${(+lat).toFixed(6)},${(+lng).toFixed(6)}`);
-      return `<a class="pop-map" href="https://www.google.com/maps/dir/?api=1&amp;destination=${destination}"
-        target="_blank" rel="noopener noreferrer" aria-label="Com arribar-hi amb Google Maps">Com arribar-hi ↗</a>`;
+      return `<div class="pop-map-footer"><a class="pop-map" href="https://www.google.com/maps/dir/?api=1&amp;destination=${destination}"
+        target="_blank" rel="noopener noreferrer" aria-label="Com arribar-hi amb Google Maps">Com arribar-hi ↗</a></div>`;
     };
     const popHTML = (p,lngLat) => {
       const r = rating(p);
@@ -601,6 +603,7 @@
       const temperature=knownHTML(p.tMean,value => `${fmt(value)} °C${qualifier?` <span class="qualifier">${qualifier}</span>`:''}`);
       const soil=knownHTML(p.substrate,value => `sòl ${esc(SOIL[value] ?? value)}`);
       return `
+      <div class="pop-scroll">
       <div class="pop-nom">${esc(p.nom ?? p.codi)}</div>
       <div class="pop-score">
         <div class="pop-score-line"><span>Probabilitat estimada</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div>
@@ -614,6 +617,7 @@
         <span class="k">Cobertura forestal</span><span class="v">${forestDetailHTML(p)}</span>
         <span class="k">Tendència tèrmica</span><span class="v">${trendDetailHTML(p.tTrend)}</span>
       </div><p class="pop-method">La cobertura és la proporció de bosc de l’entorn. La tendència compara els últims 5 dies amb els 9 anteriors.</p></details>
+      </div>
       ${mapLinkHTML(lngLat)}`;
     };
 
@@ -690,14 +694,14 @@
     }
     const areaHTML = (place,details,lngLat,distance=0) => {
       const title=place ? `A prop de ${place}` : `${lngLat.lat.toFixed(4)}, ${lngLat.lng.toFixed(4)}`;
-      if (details==null) return `<div class="pop-nom">${esc(title)}</div><div class="pop-index">No hi ha cap estimació forestal prou a prop d’aquest punt.</div>${mapLinkHTML(lngLat)}`;
+      if (details==null) return `<div class="pop-scroll"><div class="pop-nom">${esc(title)}</div><div class="pop-index">No hi ha cap estimació forestal prou a prop d’aquest punt.</div></div>${mapLinkHTML(lngLat)}`;
       const nearby=distance>0?`<div class="pop-nearby">Estimació forestal més propera · ${distance<1000?`${Math.round(distance/50)*50} m`:`${(distance/1000).toFixed(1)} km`} del punt tocat</div>`:'';
-      if (details.fH==null) { const r=rating(details),percentage=Math.round(details.score*100); return `<div class="pop-nom">${esc(title)}</div>${nearby}<div class="pop-score"><div class="pop-score-line"><span>Probabilitat estimada</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div><div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div></div>${mapLinkHTML(lngLat)}`; }
+      if (details.fH==null) { const r=rating(details),percentage=Math.round(details.score*100); return `<div class="pop-scroll"><div class="pop-nom">${esc(title)}</div>${nearby}<div class="pop-score"><div class="pop-score-line"><span>Probabilitat estimada</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div><div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div></div></div>${mapLinkHTML(lngLat)}`; }
       return popHTML({ nom:title, ...details },lngLat).replace('<div class="pop-score">',`${nearby}<div class="pop-score">`);
     };
     const locationHTML = (place,lngLat) => {
       const title=place ? `A prop de ${place}` : `${lngLat.lat.toFixed(4)}, ${lngLat.lng.toFixed(4)}`;
-      return `<div class="pop-nom">${esc(title)}</div>${mapLinkHTML(lngLat)}`;
+      return `<div class="pop-scroll"><div class="pop-nom">${esc(title)}</div></div>${mapLinkHTML(lngLat)}`;
     };
 
     // Botons del selector de capa
