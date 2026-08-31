@@ -32,7 +32,7 @@ Paràmetres = **priors ecològics raonables, no òptims** (sense ground truth no
 |---|---|---|---|---|---|
 | **Rovelló** (*Lactarius*) | conifer | neutre | Set–Nov | Baixa–1600 m | Cas base; falta separar espècies de rovelló |
 | **Cep** (*Boletus edulis* grp) | conifer/deciduous/sclerophyll | silícic | Set–Nov (+estiu) | 600–1800 m | Vol humitat sostinguda, fresc |
-| **Llenega** (*Hygrophorus*) | conifer | calcari | Oct–Des | Mitja | Tardà, aguanta el fred |
+| **Llenega negra** (*H. latitabundus*) | conifer | calcari | Oct–Des | Mitja | Tardà, aguanta el fred |
 | **Trompeta** (*Craterellus*) | deciduous/sclerophyll | neutre | Set–Nov | 300–1400 m | Fonts edàfiques contradictòries |
 | **Rossinyol** (*C. cibarius*) | conifer/deciduous/sclerophyll | silícic | Jun–Oct | 300–1600 m | Generalista forestal, preferència àcida |
 | **Camagroc** (*C. lutescens*) | conifer | calcari | Oct–Gen | 400–1600 m | Molt tardà, fred |
@@ -94,8 +94,9 @@ completament cap zona ni convertir una cartografia 1:250.000 en una falsa certes
 
 `buildGrid.mjs` descarrega una sola vegada la coberta del sòl 2024, el model
 d'elevacions i la geologia territorial 1:250.000 de l'ICGC. En desa una
-representació compacta `BGR2` a `graella.bin` (4 bytes per cel·la: bosc + altitud +
-substrat). El procés diari interpola la meteorologia, corregeix la
+representació compacta `BGR3` a `graella.bin` (5 bytes per cel·la: tipus de bosc +
+altitud + substrat + estructura forestal densa/clara). El lector manté
+compatibilitat amb les graelles `BGR1` i `BGR2` antigues. El procés diari interpola la meteorologia, corregeix la
 temperatura amb l'altitud local i genera un PNG transparent per espècie. El
 navegador rep una sola imatge d'uns centenars de KB, no 1,2 milions de geometries.
 La dada manté la resolució de 250 m, però el client la suavitza a qualsevol zoom
@@ -114,8 +115,7 @@ mateixes etiquetes vectorials.
 | Mesures XEMA | Socrata `nzvn-apee` | Semihorària. `codi_estacio`/`codi_variable`/`data_lectura`/`valor_lectura` |
 | Estacions | Socrata `yqwd-vj5e` | nom, lat, lon, altitud |
 | Variables | Socrata `4fb2-n3yi` | `35`=pluja · `32`=temp · `40`/`42`=Tx/Tn · `30`=vent · `33`=HR |
-| **MCSC** | WMS ICGC `cobertes-sol` (`cobertes_2009`) | Tipus de bosc per coordenada (GetFeatureInfo, `text/plain`) |
-| **MCSC 2024** | WMS ICGC `cobertes_2024` | Coberta forestal de la graella de 250 m |
+| **MCSC 2024** | WMS ICGC `cobertes_2024` | Tipus de bosc per estació i coberta/estructura forestal de la graella de 250 m |
 | **MET 5 m** | WCS ICGC `icc_mdt` | Altitud agregada a la graella de 250 m |
 | **Geologia territorial 1:250.000** | [GeoPackage ICGC](https://www.icgc.cat/ca/Geoinformacio-i-mapes/Dades-i-productes/Geoinformacio-geologica-i-geofisica/Cartografia-geologica/Mapa-geologic-de-Catalunya-1250000) | Proxy conservador de substrat silícic/calcari/mixt |
 | **Geocodificador ICGC** | API REST `geocodificador/invers` | Topònim més proper quan es clica el mapa |
@@ -238,9 +238,12 @@ No hi ha ground truth ("on he trobat X"). Validem per:
 El calendari no substitueix les condicions observades.*
 
 El mapa tradueix l'índex tècnic a cinc nivells ordenats: **Molt baixa · Baixa ·
-Mitjana · Alta · Molt alta**. Al detall també dona una recomanació breu (`No hi vagis`,
-`Pots provar`, `Ves-hi`...). El valor `0..1` es manté per poder auditar el model;
-és un índex de condicions, no una probabilitat estadística de trobar bolets.
+Mitjana · Alta · Molt alta**. `Molt alta` exigeix com a mínim `0,80` i que siguin
+coneguts el tipus i l'estructura del bosc i el substrat. Si falta alguna d'aquestes
+dades, l'índex queda limitat a `0,79` i el popup ho identifica com a `Desconegut (?)`.
+Al detall també dona una recomanació breu (`No hi vagis`, `Pots provar`, `Ves-hi`...).
+El valor `0..1` es manté per poder auditar el model; és un índex de condicions, no
+una probabilitat estadística de trobar bolets.
 
 ---
 

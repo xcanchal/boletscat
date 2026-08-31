@@ -23,7 +23,7 @@ import { writeFileSync } from "node:fs";
 
 const SOCRATA = "https://analisi.transparenciacatalunya.cat/resource/yqwd-vj5e.json";
 const WMS = "https://geoserveis.icgc.cat/servei/catalunya/cobertes-sol/wms";
-const LAYER = "cobertes_2009";
+const LAYER = "cobertes_2024";
 
 const GRID = parseInt(process.argv.find((a) => a.startsWith("--grid="))?.slice(7) || "5"); // NxN punts
 const STEP = 0.01;   // ~1 km entre punts → 5×5 cobreix ~4 km

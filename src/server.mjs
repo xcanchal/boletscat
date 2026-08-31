@@ -146,7 +146,7 @@ app.get("/api/predictions/:filename", async (c) => {
     const data = await readFile(join(config.predictionDir, filename));
     return c.body(data, 200, {
       "Content-Type": predictionTypes[extname(filename)] || "application/octet-stream",
-      "Cache-Control": "private, max-age=300",
+      "Cache-Control": "private, no-store",
       Vary: "Cookie",
     });
   } catch (error) {

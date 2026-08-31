@@ -16,7 +16,7 @@ const escapeHtml = (value = "") => String(value)
 
 const logo = `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M8 32C9.5 19 18 11 32 11s22.5 8 24 21H8Z" fill="#ec6c2c"/><path d="M25 31h14l3 21H22l3-21Z" fill="#e8e3d6"/><circle cx="23" cy="23" r="2" fill="#fac28c"/><circle cx="39" cy="19" r="2.5" fill="#fac28c"/></svg>`;
 
-const nav = (current = "guide") => `<header class="site-header"><nav class="wrap site-nav" aria-label="Navegació principal"><a class="brand" href="/" aria-label="Boletada, inici">${logo}Boletada</a><div class="nav-links"><a href="/bolets/"${current === "guide" ? ' aria-current="page"' : ""}>Guia de bolets</a><a class="button" href="/app/">Accedeix al mapa <span aria-hidden="true">→</span></a></div></nav></header>`;
+const nav = (current = "guide") => `<header class="site-header"><nav class="wrap site-nav" aria-label="Navegació principal"><a class="brand" href="/" aria-label="Boletada, inici">${logo}Boletada</a><div class="nav-links"><a href="/bolets/"${current === "guide" ? ' aria-current="page"' : ""}><span class="nav-label-full">Guia de bolets</span><span class="nav-label-short">Guia</span></a><a class="button" href="/app/"><span class="nav-label-full">Accedeix al mapa</span><span class="nav-label-short">Mapa</span><span aria-hidden="true">→</span></a></div></nav></header>`;
 
 const guideSectionNav = (current) => `<nav class="guide-section-nav" aria-label="Seccions de la guia"><span>Explora</span><a href="/bolets/"${current === "species" ? ' aria-current="page"' : ""}>Espècies</a><a href="/temporada-de-bolets/"${current === "season" ? ' aria-current="page"' : ""}>Calendari</a></nav>`;
 
@@ -44,7 +44,9 @@ const startsWithVowelSound = (value) => /^[aeiouàèéíïòóúüh]/i.test(valu
 const speciesReference = (species, preposition = "") => {
   const name = species.names.ca.toLocaleLowerCase("ca");
   if (startsWithVowelSound(name)) return `${preposition ? "de " : ""}l’${name}`;
-  return `${preposition ? "del" : "el"} ${name}`;
+  const article = species.grammar?.gender === "feminine" ? "la" : "el";
+  if (preposition) return `${article === "el" ? "del" : "de la"} ${name}`;
+  return `${article} ${name}`;
 };
 
 const sentenceCase = (value) => `${value.charAt(0).toLocaleUpperCase("ca")}${value.slice(1)}`;

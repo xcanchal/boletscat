@@ -38,6 +38,7 @@ test("el catàleg editorial té identificadors i referències consistents", () =
     assert.match(species.slug, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
     assert.ok(species.names.ca);
     assert.ok(species.names.scientific);
+    if (species.grammar) assert.ok(["feminine", "masculine"].includes(species.grammar.gender));
     assert.ok(["species", "group"].includes(species.kind));
     assert.ok(["edible", "conditional", "not-edible", "toxic", "deadly"].includes(species.edibility.category));
     assert.ok(species.edibility.label);

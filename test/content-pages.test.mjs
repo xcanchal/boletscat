@@ -4,6 +4,35 @@ import test from "node:test";
 import { renderDirectoryPage, renderRobots, renderSeasonPage, renderSitemap, renderSpeciesPage } from "../scripts/generate-content.mjs";
 
 const catalog = JSON.parse(await readFile(new URL("../content/catalog.json", import.meta.url), "utf8"));
+const landing = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const contentCss = await readFile(new URL("../content/content.css", import.meta.url), "utf8");
+const app = await readFile(new URL("../app.html", import.meta.url), "utf8");
+
+test("una predicció absent no conserva les dades ni la capa de l’espècie anterior", () => {
+  assert.match(app, /async function load\(species\) \{[\s\S]*?renderSpeciesInfo\(species\);/);
+  assert.match(app, /catch\(error\) \{[\s\S]*?hidePredictionLayers\(\);[\s\S]*?speciesLabel\(species\)/);
+  assert.match(app, /function hidePredictionLayers\(\) \{[\s\S]*?\['prediccio','cobertura'\]/);
+});
+
+test("la PWA actualitza les prediccions quan torna a primer pla", () => {
+  assert.match(app, /fetch\(dataUrl\(`bolets\.\$\{species\}\.geojson`\), \{ cache:'no-store', credentials:'include' \}\)/);
+  assert.match(app, /document\.addEventListener\('visibilitychange', refreshPredictionOnReturn\)/);
+  assert.match(app, /window\.addEventListener\('focus', refreshPredictionOnReturn\)/);
+  assert.match(app, /window\.addEventListener\('pageshow'/);
+  assert.match(app, /geo\.generated \?\? 'latest'\}-\$\{Date\.now\(\)\}/);
+});
+
+test("el header mòbil manté el mapa com a acció principal", () => {
+  const guide = renderDirectoryPage(catalog);
+  for (const html of [landing, guide]) {
+    assert.match(html, /nav-label-short">Guia/);
+    assert.match(html, /nav-label-short">Mapa/);
+  }
+  assert.match(landing, /header \.button\{display:inline-flex/);
+  assert.match(contentCss, /\.site-header \.button\{display:inline-flex/);
+  assert.doesNotMatch(landing, /header \.button\{display:none/);
+  assert.doesNotMatch(contentCss, /\.site-header \.button\{display:none/);
+});
 
 test("el directori agrupa les espècies i enllaça totes les fitxes", () => {
   const html = renderDirectoryPage(catalog);
@@ -30,6 +59,10 @@ test("el directori agrupa les espècies i enllaça totes les fitxes", () => {
   assert.match(html, /cep-ai\.webp/);
   assert.match(html, /rovello-ai\.webp/);
   assert.match(html, /llenega-ai\.webp/);
+  assert.match(html, /llenega-blanca-ai\.webp/);
+  assert.match(html, /Llenega negra/);
+  assert.match(html, /Llenega blanca/);
+  assert.doesNotMatch(html, />Pebràs</);
   assert.match(html, /trompeta-de-la-mort-ai\.webp/);
   assert.match(html, /camagroc-ai\.webp/);
   assert.match(html, /murgola-ai\.webp/);
@@ -121,6 +154,13 @@ test("la fitxa de l’ou de reig contrau correctament l’article", () => {
   const html = renderSpeciesPage(ouDeReig, catalog);
   assert.match(html, /L’ou de reig creix/);
   assert.match(html, /condicions actuals de l’ou de reig/);
+});
+
+test("les fitxes femenines utilitzen l’article català correcte", () => {
+  const llenega = catalog.species.find((species) => species.slug === "llenega-negra");
+  const html = renderSpeciesPage(llenega, catalog);
+  assert.match(html, /La llenega negra creix/);
+  assert.match(html, /condicions actuals de la llenega negra/);
 });
 
 test("les fitxes tòxiques mostren el nivell de risc i un avís específic", () => {

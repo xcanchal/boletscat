@@ -15,11 +15,11 @@ const WCS = "https://geoserveis.icgc.cat/icc_mdt/wcs/service?";
 const GEOLOGY = "https://datacloud.icgc.cat/datacloud/geologia-territorial-250000-geologic/gpkg/geologia-territorial-250000-geologic-v3r0-202312.zip";
 const OUT = process.argv.find((a) => a.startsWith("--out="))?.slice(6) || "graella.bin";
 
-const rgbHost = new Map([
-  [0x33cc33, 1], [0x19e61e, 1], // coníferes denses / clares
-  [0x66ff33, 2], [0xb4ff9b, 2], // caducifolis densos / clars
-  [0x689018, 3], [0xaaa500, 3], // esclerofil·les densos / clars
-  [0x00ff9b, 4],                // bosc de ribera
+const rgbForest = new Map([
+  [0x33cc33, [1, 1]], [0x19e61e, [1, 2]], // coníferes denses / clares
+  [0x66ff33, [2, 1]], [0xb4ff9b, [2, 2]], // caducifolis densos / clars
+  [0x689018, [3, 1]], [0xaaa500, [3, 2]], // esclerofil·les densos / clars
+  [0x00ff9b, [4, 1]],                     // bosc de ribera
 ]);
 
 async function fetchOk(url) {
@@ -91,13 +91,15 @@ async function main() {
   const cover = decodeRgbaPng(Buffer.from(await (await fetchOk(coverUrl)).arrayBuffer()));
   if (cover.width !== WIDTH || cover.height !== HEIGHT) throw new Error("Dimensions inesperades del WMS");
 
-  const hosts = new Uint8Array(WIDTH * HEIGHT), altitude = new Int16Array(WIDTH * HEIGHT);
+  const hosts = new Uint8Array(WIDTH * HEIGHT), forestStructure = new Uint8Array(WIDTH * HEIGHT);
+  const altitude = new Int16Array(WIDTH * HEIGHT);
   altitude.fill(-32768);
   let forest = 0;
   for (let i = 0; i < hosts.length; i++) {
     const p = i * 4;
     if (!cover.rgba[p + 3]) continue;
-    hosts[i] = rgbHost.get((cover.rgba[p] << 16) | (cover.rgba[p + 1] << 8) | cover.rgba[p + 2]) ?? 0;
+    const forestClass = rgbForest.get((cover.rgba[p] << 16) | (cover.rgba[p + 1] << 8) | cover.rgba[p + 2]);
+    if (forestClass) [hosts[i], forestStructure[i]] = forestClass;
     if (hosts[i]) forest++;
   }
   console.log(`  ${(100 * forest / hosts.length).toFixed(1)}% de cel·les forestals`);
@@ -129,13 +131,14 @@ async function main() {
 
   const substrate = await buildSubstrate(hosts);
 
-  const header = Buffer.alloc(24), cells = Buffer.alloc(hosts.length * 4);
-  header.write("BGR2", 0); header.writeUInt16LE(WIDTH, 4); header.writeUInt16LE(HEIGHT, 6);
+  const header = Buffer.alloc(24), cells = Buffer.alloc(hosts.length * 5);
+  header.write("BGR3", 0); header.writeUInt16LE(WIDTH, 4); header.writeUInt16LE(HEIGHT, 6);
   header.writeInt32LE(X0, 8); header.writeInt32LE(Y0, 12); header.writeInt32LE(Y1, 16); header.writeUInt16LE(CELL, 20);
   for (let i = 0; i < hosts.length; i++) {
-    cells[i * 4] = hosts[i];
-    cells.writeInt16LE(altitude[i], i * 4 + 1);
-    cells[i * 4 + 3] = substrate[i];
+    cells[i * 5] = hosts[i];
+    cells.writeInt16LE(altitude[i], i * 5 + 1);
+    cells[i * 5 + 3] = substrate[i];
+    cells[i * 5 + 4] = forestStructure[i];
   }
   writeFileSync(OUT, Buffer.concat([header, cells]));
   const valid = altitude.reduce((n, v, i) => n + (hosts[i] && v !== -32768 ? 1 : 0), 0);

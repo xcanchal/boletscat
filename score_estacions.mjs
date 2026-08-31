@@ -39,6 +39,7 @@ import { writeFileSync, readFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { encodeRgbaPng } from "./raster.mjs";
 import { SUBSTRATE_BY_CODE } from "./substrate.mjs";
+import { capConditionScore } from "./prediction-confidence.mjs";
 import { temperatureTrendFactor } from "./src/temperature-trend.mjs";
 
 const BASE = "https://analisi.transparenciacatalunya.cat/resource";
@@ -62,7 +63,7 @@ const SPECIES = {
                alt:[0,200,1500,1700],   temp:[2,8,20,26] },
   cep:       { nom: "Cep (grup Boletus edulis)",        mesos:[6,9,10,11],  host:["conifer","deciduous","sclerophyll"], trend:"cooling",
                substrate:["siliceous"], alt:[400,800,1600,1900], temp:[2,8,18,24] },
-  llenega:   { nom: "Llenega (Hygrophorus)",            mesos:[10,11,12],   host:["conifer"], trend:"cooling",
+  llenega:   { nom: "Llenega negra (Hygrophorus latitabundus)", mesos:[10,11,12], host:["conifer"], trend:"cooling",
                substrate:["calcareous"], alt:[100,300,1300,1500], temp:[0,4,14,20] },
   trompeta:  { nom: "Trompeta de la mort (Craterellus)",mesos:[9,10,11],    host:["deciduous","sclerophyll"], trend:"cooling",
                alt:[200,400,1300,1500], temp:[2,8,18,24] },
@@ -137,16 +138,25 @@ function readGrid(path = "graella.bin") {
   if (!existsSync(path)) return null;
   const b = readFileSync(path);
   const magic = b.toString("ascii", 0, 4);
-  if (magic !== "BGR1" && magic !== "BGR2") throw new Error("graella.bin té un format desconegut");
+  if (magic !== "BGR1" && magic !== "BGR2" && magic !== "BGR3") throw new Error("graella.bin té un format desconegut");
   const width=b.readUInt16LE(4), height=b.readUInt16LE(6), x0=b.readInt32LE(8), y0=b.readInt32LE(12), y1=b.readInt32LE(16), cell=b.readUInt16LE(20);
-  const stride = magic === "BGR2" ? 4 : 3;
+  const stride = magic === "BGR3" ? 5 : magic === "BGR2" ? 4 : 3;
   if (b.length !== 24 + width * height * stride) throw new Error("graella.bin és incomplet");
-  return { b, width, height, x0, y0, y1, x1:x0+width*cell, cell, stride, substrateVersion:magic === "BGR2" ? 1 : 0 };
+  return {
+    b, width, height, x0, y0, y1, x1:x0+width*cell, cell, stride,
+    substrateVersion:magic === "BGR1" ? 0 : 1,
+    forestStructureVersion:magic === "BGR3" ? 1 : 0,
+  };
 }
 
 function terrainCell(grid, index) {
   const offset=24+index*grid.stride;
-  return { host:grid.b[offset], alt:grid.b.readInt16LE(offset+1), substrate:grid.substrateVersion ? grid.b[offset+3] : 0 };
+  return {
+    host:grid.b[offset],
+    alt:grid.b.readInt16LE(offset+1),
+    substrate:grid.substrateVersion ? grid.b[offset+3] : 0,
+    forestStructure:grid.forestStructureVersion ? grid.b[offset+4] : 0,
+  };
 }
 
 function terrainAt(grid, lon, lat) {
@@ -289,7 +299,8 @@ async function main() {
     }
     gridWeather=interpolateGrid(grid,signals);
     writeFileSync(join(OUT,"bolets.grid.json"),JSON.stringify({
-      width:grid.width,height:grid.height,cell:grid.cell,x0:grid.x0,y0:grid.y0,y1:grid.y1,substrateVersion:grid.substrateVersion,weatherVersion:2,
+      width:grid.width,height:grid.height,cell:grid.cell,x0:grid.x0,y0:grid.y0,y1:grid.y1,
+      substrateVersion:grid.substrateVersion,forestStructureVersion:grid.forestStructureVersion,weatherVersion:2,
       coordinates:[utm31ToLngLat(grid.x0,grid.y1),utm31ToLngLat(grid.x1,grid.y1),utm31ToLngLat(grid.x1,grid.y0),utm31ToLngLat(grid.x0,grid.y0)],
     }));
 
@@ -297,16 +308,19 @@ async function main() {
     // sobre qualsevol cel·la mostri el mateix detall que una estació sense enviar
     // 1,2 milions de geometries al navegador.
     const terrain=new Uint8Array(grid.width*grid.height*4), weather=new Uint8Array(grid.width*grid.height*4);
+    const forest=new Uint8Array(grid.width*grid.height*4);
     for(let i=0;i<grid.width*grid.height;i++) {
-      const {host,alt,substrate}=terrainCell(grid,i); if(!host||alt===-32768) continue;
+      const {host,alt,substrate,forestStructure}=terrainCell(grid,i); if(!host||alt===-32768) continue;
       const p=i*4, encodedAlt=alt+32768;
       terrain[p]=host; terrain[p+1]=encodedAlt>>8; terrain[p+2]=encodedAlt&255; terrain[p+3]=252+substrate;
+      forest[p]=forestStructure; forest[p+3]=255;
       weather[p]=Math.max(0,Math.min(255,Math.round((gridWeather.outT[i]+20)*4)));
       weather[p+1]=Math.round(humidityFactor(gridWeather.outH[i],gridWeather.outR[i])*255);
       weather[p+2]=Math.max(0,Math.min(255,Math.round((gridWeather.outTrend[i]+16)*8)));
       weather[p+3]=255;
     }
     writeFileSync(join(OUT,"bolets.terrain.png"),encodeRgbaPng(grid.width,grid.height,terrain));
+    writeFileSync(join(OUT,"bolets.forest.png"),encodeRgbaPng(grid.width,grid.height,forest));
     writeFileSync(join(OUT,"bolets.weather.png"),encodeRgbaPng(grid.width,grid.height,weather));
   } else console.log("ℹ️  Sense graella.bin: es generen només els punts per estació. Corre node buildGrid.mjs\n");
 
@@ -323,9 +337,10 @@ async function main() {
       const substrateCode=grid ? (terrainAt(grid,m.lon,m.lat)?.substrate ?? 0) : 0;
       const substrate=SUBSTRATE_BY_CODE[substrateCode], fSoil=substrateFactor(substrateCode,sp);
       const fT = trapezoid(tMean, ...sp.temp), fAlt = trapezoid(m.alt, ...sp.alt), fHost = hostFactor(codi, sp);
-      const score = hScore * fT * fTrend * fAlt * fHost * fSoil;
+      const host=HOST?.[codi]?.host ?? null, forestFrac=HOST?.[codi]?.forestFrac;
+      const score = capConditionScore(hScore * fT * fTrend * fAlt * fHost * fSoil, { host, substrate, forestFrac });
       files.push({ codi, ...m, h, reserve, recentRain: recentRain.get(codi) ?? 0,
-                   tMean, tTrend, host: HOST?.[codi]?.host ?? null, substrate, score,
+                   tMean, tTrend, host, substrate, forestFrac, score,
                    fH: hScore, fT, fTrend, fAlt, fHost, fSoil });
     }
     files.sort((a, b) => b.score - a.score);
@@ -338,10 +353,10 @@ async function main() {
 
     const geojson = {
       type: "FeatureCollection", species: spKey, speciesNom: sp.nom, generated: refISO.slice(0, 10),
-      model: { scoreVersion:2, host:sp.host, substrate:sp.substrate ?? [], alt:sp.alt, temp:sp.temp, trend:sp.trend, typicalMonths:sp.mesos },
+      model: { scoreVersion:3, host:sp.host, substrate:sp.substrate ?? [], alt:sp.alt, temp:sp.temp, trend:sp.trend, typicalMonths:sp.mesos },
       features: files.map((f) => ({
         type: "Feature", geometry: { type: "Point", coordinates: [f.lon, f.lat] },
-        properties: { codi:f.codi, nom:f.nom, alt:f.alt, host:f.host, substrate:f.substrate,
+        properties: { codi:f.codi, nom:f.nom, alt:f.alt, host:f.host, substrate:f.substrate, forestFrac:f.forestFrac,
                       H:+f.h.toFixed(1), reserve:+f.reserve.toFixed(1), recentRain:+f.recentRain.toFixed(1),
                       tMean:f.tMean, tTrend:f.tTrend, score:+f.score.toFixed(3),
                       fH:+f.fH.toFixed(2), fT:+f.fT.toFixed(2), fTrend:+f.fTrend.toFixed(2), fAlt:+f.fAlt.toFixed(2), fHost:+f.fHost.toFixed(2), fSoil:+f.fSoil.toFixed(2) },
@@ -351,9 +366,11 @@ async function main() {
     if (grid && gridWeather) {
       const rgba=new Uint8Array(grid.width*grid.height*4), wanted=new Set(sp.host.map(h=>HOST_CODE[h]));
       for(let i=0;i<grid.width*grid.height;i++) {
-        const {host,alt,substrate}=terrainCell(grid,i); if(!host||alt===-32768) continue;
+        const {host,alt,substrate,forestStructure}=terrainCell(grid,i); if(!host||alt===-32768) continue;
         const fH=humidityFactor(gridWeather.outH[i],gridWeather.outR[i]), fT=trapezoid(gridWeather.outT[i],...sp.temp), fTrend=temperatureTrendFactor(gridWeather.outTrend[i],sp.trend), fAlt=trapezoid(alt,...sp.alt);
-        const fHost=wanted.has(host)?1:.25, fSoil=substrateFactor(substrate,sp), score=fH*fT*fTrend*fAlt*fHost*fSoil, [red,green,blue]=scoreColor(score), p=i*4;
+        const fHost=wanted.has(host)?1:.25, fSoil=substrateFactor(substrate,sp);
+        const score=capConditionScore(fH*fT*fTrend*fAlt*fHost*fSoil,{ host,substrate,forestStructure });
+        const [red,green,blue]=scoreColor(score), p=i*4;
         rgba[p]=red; rgba[p+1]=green; rgba[p+2]=blue; rgba[p+3]=score<.01?35:Math.round(105+Math.min(1,score)*125);
       }
       writeFileSync(join(OUT,`bolets.${spKey}.png`),encodeRgbaPng(grid.width,grid.height,rgba));

@@ -195,6 +195,7 @@
     .fbar i{display:block;height:100%;background:var(--rovello);border-radius:3px}
     .pop-grid{display:grid;grid-template-columns:auto auto;gap:2px 14px;margin-top:8px;font-size:12.5px}
     .pop-grid .k{color:var(--muted)} .pop-grid .v{text-align:right;font-variant-numeric:tabular-nums}
+    .unknown-value{color:var(--muted);font-style:italic}.unknown-value b{color:var(--accent);font-style:normal}
     .pop-map{display:inline-flex;align-items:center;margin-top:10px;padding:5px 8px;border:1px solid var(--edge);
       border-radius:7px;color:var(--text);font-size:11.5px;font-weight:600;text-decoration:none;transition:all .15s}
     .pop-map:hover{border-color:var(--rovello);color:var(--rovello);background:rgba(232,114,42,.07)}
@@ -358,7 +359,7 @@
     <div class="body" id="panelBody">
       <select id="species">
         <option value="rovello">Rovelló / pinetell</option><option value="cep">Cep</option>
-        <option value="llenega">Llenega</option><option value="trompeta">Trompeta de la mort</option>
+        <option value="llenega">Llenega negra</option><option value="trompeta">Trompeta de la mort</option>
         <option value="rossinyol">Rossinyol</option><option value="camagroc">Camagroc</option>
         <option value="murgola">Múrgola</option><option value="ou_de_reig">Ou de reig</option>
         <option value="fredolic">Fredolic</option>
@@ -366,7 +367,7 @@
       <div class="info-section" id="infoSection">
         <dl class="info-body" id="infoBody"></dl>
       </div>
-      <div class="map-caption" id="modecap">Probabilitat estimada avui.</div>
+      <div class="map-caption" id="modecap">Índex de condicions estimat avui.</div>
       <div class="legend" id="mapLegend"><div class="bar"></div>
         <div class="ticks"><span>Molt baixa</span><span>Mitjana</span><span>Molt alta</span></div></div>
       <div id="content" class="toplist" style="display:none"><div class="h">Millors punts</div><div id="rows"></div></div>
@@ -394,11 +395,13 @@
   <script src="/vendor/maplibre-gl.js"></script>
   <script type="module">
     import { ErrorCode, Purchases, PurchasesError } from '/vendor/purchases.es.js';
+    import { conditionRating } from '/prediction-confidence.mjs';
     const DATA_BASE = document.querySelector('meta[name="bolets-data-base"]')?.content ?? '.';
     const dataUrl = path => DATA_BASE === '.'
       ? `/api/predictions/${encodeURIComponent(path)}`
       : new URL(`api/predictions/${encodeURIComponent(path)}`, DATA_BASE).href;
-    let mapReady=false, mapUnlocked=false, initialMapLoaded=false;
+    let mapReady=false, mapUnlocked=false, initialMapLoaded=false, lastPredictionLoadAt=0;
+    const FOREGROUND_REFRESH_INTERVAL = 60_000;
     const formatGeneratedDate = value => {
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return '';
@@ -411,14 +414,8 @@
     const HOST_BY_CODE = [null,'conifer','deciduous','sclerophyll','ribera'];
     const SOIL = { siliceous:'silícic (tendència àcida)', calcareous:'calcari', mixed:'mixt' };
     const SUBSTRATE_BY_CODE = [null,'siliceous','calcareous','mixed'];
-    const RATING = [
-      { min:0.6, key:'very-high', nivell:'Molt alta', recomanacio:'Ves-hi' },
-      { min:0.4, key:'high',      nivell:'Alta',      recomanacio:'Bona opció' },
-      { min:0.25,key:'medium',    nivell:'Mitjana',   recomanacio:'Pots provar' },
-      { min:0.1, key:'low',       nivell:'Baixa',     recomanacio:'No compensa' },
-      { min:0,   key:'very-low',  nivell:'Molt baixa',recomanacio:'No hi vagis' },
-    ];
-    const rating = score => RATING.find(x => +score >= x.min) ?? RATING.at(-1);
+    const FOREST_STRUCTURE_BY_CODE = [null,'dense','open'];
+    const rating = conditionRating;
 
     // Condicions ideals per espècie — mirall dels paràmetres del model (score_estacions.mjs):
     // Temperatura i altitud són el tram pla del trapezoide (encaix = 1).
@@ -574,12 +571,23 @@
       return true;
     };
     const placeCache = new Map();
-    const fmt = v => (v==null ? '—' : (+v).toFixed(1));
+    const fmt = v => (+v).toFixed(1);
     const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const unknownHTML = '<span class="unknown-value">Desconegut <b aria-hidden="true">?</b></span>';
+    const knownHTML = (value, render) => value == null || value === '' || Number.isNaN(value)
+      ? unknownHTML
+      : render(value);
+    const forestDetailHTML = p => {
+      if (p.forestFrac != null && Number.isFinite(+p.forestFrac)) return `${Math.round(+p.forestFrac*100)}% de l’entorn`;
+      if (p.forestStructure === 'dense') return 'bosc dens';
+      if (p.forestStructure === 'open') return 'bosc clar';
+      return unknownHTML;
+    };
     // Popup complet, compartit pel clic al mapa i el clic a la llista.
     // El "+" desplega el desglossament: cada factor (0..1) diu com de lluny és de l'ideal de l'espècie.
     const FACTORS = [['fH','humitat'],['fT','temperatura'],['fTrend','tendència tèrmica'],['fAlt','altitud'],['fHost','bosc'],['fSoil','sòl']];
-    const factorsHTML = p => FACTORS.filter(([k]) => p[k] != null).map(([k,label]) => {
+    const factorsHTML = p => FACTORS.map(([k,label]) => {
+      if (p[k] == null) return `<span class="k">${label}</span><span class="fbar"></span><span class="v">?</span>`;
       const v = Math.max(0, Math.min(1, +p[k]));
       return `<span class="k">${label}</span>
         <span class="fbar"><i style="width:${Math.round(v*100)}%"></i></span>
@@ -592,7 +600,7 @@
         target="_blank" rel="noopener noreferrer" aria-label="Com arribar-hi amb Google Maps">Com arribar-hi ↗</a>`;
     };
     const popHTML = (p,lngLat) => {
-      const r = rating(p.score);
+      const r = rating(p);
       return `
       <div class="pop-nom">${esc(p.nom ?? p.codi)}</div>
       <div class="pop-score"><span class="quality q-${r.key}">${r.nivell}</span>
@@ -600,13 +608,14 @@
           onclick="const f=this.closest('.maplibregl-popup-content').querySelector('.pop-factors');
                    f.classList.toggle('open');this.textContent=f.classList.contains('open')?'−':'+'">+</button>` : ''}
       </div>
-      <div class="pop-index">Probabilitat ${Math.round((+p.score) * 100)}%</div>
+      <div class="pop-index">Índex de condicions ${Math.round((+p.score) * 100)}/100</div>
       <div class="pop-grid">
-        <span class="k">bosc</span><span class="v">${p.host ? (BOSC[p.host] ?? p.host) : '—'}</span>
-        <span class="k">sòl</span><span class="v">${p.substrate ? (SOIL[p.substrate] ?? p.substrate) : 'no classificat'}</span>
-        <span class="k">temperatura</span><span class="v">${fmt(p.tMean)} °C</span>
-        ${p.tTrend == null ? '' : `<span class="k">tendència tèrmica</span><span class="v">${p.tTrend > 0 ? '+' : ''}${fmt(p.tTrend)} °C</span>`}
-        <span class="k">altitud</span><span class="v">${Math.round(p.alt||0)} m</span>
+        <span class="k">bosc</span><span class="v">${knownHTML(p.host,value => esc(BOSC[value] ?? value))}</span>
+        <span class="k">cobertura forestal</span><span class="v">${forestDetailHTML(p)}</span>
+        <span class="k">sòl</span><span class="v">${knownHTML(p.substrate,value => esc(SOIL[value] ?? value))}</span>
+        <span class="k">temperatura</span><span class="v">${knownHTML(p.tMean,value => `${fmt(value)} °C`)}</span>
+        <span class="k">tendència tèrmica</span><span class="v">${knownHTML(p.tTrend,value => `${value > 0 ? '+' : ''}${fmt(value)} °C`)}</span>
+        <span class="k">altitud</span><span class="v">${knownHTML(p.alt,value => `${Math.round(value)} m`)}</span>
       </div>
       ${p.fH != null ? `<div class="pop-factors">${factorsHTML(p)}</div>` : ''}
       ${mapLinkHTML(lngLat)}`;
@@ -636,15 +645,16 @@
       return { index,row,col,x,y,score:alpha<=35 ? 0 : Math.max(0,Math.min(1,(alpha-105)/125)) };
     }
     function detailsForCell(cell) {
-      const { terrain, weather, model }=currentRaster;
+      const { terrain, weather, forest, model }=currentRaster;
       if(!terrain||!weather||!model) return { score:cell.score };
       const p=cell.index*4; if(!terrain[p+3]||!weather[p+3]) return { score:cell.score };
       const host=HOST_BY_CODE[terrain[p]], alt=((terrain[p+1]<<8)|terrain[p+2])-32768;
       const substrate=currentRaster.grid.substrateVersion?SUBSTRATE_BY_CODE[Math.max(0,terrain[p+3]-252)]:null;
+      const forestStructure=forest?FOREST_STRUCTURE_BY_CODE[forest[p]]:null;
       const tMean=weather[p]/4-20, tTrend=currentRaster.grid.weatherVersion>=2?weather[p+2]/8-16:null, fH=weather[p+1]/255;
       const fT=trapezoid(tMean,...model.temp), fAlt=trapezoid(alt,...model.alt);
       const fHost=model.host.includes(host)?1:.25, fSoil=substrateFactor(substrate,model.substrate), fTrend=temperatureTrendFactor(tTrend,model.trend);
-      return { score:cell.score, host, substrate, alt, tMean, tTrend, fH, fT, fTrend, fAlt, fHost, fSoil };
+      return { score:cell.score, host, substrate, forestStructure, alt, tMean, tTrend, fH, fT, fTrend, fAlt, fHost, fSoil };
     }
     function detailsAt(lngLat) {
       const cell=cellAt(lngLat); return cell?detailsForCell(cell):null;
@@ -686,7 +696,7 @@
       const title=place ? `A prop de ${place}` : `${lngLat.lat.toFixed(4)}, ${lngLat.lng.toFixed(4)}`;
       if (details==null) return `<div class="pop-nom">${esc(title)}</div><div class="pop-index">No hi ha cap estimació forestal prou a prop d’aquest punt.</div>${mapLinkHTML(lngLat)}`;
       const nearby=distance>0?`<div class="pop-nearby">Estimació forestal més propera · ${distance<1000?`${Math.round(distance/50)*50} m`:`${(distance/1000).toFixed(1)} km`} del punt tocat</div>`:'';
-      if (details.fH==null) return `<div class="pop-nom">${esc(title)}</div>${nearby}<div class="pop-score"><span class="quality q-${rating(details.score).key}">${rating(details.score).nivell}</span></div><div class="pop-index">Probabilitat ${Math.round(details.score*100)}%</div>${mapLinkHTML(lngLat)}`;
+      if (details.fH==null) { const r=rating(details); return `<div class="pop-nom">${esc(title)}</div>${nearby}<div class="pop-score"><span class="quality q-${r.key}">${r.nivell}</span></div><div class="pop-index">Índex de condicions ${Math.round(details.score*100)}/100</div>${mapLinkHTML(lngLat)}`; }
       return popHTML({ nom:title, ...details },lngLat).replace('<div class="pop-score">',`${nearby}<div class="pop-score">`);
     };
     const locationHTML = (place,lngLat) => {
@@ -826,7 +836,7 @@
         mapLegend.hidden=punts;
         cap.textContent = punts
           ? "Estacions meteorològiques de referència."
-          : "Probabilitat estimada avui.";
+          : "Índex de condicions estimat avui.";
         [...modeGroup.children].forEach(button=>{
           const active=button.dataset.mode===mode; button.classList.toggle('on',active); button.setAttribute('aria-pressed',String(active));
         });
@@ -873,19 +883,51 @@
       return smoothed.toDataURL('image/png');
     }
 
+    function renderSpeciesInfo(species) {
+      const info = SPECIES_INFO[species];
+      const infoBody = document.getElementById('infoBody');
+      if (!info) {
+        infoBody.innerHTML = '';
+        return;
+      }
+      infoBody.innerHTML = `
+        <dt>Bosc</dt><dd>${info.bosc}</dd>
+        <dt>Temperatura</dt><dd>${info.temperatura}</dd>
+        <dt>Altitud</dt><dd>${info.altitud}</dd>
+        <dt>Temporada</dt><dd>${info.temporada}</dd>
+        ${info.sol ? `<dt>Sòl</dt><dd>${info.sol}</dd>` : ''}
+        <dt>Humitat</dt><dd>sòl humit i pluges recents</dd>
+      `;
+    }
+
+    function speciesLabel(species) {
+      const option = [...document.getElementById('species').options].find(item => item.value === species);
+      return option?.textContent?.trim() || species;
+    }
+
+    function hidePredictionLayers() {
+      currentRaster = null;
+      for (const layer of ['prediccio','cobertura']) {
+        if (map.getLayer(layer)) map.setLayoutProperty(layer,'visibility','none');
+      }
+    }
+
     async function load(species) {
+      lastPredictionLoadAt = Date.now();
+      renderSpeciesInfo(species);
       const msg = document.getElementById('msg'), content = document.getElementById('content');
       let geo;
       try {
-        const res = await fetch(dataUrl(`bolets.${species}.geojson`));
+        const res = await fetch(dataUrl(`bolets.${species}.geojson`), { cache:'no-store', credentials:'include' });
         if (!res.ok) throw new Error();
         geo = await res.json();
       } catch(error) {
         console.error('No s’han pogut carregar les dades de predicció', { species, error });
         map.getSource('estacions').setData({ type:'FeatureCollection', features:[] });
+        hidePredictionLayers();
         content.style.display='none'; msg.style.display='block';
         msg.textContent='Les dades d’aquesta espècie no estan disponibles ara mateix. Torna-ho a provar més tard.';
-        document.getElementById('metaSpecies').textContent = 'Catalunya';
+        document.getElementById('metaSpecies').textContent = speciesLabel(species);
         document.getElementById('metaDate').textContent = '';
         document.getElementById('metaDate').removeAttribute('datetime');
         return;
@@ -894,7 +936,8 @@
       map.getSource('estacions').setData(geo);
       try {
         const grid = await fetch(dataUrl('bolets.grid.json')).then(r => { if (!r.ok) throw new Error(); return r.json(); });
-        const imageUrl=`${dataUrl(`bolets.${species}.png`)}?v=${encodeURIComponent(geo.generated ?? Date.now())}`;
+        const version=encodeURIComponent(`${geo.generated ?? 'latest'}-${Date.now()}`);
+        const imageUrl=`${dataUrl(`bolets.${species}.png`)}?v=${version}`;
         const pixels=await imagePixels(imageUrl,grid);
         const raster={ grid, pixels, model:geo.model };
         currentRaster=raster;
@@ -909,13 +952,17 @@
             layout:{ visibility:currentMode==='detallat'?'visible':'none' } },labelsBeforeLayer??undefined);
         }
         try {
-          const version=encodeURIComponent(geo.generated??Date.now());
           const [terrain,weather]=await Promise.all([
             imagePixels(`${dataUrl('bolets.terrain.png')}?v=${version}`,grid),
             imagePixels(`${dataUrl('bolets.weather.png')}?v=${version}`,grid),
           ]);
+          let forest=null;
+          if(grid.forestStructureVersion) {
+            try { forest=await imagePixels(`${dataUrl('bolets.forest.png')}?v=${version}`,grid); }
+            catch { /* Una graella anterior simplement mostrarà la cobertura com a desconeguda. */ }
+          }
           if(currentRaster===raster) {
-            Object.assign(raster,{ terrain,weather });
+            Object.assign(raster,{ terrain,weather,forest });
             const coverage={ url:displayRasterUrl(terrain,grid,'coverage'), coordinates:grid.coordinates };
             if(map.getSource('cobertura')) map.getSource('cobertura').updateImage(coverage);
             else {
@@ -928,9 +975,7 @@
           }
         } catch { /* Compatibilitat amb una generació antiga: el mapa i el score continuen funcionant. */ }
       } catch {
-        currentRaster=null;
-        for (const layer of ['prediccio']) if (map.getLayer(layer)) map.setLayoutProperty(layer,'visibility','none');
-        if (map.getLayer('cobertura')) map.setLayoutProperty('cobertura','visibility','none');
+        hidePredictionLayers();
       }
       const metaSpecies = document.getElementById('metaSpecies');
       const metaDate = document.getElementById('metaDate');
@@ -938,19 +983,6 @@
       metaDate.textContent = formatGeneratedDate(geo.generated);
       if (geo.generated) metaDate.dateTime = geo.generated;
       else metaDate.removeAttribute('datetime');
-
-      const info = SPECIES_INFO[species];
-      const infoBody = document.getElementById('infoBody');
-      if (info) {
-        infoBody.innerHTML = `
-          <dt>Bosc</dt><dd>${info.bosc}</dd>
-          <dt>Temperatura</dt><dd>${info.temperatura}</dd>
-          <dt>Altitud</dt><dd>${info.altitud}</dd>
-          <dt>Temporada</dt><dd>${info.temporada}</dd>
-          ${info.sol ? `<dt>Sòl</dt><dd>${info.sol}</dd>` : ''}
-          <dt>Humitat</dt><dd>sòl humit i pluges recents</dd>
-        `;
-      }
 
       const b = new maplibregl.LngLatBounds();
       geo.features.forEach(f => b.extend(f.geometry.coordinates));
@@ -960,7 +992,7 @@
       const rows = document.getElementById('rows'); rows.innerHTML='';
       const anyScore = top[0] && top[0].properties.score > 0;
       top.forEach((f,i) => {
-        const p = f.properties, r = rating(p.score);
+        const p = f.properties, r = rating(p);
         const el = document.createElement('div'); el.className='row';
         el.innerHTML = `<span class="rank">${i+1}</span><span class="nom">${p.nom ?? p.codi}</span>
                         <span class="sc q-${r.key}" title="${r.recomanacio} · Índex ${(+p.score).toFixed(3)} / 1">${r.nivell}</span>`;
@@ -985,6 +1017,23 @@
       if (!anyScore) { msg.style.display='block';
         msg.innerHTML = `Tot a zero: les <b>condicions observades</b> no són favorables per aquesta espècie.`; }
     }
+
+    let foregroundRefreshPending=false;
+    function refreshPredictionOnReturn() {
+      if (document.visibilityState === 'hidden' || !mapUnlocked || !mapReady || !initialMapLoaded || foregroundRefreshPending) return;
+      if (Date.now() - lastPredictionLoadAt < FOREGROUND_REFRESH_INTERVAL) return;
+      foregroundRefreshPending=true;
+      Promise.resolve(load(document.getElementById('species').value))
+        .finally(() => { foregroundRefreshPending=false; });
+    }
+    document.addEventListener('visibilitychange', refreshPredictionOnReturn);
+    window.addEventListener('focus', refreshPredictionOnReturn);
+    window.addEventListener('pageshow', event => {
+      if (event.persisted) {
+        lastPredictionLoadAt=0;
+        refreshPredictionOnReturn();
+      }
+    });
 
     const loadingView=document.getElementById('loadingView'), authView=document.getElementById('authView'), resetView=document.getElementById('resetView');
     const paywallView=document.getElementById('paywallView'), authForm=document.getElementById('authForm');

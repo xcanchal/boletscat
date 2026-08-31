@@ -71,14 +71,15 @@
       "sourceIds": ["gencat-alt-pallars", "scm"]
     },
     {
-      "slug": "llenega",
-      "kind": "group",
+      "slug": "llenega-negra",
+      "kind": "species",
       "names": {
-        "ca": "Llenega",
-        "scientific": "Hygrophorus spp.",
-        "aliases": ["llenega", "mocosa"]
+        "ca": "Llenega negra",
+        "scientific": "Hygrophorus latitabundus",
+        "aliases": ["llenega negra", "llenega", "mocosa negra"]
       },
-      "summary": "Nom popular aplicat a diversos higròfors viscosos, habituals de boscos frescos i tardorencs.",
+      "grammar": { "gender": "feminine" },
+      "summary": "Higròfor fosc, molt viscós i robust de les pinedes calcàries; és una de les llenegues més preuades a Catalunya.",
       "edibility": { "category": "edible", "label": "Comestible" },
       "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "Retira amb cura la terra i la pinassa adherides a la superfície viscosa i cuina-la completament. La textura gelatinosa es conserva bé en guisats." },
       "lookalikes": [],
@@ -93,14 +94,47 @@
       "media": {
         "card": {
           "src": "/media/bolets/llenega-ai.webp",
-          "alt": "Llenega de barret viscós entre molsa i fullaraca humida",
+          "alt": "Llenega negra de barret fosc i viscós entre molsa i fullaraca humida",
           "credit": "Imatge generada amb IA",
           "generated": true,
           "speciesVerified": false
         },
         "hero": null
       },
-      "sourceIds": ["gencat-alt-pallars", "scm"]
+      "sourceIds": ["gencat-alt-pallars", "enciclopedia-higroforacies", "scm"]
+    },
+    {
+      "slug": "llenega-blanca",
+      "kind": "species",
+      "names": {
+        "ca": "Llenega blanca",
+        "scientific": "Hygrophorus eburneus",
+        "aliases": ["llenega blanca", "mocosa blanca"]
+      },
+      "grammar": { "gender": "feminine" },
+      "summary": "Higròfor blanc de barret viscós que apareix a la tardor en boscos caducifolis i també en algunes pinedes.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "low", "label": "Interès baix", "preparation": "Neteja amb cura la capa viscosa i cuina-la completament. Té un interès culinari més modest que la llenega negra." },
+      "lookalikes": [],
+      "season": { "typicalMonths": [9, 10, 11, 12], "peakMonths": [] },
+      "ecology": {
+        "habitatSlugs": ["pinedes", "boscos-caducifolis"],
+        "altitudeM": { "min": 0, "max": 1600 },
+        "soilPreferences": []
+      },
+      "prediction": { "available": false, "key": null },
+      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "media": {
+        "card": {
+          "src": "/media/bolets/llenega-blanca-ai.webp",
+          "alt": "Llenega blanca de barret blanc i viscós entre fullaraca humida",
+          "credit": "Imatge generada amb IA",
+          "generated": true,
+          "speciesVerified": false
+        },
+        "hero": null
+      },
+      "sourceIds": ["enciclopedia-higroforacies", "scm"]
     },
     {
       "slug": "trompeta-de-la-mort",
@@ -110,6 +144,7 @@
         "scientific": "Craterellus cornucopioides",
         "aliases": ["trompeta", "trompeta de la mort"]
       },
+      "grammar": { "gender": "feminine" },
       "summary": "Bolet fosc i embudat que es confon fàcilment amb la fullaraca dels boscos humits de planifolis.",
       "edibility": { "category": "edible", "label": "Comestible" },
       "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "Obre-la i neteja bé l’interior de l’embut abans de cuinar-la. També es pot assecar i moldre per utilitzar-la com a condiment." },
@@ -214,6 +249,7 @@
         "scientific": "Morchella spp.",
         "aliases": ["múrgola", "múrgola negra"]
       },
+      "grammar": { "gender": "feminine" },
       "summary": "Grup de bolets primaverals de barret alveolat que apareixen en hàbitats molt diversos i sovint alterats.",
       "edibility": { "category": "conditional", "label": "Requereix cocció" },
       "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "No la consumeixis mai crua o poc cuita: requereix una cocció completa. Obre-la per retirar terra i petits invertebrats i consulta una persona experta si tens cap dubte." },
@@ -485,6 +521,7 @@
         "scientific": "Amanita phalloides",
         "aliases": ["farinera borda", "oronja verda"]
       },
+      "grammar": { "gender": "feminine" },
       "summary": "Amanita de tons verdosos responsable d'intoxicacions molt greus; pot aparèixer en boscos de planifolis.",
       "edibility": { "category": "deadly", "label": "Mortal" },
       "lookalikes": [
@@ -529,6 +566,7 @@
       "slug": "llengua-de-bou",
       "kind": "species",
       "names": { "ca": "Llengua de bou", "scientific": "Hydnum repandum", "aliases": ["llengua de bou", "agulletes"] },
+      "grammar": { "gender": "feminine" },
       "summary": "Bolet carnós de color crema amb agulletes sota el barret, present en pinedes i boscos de planifolis.",
       "edibility": { "category": "edible", "label": "Comestible" },
       "culinary": { "rating": "good", "label": "Bo", "preparation": "Retira les agulletes si són molt madures i cou-lo bé; els exemplars vells poden resultar amargants." },
@@ -554,21 +592,6 @@
       "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
       "media": { "card": { "src": "/media/bolets/bolet-de-tinta-ai.webp", "alt": "Bolets de tinta joves, blancs i cilíndrics en un prat humit", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
       "sourceIds": ["parcs-aiguestortes-bolet-tinta", "parcs-poblet-bolets", "gencat-bolets-comercialitzables", "scm"]
-    },
-    {
-      "slug": "pebras",
-      "kind": "species",
-      "names": { "ca": "Pebràs", "scientific": "Russula delica group", "aliases": ["pebràs", "pebrassa"] },
-      "summary": "Russulàcia robusta i blanquinosa que emergeix sovint mig enterrada i pot acumular molta terra al barret.",
-      "edibility": { "category": "edible", "label": "Comestible" },
-      "culinary": { "rating": "low", "label": "Interès baix", "preparation": "Neteja’l a fons i cuina’l completament. La textura i el gust són modestos i els exemplars vells es deterioren amb facilitat." },
-      "lookalikes": [],
-      "season": { "typicalMonths": [6, 7, 8, 9, 10], "peakMonths": [] },
-      "ecology": { "habitatSlugs": ["pinedes", "boscos-caducifolis", "alzinars"], "altitudeM": { "min": 0, "max": 1600 }, "soilPreferences": ["mixed"] },
-      "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
-      "media": { "card": { "src": "/media/bolets/pebras-ai.webp", "alt": "Pebràs blanc i robust mig enterrat entre fullaraca", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
-      "sourceIds": ["parcs-poblet-bolets", "parcs-ports-bolets", "scm"]
     },
     {
       "slug": "bolet-amarg",
@@ -606,6 +629,7 @@
       "slug": "girgola-olivera",
       "kind": "species",
       "names": { "ca": "Gírgola d’olivera", "scientific": "Omphalotus olearius", "aliases": ["gírgola d’olivera", "bolet d’olivera"] },
+      "grammar": { "gender": "feminine" },
       "summary": "Bolet taronja que creix en grups sobre fusta o arrels enterrades; és tòxic i pot recordar un rossinyol.",
       "edibility": { "category": "toxic", "label": "Tòxic" },
       "lookalikes": [
@@ -763,6 +787,12 @@
       "name": "Institució Catalana d’Història Natural · Fongs que requereixen mesures de conservació",
       "url": "https://ichn.iec.cat/fongs-liquens-i-briofits-que-requereixen-mesures-de-conservacio-a-catalunya/",
       "role": "nomenclatura i presència de Tylopilus felleus"
+    },
+    {
+      "id": "enciclopedia-higroforacies",
+      "name": "Enciclopèdia Catalana · Les higroforàcies: higrocibes, llenegues, carlets i afins",
+      "url": "https://www.enciclopedia.cat/historia-natural-dels-paisos-catalans/les-higroforacies-higrocibes-llenegues-carlets-i-afins",
+      "role": "nomenclatura, hàbitat i interès culinari de les llenegues"
     }
   ]
 }
