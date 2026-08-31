@@ -43,3 +43,11 @@ test("el raster diferencia el bosc de probabilitat baixa de les cel·les sense b
   assert.match(app, /LOW_SCORE_FOREST_ALPHA\+\(pixels\[p\+3\]-LOW_SCORE_FOREST_ALPHA\)\*reveal/);
   assert.doesNotMatch(app, /if\(score<DISPLAY_SCORE_MIN\) continue/);
 });
+
+test("el mapa estrena la vista satèl·lit i recorda la preferència", () => {
+  assert.match(app, /currentBase = 'sat'/);
+  assert.match(app, /localStorage\.getItem\('map-base'\)/);
+  assert.match(app, /localStorage\.setItem\('map-base',currentBase\)/);
+  assert.match(app, /visibility:base\.id===currentBase\?'visible':'none'/);
+  assert.match(app, /btn\.classList\.toggle\('on',b\.id===currentBase\)/);
+});

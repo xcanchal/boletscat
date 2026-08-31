@@ -550,9 +550,11 @@
     const markUserNavigation = () => {
       userNavigationRevision++;
     };
-    let currentMode = 'detallat', currentBase = 'dark';
+    let currentMode = 'detallat', currentBase = 'sat';
     let predictionIntensity=1;
     try {
+      const savedBase=localStorage.getItem('map-base');
+      if(BASES.some(base=>base.id===savedBase))currentBase=savedBase;
       const savedIntensity=localStorage.getItem('prediction-intensity');
       if (savedIntensity!==null) predictionIntensity=Math.max(0,Math.min(1,+savedIntensity/100));
     } catch {}
@@ -729,11 +731,12 @@
         map.setPaintProperty(id,'text-halo-width',light?1.1:1.25);
       });
     };
-    BASES.forEach((b,i) => {
+    BASES.forEach(b => {
       const btn = document.createElement('button');
-      btn.textContent = b.label; if (i===0) btn.classList.add('on');
+      btn.textContent = b.label; btn.classList.toggle('on',b.id===currentBase);
       btn.onclick = () => {
         currentBase = b.id;
+        try { localStorage.setItem('map-base',currentBase); } catch {}
         BASES.filter(x=>x.tiles).forEach(x=>{
           if(map.getLayer('base-'+x.id))map.setLayoutProperty('base-'+x.id,'visibility',x.id===b.id?'visible':'none');
         });
@@ -778,7 +781,7 @@
       BASES.filter(base=>base.tiles).forEach(base=>{
         map.addSource('base-'+base.id,{type:'raster',tileSize:256,tiles:base.tiles,attribution:base.attr});
         map.addLayer({id:'base-'+base.id,type:'raster',source:'base-'+base.id,
-          paint:base.paint??{},layout:{visibility:'none'}},labelsBeforeLayer??undefined);
+          paint:base.paint??{},layout:{visibility:base.id===currentBase?'visible':'none'}},labelsBeforeLayer??undefined);
       });
       applyVectorLabelStyle();
 
