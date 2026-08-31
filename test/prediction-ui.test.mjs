@@ -37,3 +37,9 @@ test("el popup és ample, responsive i manté visible el botó de ruta", () => {
   assert.match(app, /\.pop-map-footer\{flex:none/);
   assert.match(app, /<div class="pop-map-footer"><a class="pop-map"/);
 });
+
+test("el raster diferencia el bosc de probabilitat baixa de les cel·les sense bosc", () => {
+  assert.match(app, /const LOW_SCORE_FOREST_ALPHA = 20/);
+  assert.match(app, /LOW_SCORE_FOREST_ALPHA\+\(pixels\[p\+3\]-LOW_SCORE_FOREST_ALPHA\)\*reveal/);
+  assert.doesNotMatch(app, /if\(score<DISPLAY_SCORE_MIN\) continue/);
+});
