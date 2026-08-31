@@ -14,24 +14,26 @@ test("el mapa presenta la puntuació amb el copy de probabilitat", () => {
 test("el popup identifica dades desconegudes i carrega l'estructura forestal", () => {
   assert.match(app, /<span class="unknown-value">Desconegut<\/span>/);
   assert.doesNotMatch(app, /Desconegut \?/);
-  assert.match(app, /Cobertura forestal/);
+  assert.match(app, /entorn dens/);
   assert.match(app, /bolets\.forest\.png/);
 });
 
 test("el popup concentra les xifres útils i no publica els factors interns", () => {
-  assert.match(app, /Dades de l’entorn/);
+  assert.match(app, /Condicions del punt/);
   assert.match(app, /\$\{percentage\}% · \$\{r\.nivell\}/);
-  assert.match(app, /\$\{percentage\}% · \$\{level\}/);
   assert.match(app, /°C · \$\{direction\}/);
-  assert.match(app, /últims 5 dies amb els 9 anteriors/);
+  assert.match(app, /Adequació de \$\{label\}: \$\{level\}/);
+  assert.match(app, /class="pop-fit unknown"/);
+  assert.match(app, /grid-template-columns:repeat\(4,10px\)/);
+  assert.match(app, /Math\.ceil\(fit\*4\)/);
+  assert.doesNotMatch(app, /<details class="pop-environment"/);
   assert.doesNotMatch(app, /const FACTORS/);
   assert.doesNotMatch(app, /class="fbar"/);
 });
 
 test("el popup és ample, responsive i manté visible el botó de ruta", () => {
-  assert.match(app, /width:min\(340px,calc\(100vw - 24px\)\)/);
-  assert.match(app, /grid-template-columns:minmax\(0,1fr\) auto/);
-  assert.match(app, /\.pop-grid \.v\{[^}]*white-space:nowrap/);
+  assert.match(app, /width:min\(320px,calc\(100vw - 24px\)\)/);
+  assert.match(app, /grid-template-columns:72px minmax\(0,1fr\)/);
   assert.match(app, /\.maplibregl-popup-content\{display:flex;flex-direction:column/);
   assert.match(app, /\.pop-scroll\{min-height:0;[^}]*overflow-y:auto/);
   assert.match(app, /\.pop-map-footer\{flex:none/);

@@ -159,7 +159,7 @@
     .maplibregl-ctrl-bottom-right{right:env(safe-area-inset-right);bottom:env(safe-area-inset-bottom)}
     .maplibregl-ctrl-group button{touch-action:manipulation}
 
-    .maplibregl-popup{width:min(340px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)!important}
+    .maplibregl-popup{width:min(320px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)!important}
     .maplibregl-popup-content{display:flex;flex-direction:column;width:100%;background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--edge);
       border-radius:12px;color:var(--text);font-family:var(--ui);padding:12px 14px;max-height:min(70dvh,420px);
       overflow:hidden}.pop-scroll{min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
@@ -182,13 +182,17 @@
     .pop-index{color:var(--muted);font-size:11px;margin-top:4px;font-variant-numeric:tabular-nums}
     .pop-nearby{margin:8px 0 3px;padding:6px 8px;border-left:2px solid var(--rovello);
       background:rgba(232,114,42,.08);color:#c5c9bb;font-size:11px;line-height:1.4}
-    .pop-summary{display:grid;gap:3px;margin-top:11px;font-size:12.5px;line-height:1.35}.pop-summary-line{display:flex;flex-wrap:wrap;gap:0 5px}.pop-summary-line>span:not(.dot){white-space:nowrap}.pop-summary-line .dot{color:#697064}
-    .pop-summary .qualifier{color:#b8beaf}.pop-environment{margin-top:10px;padding-top:8px;border-top:1px solid var(--edge)}
-    .pop-environment summary{display:flex;align-items:center;justify-content:space-between;color:#bbc1b5;font-size:11.5px;font-weight:650;cursor:pointer;list-style:none}
-    .pop-environment summary::-webkit-details-marker{display:none}.pop-environment summary::after{content:'⌄';color:var(--muted);font-size:15px;line-height:1;transition:transform .15s}.pop-environment[open] summary::after{transform:rotate(180deg)}
-    .pop-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;margin-top:8px;font-size:12px}
-    .pop-grid .k{min-width:0;color:var(--muted)} .pop-grid .v{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-    .pop-method{margin:7px 0 0;color:#788074;font-size:9.5px;line-height:1.4}
+    .pop-conditions{margin-top:11px;padding-top:8px;border-top:1px solid var(--edge)}
+    .pop-conditions-title{margin-bottom:3px;color:#bbc1b5;font-size:11.5px;font-weight:650}
+    .pop-condition{display:grid;grid-template-columns:72px minmax(0,1fr);gap:3px 10px;padding:5px 0;font-size:11.5px;line-height:1.3}
+    .pop-condition .k,.pop-context .k{color:var(--muted)}
+    .pop-condition .v,.pop-context .v{min-width:0;text-align:right;font-variant-numeric:tabular-nums}
+    .pop-condition .qualifier{color:#b8beaf}
+    .pop-fit{grid-column:2;justify-self:end;display:grid;grid-template-columns:repeat(4,10px);gap:3px;height:4px}
+    .pop-fit i{display:block;height:4px;border-radius:999px;background:rgba(232,226,214,.11)}
+    .pop-fit i.on{background:var(--rovello)}
+    .pop-fit.unknown i{background:repeating-linear-gradient(90deg,rgba(154,163,155,.36) 0 5px,transparent 5px 8px)}
+    .pop-context{display:grid;grid-template-columns:72px minmax(0,1fr);gap:4px 10px;margin-top:3px;padding-top:8px;border-top:1px solid var(--edge);font-size:11.5px}
     .unknown-value{color:var(--muted);font-style:italic}
     .pop-map-footer{flex:none;margin:8px -14px -12px;padding:9px 14px 12px;border-top:1px solid var(--edge);background:#131b12}
     .pop-map{display:inline-flex;align-items:center;padding:5px 8px;border:1px solid var(--edge);
@@ -549,9 +553,6 @@
     const markUserNavigation = () => {
       userNavigationRevision++;
     };
-    map.getContainer().addEventListener('click',event=>{
-      if (event.target.closest('.maplibregl-popup .pop-environment summary')) setTimeout(keepPopupVisible);
-    });
     let currentMode = 'detallat', currentBase = 'dark';
     let predictionIntensity=1;
     try {
@@ -573,15 +574,14 @@
       ? unknownHTML
       : render(value);
     const sentenceCase = value => value ? value.charAt(0).toUpperCase()+value.slice(1) : value;
-    const forestDetailHTML = p => {
+    const forestEnvironmentLabel = p => {
       if (p.forestFrac != null && Number.isFinite(+p.forestFrac)) {
         const percentage=Math.round(+p.forestFrac*100);
-        const level=percentage>=60?'alta':percentage>=30?'mitjana':'baixa';
-        return `${percentage}% · ${level}`;
+        return percentage>=60?'entorn dens':percentage>=30?'entorn mitjà':'entorn obert';
       }
-      if (p.forestStructure === 'dense') return 'densa';
-      if (p.forestStructure === 'open') return 'clara';
-      return unknownHTML;
+      if (p.forestStructure === 'dense') return 'entorn dens';
+      if (p.forestStructure === 'open') return 'entorn obert';
+      return '';
     };
     const temperatureQualifier = factor => factor == null || Number.isNaN(+factor)
       ? ''
@@ -590,6 +590,15 @@
       const direction=delta<=-.3?'refredant-se':delta>=.3?'escalfant-se':'estable';
       return `${delta>0?'+':''}${fmt(delta)} °C · ${direction}`;
     });
+    const fitBarHTML = (value,label,known=true) => {
+      const segments=Array.from({ length:4 },()=>'<i></i>').join('');
+      if (!known || value == null || Number.isNaN(+value)) return `<span class="pop-fit unknown" role="img" aria-label="Adequació de ${label}: desconeguda">${segments}</span>`;
+      const fit=Math.max(0,Math.min(1,+value));
+      const level=fit>=.8?'alta':fit>=.45?'mitjana':'baixa';
+      const active=Math.max(1,Math.ceil(fit*4));
+      const meter=Array.from({ length:4 },(_,index)=>`<i${index<active?' class="on"':''}></i>`).join('');
+      return `<span class="pop-fit" role="img" aria-label="Adequació de ${label}: ${level}">${meter}</span>`;
+    };
     const mapLinkHTML = lngLat => {
       const [lng,lat]=Array.isArray(lngLat)?lngLat:[lngLat.lng,lngLat.lat];
       const destination=encodeURIComponent(`${(+lat).toFixed(6)},${(+lng).toFixed(6)}`);
@@ -600,8 +609,12 @@
       const r = rating(p);
       const percentage=Math.round((+p.score)*100);
       const qualifier=temperatureQualifier(p.fT);
-      const temperature=knownHTML(p.tMean,value => `${fmt(value)} °C${qualifier?` <span class="qualifier">${qualifier}</span>`:''}`);
-      const soil=knownHTML(p.substrate,value => `sòl ${esc(SOIL[value] ?? value)}`);
+      const forest=knownHTML(p.host,value => {
+        const environment=forestEnvironmentLabel(p);
+        return `${esc(sentenceCase(BOSC[value] ?? value))}${environment?` · <span class="qualifier">${environment}</span>`:''}`;
+      });
+      const temperature=knownHTML(p.tMean,value => `${fmt(value)} °C${qualifier?` · <span class="qualifier">${qualifier}</span>`:''}`);
+      const soil=knownHTML(p.substrate,value => esc(sentenceCase(SOIL[value] ?? value)));
       return `
       <div class="pop-scroll">
       <div class="pop-nom">${esc(p.nom ?? p.codi)}</div>
@@ -609,14 +622,16 @@
         <div class="pop-score-line"><span>Probabilitat estimada</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div>
         <div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div>
       </div>
-      <div class="pop-summary">
-        <div class="pop-summary-line"><span>${knownHTML(p.host,value => esc(sentenceCase(BOSC[value] ?? value)))}</span><span class="dot">·</span><span>${knownHTML(p.alt,value => `${Math.round(value).toLocaleString('ca-ES')} m`)}</span></div>
-        <div class="pop-summary-line"><span>${temperature}</span><span class="dot">·</span><span>${soil}</span></div>
+      <div class="pop-conditions">
+        <div class="pop-conditions-title">Condicions del punt</div>
+        <div class="pop-condition"><span class="k">Bosc</span><span class="v">${forest}</span>${fitBarHTML(p.fHost,'bosc',p.host!=null)}</div>
+        <div class="pop-condition"><span class="k">Temperatura</span><span class="v">${temperature}</span>${fitBarHTML(p.fT,'temperatura',p.tMean!=null)}</div>
+        <div class="pop-condition"><span class="k">Sòl</span><span class="v">${soil}</span>${fitBarHTML(p.fSoil,'sòl',p.substrate!=null)}</div>
+        <div class="pop-context">
+          <span class="k">Altitud</span><span class="v">${knownHTML(p.alt,value => `${Math.round(value).toLocaleString('ca-ES')} m`)}</span>
+          <span class="k">Tendència</span><span class="v">${trendDetailHTML(p.tTrend)}</span>
+        </div>
       </div>
-      <details class="pop-environment"><summary>Dades de l’entorn</summary><div class="pop-grid">
-        <span class="k">Cobertura forestal</span><span class="v">${forestDetailHTML(p)}</span>
-        <span class="k">Tendència tèrmica</span><span class="v">${trendDetailHTML(p.tTrend)}</span>
-      </div><p class="pop-method">La cobertura és la proporció de bosc de l’entorn. La tendència compara els últims 5 dies amb els 9 anteriors.</p></details>
       </div>
       ${mapLinkHTML(lngLat)}`;
     };
