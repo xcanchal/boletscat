@@ -165,7 +165,8 @@ function terrainAt(grid, lon, lat) {
   return terrainCell(grid,row*grid.width+col);
 }
 
-// Conversió suficient per georeferenciar les quatre cantonades del ràster a MapLibre.
+// Conversió de les cantonades que delimiten l'extensió. El client reprojecta
+// després cada píxel a Web Mercator; no estira directament aquest quadrilàter.
 function utm31ToLngLat(easting, northing) {
   const a=6378137, ecc=0.00669438, k0=.9996, e1=(1-Math.sqrt(1-ecc))/(1+Math.sqrt(1-ecc));
   const x=easting-500000, m=northing/k0, mu=m/(a*(1-ecc/4-3*ecc**2/64-5*ecc**3/256));

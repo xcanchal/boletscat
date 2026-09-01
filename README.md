@@ -99,10 +99,20 @@ altitud + substrat + estructura forestal densa/clara). El lector manté
 compatibilitat amb les graelles `BGR1` i `BGR2` antigues. El procés diari interpola la meteorologia, corregeix la
 temperatura amb l'altitud local i genera un PNG transparent per espècie. El
 navegador rep una sola imatge d'uns centenars de KB, no 1,2 milions de geometries.
-La dada manté la resolució de 250 m, però el client la suavitza a qualsevol zoom
-perquè es llegeixi sempre com un mapa de calor. Si el punt tocat no té dades però
-el color prové d'una cel·la pròxima, el popup usa la cel·la forestal més propera
-dins d'1,5 km i n'indica la distància. El fons fosc i les etiquetes són vectorials
+La dada manté la resolució de 250 m. Abans de lliurar-la a MapLibre, el client
+reprojecta el canvas UTM 31N a un rectangle Web Mercator i després hi aplica un
+suavitzat lleu. El popup consulta l'índex de cel·les d'aquesta mateixa reprojecció,
+de manera que el valor numèric i el color visible sempre provenen del mateix píxel.
+Si el punt tocat no té dades, el popup usa la cel·la forestal més propera dins
+d'1,5 km i n'indica la distància. El contracte espacial és:
+
+| Fase | Referència espacial | Garantia |
+|---|---|---|
+| Càlcul diari | Graella UTM 31N de 250 m | Manté terreny, meteorologia i score sense alterar |
+| Visualització | Canvas reproyectat a Web Mercator | MapLibre no deforma tota Catalunya com un únic quadrilàter |
+| Clic i popup | Índex Web Mercator → píxel UTM original | El detall correspon exactament a la cel·la pintada |
+
+El fons fosc i les etiquetes són vectorials
 (CARTO + OpenStreetMap); relleu i satèl·lit es mantenen com a capes Esri sota les
 mateixes etiquetes vectorials.
 
@@ -279,6 +289,7 @@ una probabilitat estadística de trobar bolets.
 | `buildGrid.mjs` | Precompute de coberta forestal, altitud i substrat a 250 m → `graella.bin`. |
 | `substrate.mjs` | Classificació litològica, lectura GeoPackage i rasterització del substrat. |
 | `raster.mjs` | Codificador/descodificador PNG sense dependències. |
+| `raster-projection.mjs` | Reprojecció visual Web Mercator i correspondència entre el píxel pintat i la cel·la UTM. |
 | `buildHost.mjs` | Precompute de l'hoste (MCSC) → `estacions_host.json` (córrer un cop). |
 | `index.html` | Landing pública de Boletada. |
 | `app.html` | Mapa MapLibre, accés i selector d'espècie. |

@@ -60,3 +60,10 @@ test("el suavitzat no escampa el color sobre diverses cel·les", () => {
   assert.match(app, /kind==='coverage'\?1\.25:\.9/);
   assert.doesNotMatch(app, /kind==='coverage'\?1\.25:2\.25/);
 });
+
+test("el popup consulta la mateixa reprojecció Web Mercator que la capa visual", () => {
+  assert.match(app, /createRasterProjection, projectedPixelAtLngLat/);
+  assert.match(app, /const displayed=projectedPixelAtLngLat\(currentRaster\.projection,lngLat\.lng,lngLat\.lat\)/);
+  assert.match(app, /const index=currentRaster\.projection\.sourceIndices\[displayed\.index\]/);
+  assert.doesNotMatch(app, /coordinates:grid\.coordinates/);
+});

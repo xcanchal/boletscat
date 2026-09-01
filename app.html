@@ -391,6 +391,7 @@
   <script type="module">
     import { ErrorCode, Purchases, PurchasesError } from '/vendor/purchases.es.js';
     import { conditionRating } from '/prediction-confidence.mjs';
+    import { createRasterProjection, projectedPixelAtLngLat } from '/raster-projection.mjs';
     const DATA_BASE = document.querySelector('meta[name="bolets-data-base"]')?.content ?? '.';
     const dataUrl = path => DATA_BASE === '.'
       ? `/api/predictions/${encodeURIComponent(path)}`
@@ -643,9 +644,11 @@
     function cellAt(lngLat) {
       if (!currentRaster?.pixels) return null;
       const { grid, pixels } = currentRaster, [x,y] = wgs84ToUtm31(lngLat.lng,lngLat.lat);
-      const col=Math.floor((x-grid.x0)/grid.cell), row=Math.floor((grid.y1-y)/grid.cell);
-      if (col<0||row<0||col>=grid.width||row>=grid.height) return null;
-      const index=row*grid.width+col, alpha=pixels[index*4+3];
+      const displayed=projectedPixelAtLngLat(currentRaster.projection,lngLat.lng,lngLat.lat);
+      if(!displayed) return null;
+      const index=currentRaster.projection.sourceIndices[displayed.index];
+      if(index<0) return null;
+      const col=index%grid.width,row=Math.floor(index/grid.width),alpha=pixels[index*4+3];
       if (!alpha) return null;
       return { index,row,col,x,y,score:alpha<=35 ? 0 : Math.max(0,Math.min(1,(alpha-105)/125)) };
     }
@@ -867,22 +870,32 @@
       return context.getImageData(0,0,grid.width,grid.height).data;
     }
 
-    function displayRasterUrl(pixels,grid,kind) {
-      const canvas=document.createElement('canvas'); canvas.width=grid.width; canvas.height=grid.height;
+    let rasterProjectionCache=null;
+    const projectionForGrid = grid => {
+      const key=[grid.width,grid.height,grid.cell,grid.x0,grid.y1,...grid.coordinates.flat()].join(':');
+      if(rasterProjectionCache?.key!==key) rasterProjectionCache={key,projection:createRasterProjection(grid)};
+      return rasterProjectionCache.projection;
+    };
+
+    function displayRaster(pixels,grid,kind) {
+      const projection=projectionForGrid(grid);
+      const canvas=document.createElement('canvas'); canvas.width=projection.width; canvas.height=projection.height;
       const context=canvas.getContext('2d'), image=context.createImageData(grid.width,grid.height), out=image.data;
-      for(let p=0;p<pixels.length;p+=4) {
+      for(let target=0;target<projection.sourceIndices.length;target++) {
+        const source=projection.sourceIndices[target]; if(source<0) continue;
+        const p=source*4,q=target*4;
         if(!pixels[p+3]) continue;
         if(kind==='coverage') {
-          out[p]=89; out[p+1]=102; out[p+2]=94; out[p+3]=255;
+          out[q]=89; out[q+1]=102; out[q+2]=94; out[q+3]=255;
           continue;
         }
         const score=pixels[p+3]<=35?0:Math.max(0,Math.min(1,(pixels[p+3]-105)/125));
-        out[p]=pixels[p]; out[p+1]=pixels[p+1]; out[p+2]=pixels[p+2];
+        out[q]=pixels[p]; out[q+1]=pixels[p+1]; out[q+2]=pixels[p+2];
         // Una cel·la forestal amb score molt baix continua sent bosc. La
         // mantenim molt subtil en comptes de convertir-la en un forat que es
         // pugui confondre amb una absència de dades o de cobertura forestal.
         const reveal=Math.max(0,Math.min(1,(score-DISPLAY_SCORE_MIN)/.08));
-        out[p+3]=Math.round(LOW_SCORE_FOREST_ALPHA+(pixels[p+3]-LOW_SCORE_FOREST_ALPHA)*reveal);
+        out[q+3]=Math.round(LOW_SCORE_FOREST_ALPHA+(pixels[p+3]-LOW_SCORE_FOREST_ALPHA)*reveal);
       }
       context.putImageData(image,0,0);
       // La dada continua sent una graella de 250 m per al càlcul i el clic, però
@@ -892,7 +905,7 @@
       const smoothContext=smoothed.getContext('2d');
       if('filter' in smoothContext) smoothContext.filter=`blur(${kind==='coverage'?1.25:.9}px)`;
       smoothContext.drawImage(canvas,0,0);
-      return smoothed.toDataURL('image/png');
+      return {url:smoothed.toDataURL('image/png'),coordinates:projection.coordinates};
     }
 
     function renderSpeciesInfo(species) {
@@ -951,9 +964,9 @@
         const version=encodeURIComponent(`${geo.generated ?? 'latest'}-${Date.now()}`);
         const imageUrl=`${dataUrl(`bolets.${species}.png`)}?v=${version}`;
         const pixels=await imagePixels(imageUrl,grid);
-        const raster={ grid, pixels, model:geo.model };
+        const raster={ grid, pixels, model:geo.model, projection:projectionForGrid(grid) };
         currentRaster=raster;
-        const image={ url:displayRasterUrl(pixels,grid,'prediction'), coordinates:grid.coordinates };
+        const image=displayRaster(pixels,grid,'prediction');
         if (map.getSource('prediccio')) {
           map.getSource('prediccio').updateImage(image);
         }
@@ -975,7 +988,7 @@
           }
           if(currentRaster===raster) {
             Object.assign(raster,{ terrain,weather,forest });
-            const coverage={ url:displayRasterUrl(terrain,grid,'coverage'), coordinates:grid.coordinates };
+            const coverage=displayRaster(terrain,grid,'coverage');
             if(map.getSource('cobertura')) map.getSource('cobertura').updateImage(coverage);
             else {
               map.addSource('cobertura',{ type:'image', ...coverage });
