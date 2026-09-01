@@ -5,22 +5,17 @@ import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { aggregateForestCover } from "./forest-cover.mjs";
 import { decodeRgbaPng } from "./raster.mjs";
 import { rasterizeSubstrate } from "./substrate.mjs";
 
 const CELL = 250, X0 = 260000, Y0 = 4484000, X1 = 530000, Y1 = 4760000;
 const WIDTH = (X1 - X0) / CELL, HEIGHT = (Y1 - Y0) / CELL;
+const COVER_SAMPLES_PER_CELL = 3;
 const WMS = "https://geoserveis.icgc.cat/servei/catalunya/cobertes-sol/wms";
 const WCS = "https://geoserveis.icgc.cat/icc_mdt/wcs/service?";
 const GEOLOGY = "https://datacloud.icgc.cat/datacloud/geologia-territorial-250000-geologic/gpkg/geologia-territorial-250000-geologic-v3r0-202312.zip";
 const OUT = process.argv.find((a) => a.startsWith("--out="))?.slice(6) || "graella.bin";
-
-const rgbForest = new Map([
-  [0x33cc33, [1, 1]], [0x19e61e, [1, 2]], // coníferes denses / clares
-  [0x66ff33, [2, 1]], [0xb4ff9b, [2, 2]], // caducifolis densos / clars
-  [0x689018, [3, 1]], [0xaaa500, [3, 2]], // esclerofil·les densos / clars
-  [0x00ff9b, [4, 1]],                     // bosc de ribera
-]);
 
 async function fetchOk(url) {
   const res = await fetch(url);
@@ -84,25 +79,21 @@ async function main() {
   console.log(`Graella ${WIDTH}×${HEIGHT} (${(WIDTH * HEIGHT).toLocaleString("ca")} cel·les de ${CELL} m)`);
   const coverUrl = WMS + "?" + new URLSearchParams({
     SERVICE:"WMS", VERSION:"1.3.0", REQUEST:"GetMap", LAYERS:"cobertes_2024", STYLES:"",
-    CRS:"EPSG:25831", BBOX:`${X0},${Y0},${X1},${Y1}`, WIDTH:String(WIDTH), HEIGHT:String(HEIGHT),
+    CRS:"EPSG:25831", BBOX:`${X0},${Y0},${X1},${Y1}`,
+    WIDTH:String(WIDTH * COVER_SAMPLES_PER_CELL), HEIGHT:String(HEIGHT * COVER_SAMPLES_PER_CELL),
     FORMAT:"image/png", TRANSPARENT:"true",
   });
   console.log("Baixant cobertes del sòl…");
   const cover = decodeRgbaPng(Buffer.from(await (await fetchOk(coverUrl)).arrayBuffer()));
-  if (cover.width !== WIDTH || cover.height !== HEIGHT) throw new Error("Dimensions inesperades del WMS");
-
-  const hosts = new Uint8Array(WIDTH * HEIGHT), forestStructure = new Uint8Array(WIDTH * HEIGHT);
+  const { hosts, forestStructure } = aggregateForestCover(cover, {
+    gridWidth:WIDTH,
+    gridHeight:HEIGHT,
+    samplesPerCell:COVER_SAMPLES_PER_CELL,
+  });
   const altitude = new Int16Array(WIDTH * HEIGHT);
   altitude.fill(-32768);
-  let forest = 0;
-  for (let i = 0; i < hosts.length; i++) {
-    const p = i * 4;
-    if (!cover.rgba[p + 3]) continue;
-    const forestClass = rgbForest.get((cover.rgba[p] << 16) | (cover.rgba[p + 1] << 8) | cover.rgba[p + 2]);
-    if (forestClass) [hosts[i], forestStructure[i]] = forestClass;
-    if (hosts[i]) forest++;
-  }
-  console.log(`  ${(100 * forest / hosts.length).toFixed(1)}% de cel·les forestals`);
+  const forest = hosts.reduce((total, host) => total + Number(Boolean(host)), 0);
+  console.log(`  ${(100 * forest / hosts.length).toFixed(1)}% de cel·les forestals (majoria de ${COVER_SAMPLES_PER_CELL}×${COVER_SAMPLES_PER_CELL} mostres)`);
 
   const TILE = 180, tiles = [];
   for (let row = 0; row < HEIGHT; row += TILE)

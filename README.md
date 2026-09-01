@@ -99,7 +99,11 @@ completament cap zona ni convertir una cartografia 1:250.000 en una falsa certes
 `buildGrid.mjs` descarrega una sola vegada la coberta del sòl 2024, el model
 d'elevacions i la geologia territorial 1:250.000 de l'ICGC. En desa una
 representació compacta `BGR3` a `graella.bin` (5 bytes per cel·la: tipus de bosc +
-altitud + substrat + estructura forestal densa/clara). El lector manté
+altitud + substrat + estructura forestal densa/clara). La coberta es mostreja en
+una matriu 3×3 dins de cada cel·la de 250 m: només es considera bosc quan hi ha
+majoria forestal, i se n'assignen el tipus i l'estructura dominants. Això evita
+que una clariana o un arbre aïllat al centre decideixin tota la cel·la sense
+omplir zones on predominen roca, prat o matollar. El lector manté
 compatibilitat amb les graelles `BGR1` i `BGR2` antigues. El procés diari interpola la meteorologia, corregeix la
 temperatura amb l'altitud local i genera un PNG transparent per espècie. El
 navegador rep una sola imatge d'uns centenars de KB, no 1,2 milions de geometries.
@@ -297,6 +301,7 @@ una probabilitat estadística de trobar bolets.
 |---|---|
 | `score_estacions.mjs` | Scorer multi-espècie: punts GeoJSON + mapa PNG per espècie. |
 | `buildGrid.mjs` | Precompute de coberta forestal, altitud i substrat a 250 m → `graella.bin`. |
+| `forest-cover.mjs` | Agregació 3×3 de la coberta ICGC per majoria forestal i bosc dominant. |
 | `substrate.mjs` | Classificació litològica, lectura GeoPackage i rasterització del substrat. |
 | `raster.mjs` | Codificador/descodificador PNG sense dependències. |
 | `raster-projection.mjs` | Reprojecció visual Web Mercator i correspondència entre el píxel pintat i la cel·la UTM. |
@@ -322,4 +327,5 @@ una probabilitat estadística de trobar bolets.
 `TRIGGER_IDEAL`/`RESERVE_IDEAL` (humitat) · el bloc `SPECIES`
 (mesos informatius, altitud, temperatura, tendència tèrmica, bosc i substrat per espècie) · els factors dins
 `hostFactor` i `substrateFactor` (duresa de cada penalització).
+`buildGrid.mjs`: `COVER_SAMPLES_PER_CELL` (resolució senar del mostreig d'àrea forestal).
 `buildHost.mjs`: `GRID`/`STEP` (radi i densitat del mostreig).
