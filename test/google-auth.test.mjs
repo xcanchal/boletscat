@@ -70,3 +70,10 @@ test("el gate ofereix Google sense exposar-lo al client natiu incomplet", () => 
   assert.match(appSource, /billingConfig\.googleAuthEnabled&&DATA_BASE==='\.'/);
   assert.match(appSource, /location\.assign\(authorizationURL\.href\)/);
 });
+
+test("els termes apareixen una sola vegada al final del formulari d'accés", () => {
+  assert.equal((appSource.match(/id="authLegal"/g) || []).length, 1);
+  assert.equal((appSource.match(/En continuar acceptes els/g) || []).length, 1);
+  assert.doesNotMatch(appSource, /id="authLegal" hidden/);
+  assert.ok(appSource.indexOf('id="authLegal"') > appSource.indexOf('id="authMessage"'));
+});
