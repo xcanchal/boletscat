@@ -822,7 +822,10 @@
       map.on('mouseenter','punt', () => map.getCanvas().style.cursor='pointer');
       map.on('mouseleave','punt', () => map.getCanvas().style.cursor='');
 
-      document.getElementById('species').addEventListener('change', e => load(e.target.value));
+      document.getElementById('species').addEventListener('change', e => {
+        dismissOpenPopup();
+        load(e.target.value);
+      });
 
       // Mode de dades: un únic selector global evita duplicar controls a la sidebar.
       const cap = document.getElementById('modecap');
@@ -887,7 +890,7 @@
       // El desenfocament es cou a la imatge i funciona igual a web, iOS i Android.
       const smoothed=document.createElement('canvas'); smoothed.width=grid.width; smoothed.height=grid.height;
       const smoothContext=smoothed.getContext('2d');
-      if('filter' in smoothContext) smoothContext.filter=`blur(${kind==='coverage'?1.25:2.25}px)`;
+      if('filter' in smoothContext) smoothContext.filter=`blur(${kind==='coverage'?1.25:.9}px)`;
       smoothContext.drawImage(canvas,0,0);
       return smoothed.toDataURL('image/png');
     }

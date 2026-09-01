@@ -51,3 +51,12 @@ test("el mapa estrena la vista satèl·lit i recorda la preferència", () => {
   assert.match(app, /visibility:base\.id===currentBase\?'visible':'none'/);
   assert.match(app, /btn\.classList\.toggle\('on',b\.id===currentBase\)/);
 });
+
+test("canviar d’espècie tanca el popup anterior", () => {
+  assert.match(app, /getElementById\('species'\)\.addEventListener\('change', e => \{\s*dismissOpenPopup\(\);\s*load\(e\.target\.value\);/);
+});
+
+test("el suavitzat no escampa el color sobre diverses cel·les", () => {
+  assert.match(app, /kind==='coverage'\?1\.25:\.9/);
+  assert.doesNotMatch(app, /kind==='coverage'\?1\.25:2\.25/);
+});
