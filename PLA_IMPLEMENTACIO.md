@@ -125,7 +125,7 @@ de base de dades.
 | Tall als 100 | Manual al dashboard de RevenueCat |
 | Després del tall | `$rc_annual` → `boletada_annual`; no eliminar ni desassociar el producte pioner |
 | Persistència local | Cap canvi; `user_access` continua reflectint l'entitlement actiu |
-| Social login | Fora de l'MVP; valorar Apple + Google conjuntament més endavant |
+| Social login | Google implementat al web/PWA amb Better Auth; apps natives pendents de deep links |
 | Web billing | RevenueCat Billing amb Stripe com a passarel·la |
 | Billing natiu | StoreKit a iOS i Google Play Billing a Android, mitjançant RevenueCat |
 | Ordre de lliurament | Nucli compartit → web → iOS → Android |
@@ -664,6 +664,8 @@ Variables mínimes de producció:
 | `BETTER_AUTH_URL` | `https://boletada.cat` | No |
 | `BETTER_AUTH_SECRET` | Valor aleatori estable de 32+ caràcters | **Sí** |
 | `TRUSTED_ORIGINS` | `https://boletada.cat` | No |
+| `GOOGLE_CLIENT_ID` | Client OAuth web de Google Cloud | No |
+| `GOOGLE_CLIENT_SECRET` | Secret del client OAuth web | **Sí** |
 | `EMAIL_PROVIDER_API_KEY` | API key live de Resend | **Sí** |
 | `EMAIL_FROM` | `Boletada <hola@boletada.cat>` | No |
 | `EMAIL_PROVIDER_URL` | `https://api.resend.com/emails` | No |
@@ -754,8 +756,8 @@ Després del llançament web: iOS (fase 5A) i, tot seguit, Android (fase 5B).
 |---|---|---|
 | `GET /healthz` | Pública | Procés viu |
 | `GET /readyz` | Pública | Procés i PostgreSQL disponibles |
-| `GET /api/config` | Pública | Només clau pública RevenueCat i entitlement |
-| `* /api/auth/*` | Better Auth | Registre, login, verificació, reset i sessions |
+| `GET /api/config` | Pública | Disponibilitat de Google, clau pública RevenueCat i entitlement |
+| `* /api/auth/*` | Better Auth | Registre, login, Google OAuth, verificació, reset i sessions |
 | `GET /api/me` | Sessió | Usuari i projecció local d'accés |
 | `POST /api/billing/sync` | Sessió | Sincronitza el subscriber de RevenueCat |
 | `GET /api/predictions/:filename` | Sessió + `boletada_pro` | Serveix recursos privats validats per allowlist |
@@ -797,7 +799,7 @@ sessions existents.
 
 - StoreKit/App Store Connect i Google Play Billing.
 - Restauració de compres natives.
-- Social login.
+- Login social natiu amb Google/Apple i retorn per universal links/deep links.
 - Webhooks i observabilitat avançada de RevenueCat.
 - CRM/newsletter, analítica comercial complexa o múltiples plans.
 - Reescriptura del frontend o abstraccions noves.

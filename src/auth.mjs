@@ -15,6 +15,12 @@ export const auth = betterAuth({
   baseURL: config.authUrl,
   secret: config.authSecret,
   trustedOrigins: config.trustedOrigins,
+  socialProviders: config.google.enabled ? {
+    google: {
+      clientId: config.google.clientId,
+      clientSecret: config.google.clientSecret,
+    },
+  } : {},
   rateLimit: {
     enabled: true,
     storage: "database",
@@ -22,6 +28,7 @@ export const auth = betterAuth({
     max: 100,
     customRules: {
       "/sign-in/email": { window: 10, max: 3 },
+      "/sign-in/social": { window: 10, max: 10 },
       "/sign-up/email": { window: 60, max: 5 },
       "/request-password-reset": { window: 300, max: 3 },
     },

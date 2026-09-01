@@ -15,6 +15,12 @@ function csv(value) {
 
 const authUrl = process.env.BETTER_AUTH_URL?.trim() || "http://localhost:8080";
 const developmentSecret = "boletada-local-only-secret-change-me";
+const googleClientId = process.env.GOOGLE_CLIENT_ID?.trim() || "";
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim() || "";
+
+if (Boolean(googleClientId) !== Boolean(googleClientSecret)) {
+  throw new Error("GOOGLE_CLIENT_ID i GOOGLE_CLIENT_SECRET s’han de configurar junts");
+}
 
 export const config = {
   isProduction,
@@ -24,6 +30,11 @@ export const config = {
   authUrl,
   authSecret: isProduction ? required("BETTER_AUTH_SECRET") : (process.env.BETTER_AUTH_SECRET || developmentSecret),
   trustedOrigins: csv(process.env.TRUSTED_ORIGINS || authUrl),
+  google: {
+    enabled: Boolean(googleClientId && googleClientSecret),
+    clientId: googleClientId,
+    clientSecret: googleClientSecret,
+  },
   requireEmailVerification: process.env.REQUIRE_EMAIL_VERIFICATION
     ? process.env.REQUIRE_EMAIL_VERIFICATION === "true"
     : isProduction,

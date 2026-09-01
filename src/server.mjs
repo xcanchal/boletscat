@@ -34,6 +34,7 @@ app.get("/readyz", async (c) => {
 });
 
 app.get("/api/config", (c) => c.json({
+  googleAuthEnabled: config.google.enabled,
   revenueCatWebPublicApiKey: config.revenueCat.webPublicApiKey,
   entitlementId: config.revenueCat.entitlementId,
 }));

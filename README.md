@@ -173,6 +173,10 @@ Node 22+. Docker només és necessari si vols PostgreSQL local; amb Neon no cal.
 cp .env.example .env
 npm install
 
+# Opcional: login web/PWA amb Google
+# GOOGLE_CLIENT_ID=…
+# GOOGLE_CLIENT_SECRET=…
+
 # Esquema Better Auth/Boletada sobre la DATABASE_URL configurada
 npm run db:migrate
 
@@ -210,6 +214,8 @@ docker run --env-file .env -p 8080:8080 boletada
 1. Configurar la `DATABASE_URL` de producció de Neon o d’un PostgreSQL persistent.
 2. Desplegar el repo amb el `Dockerfile`, port **8080**, domini `boletada.cat`.
 3. Configurar les variables de `.env.example` amb secrets reals.
+   Per activar Google, crear un client OAuth web i autoritzar
+   `https://boletada.cat/api/auth/callback/google` com a URI de redirecció.
 4. **Scheduled Task**: `node score_estacions.mjs --all --out=private/predictions`, freqüència `0 6 * * *`.
 
 **Notes honestes:**

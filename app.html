@@ -249,6 +249,15 @@
     .primary-action{width:100%;border:0;border-radius:11px;background:#e1722d;color:#17120d;padding:13px 16px;
       font:750 14px var(--ui);cursor:pointer;transition:transform .15s,filter .15s;margin-top:3px}
     .primary-action:hover{filter:brightness(1.08);transform:translateY(-1px)}.primary-action:disabled{opacity:.55;cursor:wait;transform:none}
+    .social-auth{display:grid;gap:11px;margin:18px 0 16px}
+    .social-action{width:100%;min-height:46px;display:flex;align-items:center;justify-content:center;gap:11px;border:1px solid rgba(223,226,210,.2);
+      border-radius:11px;background:rgba(240,238,228,.055);color:#eeece3;padding:11px 15px;font:700 14px var(--ui);cursor:pointer;
+      transition:border-color .15s,background .15s,transform .15s}
+    .social-action:hover{border-color:rgba(232,114,42,.52);background:rgba(232,114,42,.075);transform:translateY(-1px)}
+    .social-action:disabled{opacity:.58;cursor:wait;transform:none}.social-action svg{width:19px;height:19px;flex:none}
+    .social-divider{display:flex;align-items:center;gap:10px;color:#737b70;font-size:10px;font-weight:650;letter-spacing:.06em;text-transform:uppercase}
+    .social-divider::before,.social-divider::after{content:"";height:1px;flex:1;background:rgba(223,226,210,.11)}
+    .social-legal{margin:0;color:#6f776d;font-size:9.5px;line-height:1.45;text-align:center}.social-legal a{color:#9ba294;text-underline-offset:3px}
     .text-action{border:0;background:none;color:#9fa598;font:600 12px var(--ui);padding:3px 0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
     .form-foot{display:flex;justify-content:center}.form-foot[hidden]{display:none}.auth-switch{display:flex;align-items:baseline;justify-content:center;gap:6px;margin:18px 0 0;color:#858c80;font-size:12px}.auth-switch .text-action{color:#c9cec2}
     .gate-message{min-height:18px;margin:12px 0 0;color:#d5a36c;font-size:12px;line-height:1.45}
@@ -295,6 +304,14 @@
       </section>
       <section class="gate-card" id="authView" aria-labelledby="authTitle" hidden>
         <h2 id="authTitle">Accedeix al compte</h2>
+        <div class="social-auth" id="googleAuthBlock" hidden>
+          <button class="social-action" id="googleSignIn" type="button">
+            <svg viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.797 2.716v2.258h2.909c1.702-1.567 2.684-3.875 2.684-6.614Z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.181l-2.909-2.258c-.806.54-1.835.859-3.047.859-2.344 0-4.328-1.585-5.037-3.715H.956v2.332A9 9 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.963 10.705A5.41 5.41 0 0 1 3.682 9c0-.592.102-1.168.281-1.705V4.963H.956A9 9 0 0 0 0 9c0 1.452.347 2.827.956 4.037l3.007-2.332Z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.507.454 3.441 1.346l2.581-2.581C13.463.892 11.426 0 9 0A9 9 0 0 0 .956 4.963l3.007 2.332C4.672 5.165 6.656 3.58 9 3.58Z"/></svg>
+            <span>Continua amb Google</span>
+          </button>
+          <p class="social-legal">En continuar acceptes els <a href="https://boletada.cat/legal/#termes" target="_blank" rel="noopener">Termes</a> i la <a href="https://boletada.cat/legal/#privacitat" target="_blank" rel="noopener">Política de privacitat</a>.</p>
+          <div class="social-divider"><span>o amb correu</span></div>
+        </div>
         <form class="auth-form" id="authForm">
           <label class="auth-field"><span class="auth-label">Correu electrònic</span><input id="authEmail" name="email" type="email" autocomplete="email" required /></label>
           <div class="auth-field"><label class="auth-label" for="authPassword">Contrasenya</label><div class="password-control"><input id="authPassword" name="password" type="password" autocomplete="current-password" maxlength="128" required /><button class="password-toggle" type="button" data-password-toggle="authPassword" aria-label="Mostra la contrasenya" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/><path class="eye-slash" d="m4 4 16 16"/></svg></button></div></div>
@@ -1112,6 +1129,18 @@
       setTimeout(()=>map.resize(),0);
       setupActiveAccount();
     }
+    async function prepareAuthProviders() {
+      const googleBlock=document.getElementById('googleAuthBlock');
+      try {
+        billingConfig ||= await request('/api/config');
+        // El redirect web funciona també dins la PWA. El client Capacitor necessita
+        // universal links/deep links propis i no ha de mostrar un flux incomplet.
+        googleBlock.hidden=!(billingConfig.googleAuthEnabled&&DATA_BASE==='.');
+      } catch(error) {
+        googleBlock.hidden=true;
+        console.warn('No s’ha pogut comprovar el login social',error);
+      }
+    }
     async function setupActiveAccount() {
       try {
         billingConfig ||= await request('/api/config');
@@ -1143,7 +1172,16 @@
     }
     async function refreshSession({sync=false}={}) {
       const me=await request('/api/me');
-      if(!me.user){currentUser=null;showView('auth');return false}
+      if(!me.user){
+        currentUser=null;
+        await prepareAuthProviders();
+        showView('auth');
+        if(oauthError){
+          setMessage(authMessage,'No s’ha pogut completar l’accés amb Google. Torna-ho a provar.','error');
+          const cleanURL=new URL(location.href);cleanURL.searchParams.delete('oauth');cleanURL.searchParams.delete('error');history.replaceState({},'',cleanURL.href);
+        }
+        return false;
+      }
       currentUser=me.user;
       let active=Boolean(me.access?.active);
       if(sync){
@@ -1210,6 +1248,22 @@
       hidePasswords('authPassword','authPasswordConfirm');
       setAuthMode(authMode==='signup'?'signin':'signup',{updateUrl:true});
     });
+    document.getElementById('googleSignIn').addEventListener('click',async()=>{
+      const button=document.getElementById('googleSignIn');button.disabled=true;button.setAttribute('aria-busy','true');setMessage(authMessage,'Obrint Google…');
+      try {
+        const errorURL=new URL(APP_CALLBACK_URL);errorURL.searchParams.set('oauth','google');
+        const result=await request('/api/auth/sign-in/social',{method:'POST',body:JSON.stringify({
+          provider:'google',callbackURL:APP_CALLBACK_URL,errorCallbackURL:errorURL.href,disableRedirect:true,
+        }),headers:{Origin:location.origin}});
+        const authorizationURL=new URL(result.url);
+        if(authorizationURL.protocol!=='https:')throw new Error('URL OAuth no segura');
+        location.assign(authorizationURL.href);
+      } catch(error) {
+        console.error('No s’ha pogut iniciar l’accés amb Google',error);
+        setMessage(authMessage,userSafeText(error,'No s’ha pogut obrir Google. Torna-ho a provar.'),'error');
+        button.disabled=false;button.removeAttribute('aria-busy');
+      }
+    });
     authForm.addEventListener('submit',async event=>{
       event.preventDefault();const button=document.getElementById('authSubmit');button.disabled=true;setMessage(authMessage,'');
       const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value;
@@ -1231,7 +1285,7 @@
       finally {button.disabled=false}
     });
 
-    const resetParams=new URLSearchParams(location.search),resetToken=resetParams.get('token');
+    const resetParams=new URLSearchParams(location.search),resetToken=resetParams.get('token'),oauthError=resetParams.get('oauth')==='google';
     function openReset() {
       showView('reset');const setting=Boolean(resetToken);
       document.getElementById('resetEmailField').hidden=setting;document.getElementById('newPasswordField').hidden=!setting;document.getElementById('newPasswordConfirmField').hidden=!setting;
@@ -1290,7 +1344,7 @@
     document.getElementById('signOut').addEventListener('click',signOut);
     document.getElementById('mapSignOut').addEventListener('click',signOut);
 
-    if(resetToken||resetParams.get('error')) openReset();
+    if(resetToken||(resetParams.get('error')&&!oauthError)) openReset();
     else {
       setAuthMode(authMode);showView('loading');
       refreshSession({sync:true}).catch(error=>{
