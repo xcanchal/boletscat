@@ -1,13 +1,10 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { SPECIES } from "../src/species-model.mjs";
 
 const catalog = JSON.parse(
   await readFile(new URL("../content/catalog.json", import.meta.url), "utf8"),
-);
-const predictorSource = await readFile(
-  new URL("../score_estacions.mjs", import.meta.url),
-  "utf8",
 );
 const appSource = await readFile(new URL("../app.html", import.meta.url), "utf8");
 
@@ -95,7 +92,7 @@ test("el catàleg inicial cobreix totes les espècies disponibles al predictor",
 
 test("el motor i el selector cobreixen totes les espècies predictives del catàleg", () => {
   for (const key of MODEL_SPECIES) {
-    assert.match(predictorSource, new RegExp(`\\b${key}\\s*:`), `${key}: falta al motor`);
+    assert.ok(key in SPECIES, `${key}: falta al motor`);
     assert.match(appSource, new RegExp(`<option value="${key}">`), `${key}: falta al selector`);
   }
 });

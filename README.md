@@ -30,15 +30,15 @@ Paràmetres = **priors ecològics raonables, no òptims** (sense ground truth no
 
 | Espècie | Bosc (MCSC) | Substrat | Temporada | Altitud | Notes |
 |---|---|---|---|---|---|
-| **Rovelló** (*Lactarius*) | conifer | neutre | Set–Nov | Baixa–1600 m | Cas base; falta separar espècies de rovelló |
-| **Cep** (*Boletus edulis* grp) | conifer/deciduous/sclerophyll | silícic | Set–Nov (+estiu) | 600–1800 m | Vol humitat sostinguda, fresc |
-| **Llenega negra** (*H. latitabundus*) | conifer | calcari | Oct–Des | Mitja | Tardà, aguanta el fred |
-| **Trompeta** (*Craterellus*) | deciduous/sclerophyll | neutre | Set–Nov | 300–1400 m | Fonts edàfiques contradictòries |
-| **Rossinyol** (*C. cibarius*) | conifer/deciduous/sclerophyll | silícic | Jun–Oct | 300–1600 m | Generalista forestal, preferència àcida |
-| **Camagroc** (*C. lutescens*) | conifer | calcari | Oct–Gen | 400–1600 m | Molt tardà, fred |
-| **Múrgola** (*Morchella*) | ribera/deciduous | neutre | **Mar–Maig** | 200–1400 m | **Primavera!** Sapròfit |
-| **Ou de reig** (*A. caesarea*) | deciduous/sclerophyll | silícic | Jul–Oct | 100–1400 m | Mediterrani, termòfil |
-| **Fredolic** (*T. terreum*) | conifer | calcari | Oct–Gen | 0–1500 m | Tardà i associat sobretot a pins |
+| **Rovelló** (*Lactarius*) | conifer | neutre | Set–Nov | Òptim 200–1500 m; cua 2200 m | Cas base; falta separar espècies de rovelló |
+| **Cep** (*Boletus edulis* grp) | conifer/deciduous/sclerophyll | silícic | Set–Nov (+estiu) | Òptim 800–1600 m; cua 2300 m | Vol humitat sostinguda, fresc |
+| **Llenega negra** (*H. latitabundus*) | conifer | calcari | Oct–Des | Òptim 300–1300 m; cua 2000 m | Tardà, aguanta el fred |
+| **Trompeta** (*Craterellus*) | deciduous/sclerophyll | neutre | Set–Nov | Òptim 400–1300 m; cua 2000 m | Fonts edàfiques contradictòries |
+| **Rossinyol** (*C. cibarius*) | conifer/deciduous/sclerophyll | silícic | Jun–Oct | Òptim 400–1500 m; cua 2200 m | Generalista forestal, preferència àcida |
+| **Camagroc** (*C. lutescens*) | conifer | calcari | Oct–Gen | Òptim 500–1500 m; cua 2200 m | Molt tardà, fred |
+| **Múrgola** (*Morchella*) | ribera/deciduous | neutre | **Mar–Maig** | Òptim 300–1200 m; cua 1900 m | **Primavera!** Sapròfit |
+| **Ou de reig** (*A. caesarea*) | deciduous/sclerophyll | silícic | Jul–Oct | Òptim 100–1400 m; cua 2100 m | Mediterrani, termòfil |
+| **Fredolic** (*T. terreum*) | conifer | calcari | Oct–Gen | Òptim 100–1500 m; cua 2200 m | Tardà i associat sobretot a pins |
 
 ---
 
@@ -59,6 +59,10 @@ però el millor lloc d'un dia dolent no es normalitza artificialment.
 
 ### Temperatura · Tendència · Altitud — per espècie
 La temperatura recent i l'altitud utilitzen finestres trapezoidals per espècie.
+Totes les espècies comparteixen una cua d'altitud de 700 m per sobre del seu
+límit òptim. Aquesta regla evita excloure de cop els boscos de muntanya: el rang
+òptim continua sent propi de cada espècie i, per damunt, l'altitud penalitza
+progressivament fins a zero mentre la resta de factors continuen comptant.
 La tendència compara els últims 5 dies amb els 9 anteriors i només pot ajustar el
 resultat un màxim del 10%. Els mesos habituals es conserven per al calendari i les
 fitxes, però no participen en el score.

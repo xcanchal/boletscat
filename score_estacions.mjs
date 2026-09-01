@@ -40,6 +40,7 @@ import { join } from "node:path";
 import { encodeRgbaPng } from "./raster.mjs";
 import { SUBSTRATE_BY_CODE } from "./substrate.mjs";
 import { capConditionScore } from "./prediction-confidence.mjs";
+import { SPECIES, trapezoid } from "./src/species-model.mjs";
 import { temperatureTrendFactor } from "./src/temperature-trend.mjs";
 
 const BASE = "https://analisi.transparenciacatalunya.cat/resource";
@@ -54,30 +55,6 @@ const LAG_RISE = 6, LAG_FALL = 16, RESERVE_FALL = 14;
 const TRIGGER_IDEAL = 60, RESERVE_IDEAL = 100;
 const HOST_CODE = { conifer:1, deciduous:2, sclerophyll:3, ribera:4 };
 const COLOR_STOPS = [[0,[89,102,94]],[.1,[116,125,69]],[.25,[161,164,71]],[.4,[201,147,47]],[.6,[226,121,42]],[.8,[200,69,27]],[1,[169,46,20]]];
-
-// ── Config per espècie ──────────────────────────────────────────────────────
-// host = categories de bosc del MCSC: conifer (pins) · deciduous (roure/faig/castanyer)
-//        · sclerophyll (alzina/surera) · ribera (bosc de ribera).
-const SPECIES = {
-  rovello:   { nom: "Rovelló / pinetell",               mesos:[9,10,11],    host:["conifer"], trend:"cooling",
-               alt:[0,200,1500,1700],   temp:[2,8,20,26] },
-  cep:       { nom: "Cep (grup Boletus edulis)",        mesos:[6,9,10,11],  host:["conifer","deciduous","sclerophyll"], trend:"cooling",
-               substrate:["siliceous"], alt:[400,800,1600,1900], temp:[2,8,18,24] },
-  llenega:   { nom: "Llenega negra (Hygrophorus latitabundus)", mesos:[10,11,12], host:["conifer"], trend:"cooling",
-               substrate:["calcareous"], alt:[100,300,1300,1500], temp:[0,4,14,20] },
-  trompeta:  { nom: "Trompeta de la mort (Craterellus)",mesos:[9,10,11],    host:["deciduous","sclerophyll"], trend:"cooling",
-               alt:[200,400,1300,1500], temp:[2,8,18,24] },
-  rossinyol: { nom: "Rossinyol (Cantharellus cibarius)",mesos:[6,7,8,9,10], host:["conifer","deciduous","sclerophyll"], trend:"neutral",
-               substrate:["siliceous"], alt:[200,400,1500,1700], temp:[4,10,22,28] },
-  camagroc:  { nom: "Camagroc (Cantharellus lutescens)",mesos:[10,11,12,1], host:["conifer"], trend:"cooling",
-               substrate:["calcareous"], alt:[300,500,1500,1700], temp:[-2,2,14,20] },
-  murgola:   { nom: "Múrgola (Morchella)",              mesos:[3,4,5],      host:["ribera","deciduous"], trend:"warming",
-               alt:[100,300,1200,1500], temp:[2,8,18,24] },
-  ou_de_reig:{ nom: "Ou de reig (Amanita caesarea)",    mesos:[7,8,9,10],   host:["deciduous","sclerophyll"], trend:"neutral",
-               substrate:["siliceous"], alt:[0,100,1400,1600], temp:[8,14,28,32] },
-  fredolic:  { nom: "Fredolic (Tricholoma terreum)",     mesos:[1,10,11,12], host:["conifer"], trend:"cooling",
-               substrate:["calcareous"], alt:[0,100,1500,1700], temp:[-5,0,12,18] },
-};
 
 // ── Hoste: carreguem el precompute del MCSC (si hi és) ──────────────────────
 let HOST = null;
@@ -115,13 +92,6 @@ const findKey = (row, ...c) => {
     for (const x of c) if (k.replace(/_/g,"").toLowerCase().includes(x.replace(/_/g,""))) return k;
   return null;
 };
-function trapezoid(x, a, b, c, d) {
-  if (x == null || Number.isNaN(x)) return 0.5;
-  if (x <= a || x >= d) return 0;
-  if (x < b) return (x - a) / (b - a);
-  if (x <= c) return 1;
-  return (d - x) / (d - c);
-}
 const lagWeight = (d) => (1 - Math.exp(-d / LAG_RISE)) * Math.exp(-d / LAG_FALL);
 const reserveWeight = (d) => Math.exp(-d / RESERVE_FALL);
 function smoothRamp(x, ideal) {
@@ -354,7 +324,7 @@ async function main() {
 
     const geojson = {
       type: "FeatureCollection", species: spKey, speciesNom: sp.nom, generated: refISO.slice(0, 10),
-      model: { scoreVersion:3, host:sp.host, substrate:sp.substrate ?? [], alt:sp.alt, temp:sp.temp, trend:sp.trend, typicalMonths:sp.mesos },
+      model: { scoreVersion:4, host:sp.host, substrate:sp.substrate ?? [], alt:sp.alt, temp:sp.temp, trend:sp.trend, typicalMonths:sp.mesos },
       features: files.map((f) => ({
         type: "Feature", geometry: { type: "Point", coordinates: [f.lon, f.lat] },
         properties: { codi:f.codi, nom:f.nom, alt:f.alt, host:f.host, substrate:f.substrate, forestFrac:f.forestFrac,
