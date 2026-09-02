@@ -124,7 +124,8 @@ test("les fitxes publicades apareixen al sitemap i robots el declara", () => {
   const publishedSpecies = catalog.species.filter((species) => species.publication.status === "published");
   assert.match(renderRobots(), /Sitemap: https:\/\/boletada\.cat\/sitemap\.xml/);
   assert.match(renderRobots(), /Disallow: \/app\//);
-  assert.equal((sitemap.match(/<loc>/g) || []).length, publishedSpecies.length + 3);
+  assert.equal((sitemap.match(/<loc>/g) || []).length, publishedSpecies.length + 4);
+  assert.match(sitemap, /<loc>https:\/\/boletada\.cat\/bones-practiques\/<\/loc><lastmod>2026-09-02<\/lastmod>/);
   for (const species of publishedSpecies) {
     assert.match(sitemap, new RegExp(`<loc>https://boletada\\.cat/bolets/${species.slug}/</loc>`));
     assert.match(sitemap, new RegExp(`<lastmod>${species.publication.reviewedAt}</lastmod>`));

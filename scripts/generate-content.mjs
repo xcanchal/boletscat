@@ -65,6 +65,7 @@ export const renderSitemap = (catalog) => {
     { loc: `${SITE_URL}/`, lastmod: "2026-08-31" },
     { loc: `${SITE_URL}/bolets/`, lastmod: "2026-08-31" },
     { loc: `${SITE_URL}/temporada-de-bolets/`, lastmod: "2026-08-31" },
+    { loc: `${SITE_URL}/bones-practiques/`, lastmod: "2026-09-02" },
     ...publishedSpecies.map((species) => ({
       loc: `${SITE_URL}/bolets/${species.slug}/`,
       lastmod: species.publication.reviewedAt,

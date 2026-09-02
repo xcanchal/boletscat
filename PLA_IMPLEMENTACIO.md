@@ -756,6 +756,7 @@ Després del llançament web: iOS (fase 5A) i, tot seguit, Android (fase 5B).
 |---|---|---|
 | `GET /healthz` | Pública | Procés viu |
 | `GET /readyz` | Pública | Procés i PostgreSQL disponibles |
+| `GET /bones-practiques/` | Pública | Guia de responsabilitat, accés i seguretat al bosc |
 | `GET /api/config` | Pública | Disponibilitat de Google, clau pública RevenueCat i entitlement |
 | `* /api/auth/*` | Better Auth | Registre, login, Google OAuth, verificació, reset i sessions |
 | `GET /api/me` | Sessió | Usuari i projecció local d'accés |

@@ -177,6 +177,8 @@ app.get("/app", (c) => c.redirect("/app/", 308));
 app.get("/app/", serveStatic({ path: `${config.publicDir}/app/index.html` }));
 app.get("/legal", (c) => c.redirect("/legal/", 308));
 app.get("/legal/", serveStatic({ path: `${config.publicDir}/legal/index.html` }));
+app.get("/bones-practiques", (c) => c.redirect("/bones-practiques/", 308));
+app.get("/bones-practiques/", serveStatic({ path: `${config.publicDir}/bones-practiques/index.html` }));
 app.use("*", serveStatic({ root: config.publicDir }));
 app.get("/", serveStatic({ path: `${config.publicDir}/index.html` }));
 app.notFound((c) => c.req.path.startsWith("/api/")

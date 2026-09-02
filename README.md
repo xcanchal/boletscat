@@ -308,6 +308,7 @@ una probabilitat estadística de trobar bolets.
 | `buildHost.mjs` | Precompute de l'hoste (MCSC) → `estacions_host.json` (córrer un cop). |
 | `index.html` | Landing pública de Boletada. |
 | `app.html` | Mapa MapLibre, accés i selector d'espècie. |
+| `bones-practiques.html` | Guia pública d’accés, cura del bosc, seguretat i identificació. |
 | `manifest.webmanifest` · `sw.js` | PWA instal·lable de `/app/`. El service worker és buit a propòsit: no fa cache. |
 | `src/server.mjs` | Servidor Hono: auth, billing i fitxers privats. |
 | `src/auth.mjs` · `src/db.mjs` | Better Auth i PostgreSQL. |
