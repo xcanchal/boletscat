@@ -38,3 +38,28 @@ export async function syncRevenueCatCustomer(userId) {
 
   return { status, active };
 }
+
+export async function deleteRevenueCatCustomer(userId, {
+  apiUrl = config.revenueCat.apiUrl,
+  secretApiKey = config.revenueCat.secretApiKey,
+  fetchImpl = fetch,
+} = {}) {
+  // En local encara podem provar la baixa del compte sense un projecte de
+  // Billing configurat. A producció fallem tancat: no deixem una subscripció
+  // facturable sense identitat local per un error de configuració.
+  if (!secretApiKey) {
+    if (config.isProduction) throw new Error("Falta REVENUECAT_SECRET_API_KEY per eliminar el customer");
+    return { deleted: false, skipped: true };
+  }
+
+  const response = await fetchImpl(
+    `${apiUrl}/subscribers/${encodeURIComponent(userId)}`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${secretApiKey}`, Accept: "application/json" } },
+  );
+
+  // No tots els comptes han arribat a crear un customer a RevenueCat.
+  if (response.status === 404) return { deleted: false, missing: true };
+  if (!response.ok) throw new Error(`No s’ha pogut eliminar el customer de RevenueCat (${response.status})`);
+
+  return { deleted: true };
+}

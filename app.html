@@ -98,11 +98,18 @@
     .row .sc{font-size:12px;font-weight:600;color:var(--rovello);text-align:right;white-space:nowrap}
     .msg{font-size:13px;color:var(--muted);line-height:1.5;margin-top:12px}
     .msg code{background:rgba(232,226,214,.08);padding:1px 6px;border-radius:5px;font-size:12px}
-    .map-account{display:grid;gap:7px;margin-top:14px;padding-top:12px;border-top:1px solid var(--edge);font-size:11px}
-    .map-account-email{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .map-account-actions{display:flex;gap:12px}.map-account button,.map-account a{border:0;background:none;color:var(--muted);
-      font:600 11px var(--ui);padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
-    .map-account button:hover,.map-account a:hover{color:var(--text)}
+    .map-account{display:grid;margin-top:14px;padding-top:12px;border-top:1px solid var(--edge);font-size:11px}
+    .map-account-trigger{display:flex;align-items:center;justify-content:space-between;width:100%;padding:0;border:0;background:none;color:#c8ccc1;font:650 11px var(--ui);cursor:pointer;text-align:left}
+    .map-account-trigger svg{width:13px;height:13px;color:#8b9487;transition:transform .18s}.map-account-trigger:hover{color:var(--text)}
+    .account-dialog{width:min(420px,calc(100vw - 28px));max-height:min(720px,calc(100dvh - 28px));padding:0;overflow:auto;border:1px solid rgba(223,226,210,.17);border-radius:18px;background:#131b12;color:var(--text);box-shadow:0 28px 90px rgba(0,0,0,.62);font-family:var(--ui)}
+    .account-dialog::backdrop{background:rgba(3,6,3,.7);backdrop-filter:blur(5px)}
+    .account-dialog-shell{padding:22px}.account-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}.account-dialog-head h2{margin:0 0 3px;font:600 25px/1.1 var(--display)}
+    .account-dialog-email{display:block;max-width:300px;overflow:hidden;color:var(--muted);font-size:11px;text-overflow:ellipsis;white-space:nowrap}
+    .account-dialog-close{display:grid;place-items:center;width:34px;height:34px;flex:none;padding:0;border:1px solid var(--edge);border-radius:9px;background:rgba(232,226,214,.05);color:var(--muted);font:400 22px/1 var(--ui);cursor:pointer}.account-dialog-close:hover{color:var(--text);background:rgba(232,226,214,.09)}
+    .account-primary-actions{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:18px;padding-bottom:18px;border-bottom:1px solid var(--edge)}.account-primary-actions button,.account-primary-actions a{border:0;background:none;color:#c3c8bc;font:600 11.5px var(--ui);padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}.account-primary-actions button:hover,.account-primary-actions a:hover{color:var(--rovello)}
+    .account-danger{padding-top:17px}.account-danger summary{color:#d48b72;cursor:pointer;font:650 12px var(--ui);list-style:none}.account-danger summary::-webkit-details-marker{display:none}
+    .account-danger[open] summary{margin-bottom:12px}.account-danger-copy{margin:0 0 12px;color:#a9afa2;font-size:11.5px;line-height:1.5}.account-verification{margin:0 0 11px;padding:8px 10px;border-left:2px solid rgba(232,114,42,.7);background:rgba(232,114,42,.055);color:#aeb5a8;font-size:10.5px;line-height:1.45}
+    .account-delete-form{display:grid;gap:10px}.account-delete-form label{display:grid;gap:5px;color:#a4ab9f;font-size:10.5px;font-weight:600}.account-delete-form input{width:100%;min-height:39px;padding:9px 10px;border:1px solid var(--edge);border-radius:8px;background:#0f150e;color:#f0eee4;font:13px var(--ui);outline:none}.account-delete-form input:focus{border-color:#c26b4a;box-shadow:0 0 0 3px rgba(194,107,74,.12)}.account-delete-form button[type="submit"]{min-height:39px;padding:0 11px;border:1px solid rgba(201,103,79,.56);border-radius:8px;background:rgba(151,55,38,.2);color:#f0b1a1;font:700 11.5px var(--ui);cursor:pointer}.account-delete-form button[type="submit"]:disabled{opacity:.45;cursor:not-allowed}.account-message{margin:0;color:#dca38f;font-size:10.5px;line-height:1.45}.account-message:empty{display:none}.account-message.success{color:#c9d991}.account-message.error{color:#f1ad9a}
 
     /* Selector de capa base */
     .bases{position:absolute;left:max(16px,env(safe-area-inset-left));bottom:max(16px,env(safe-area-inset-bottom));z-index:2;display:flex;gap:2px;padding:3px;
@@ -346,7 +353,7 @@
         <button class="primary-action" id="purchaseButton" type="button">Subscriure'm</button>
         <p class="gate-message" id="billingMessage" role="status" aria-live="polite"></p>
         <p class="gate-legal">Pagament segur processat per Stripe a través de RevenueCat.<br><a href="https://boletada.cat/legal/#termes" target="_blank" rel="noopener">Termes</a> · <a href="https://boletada.cat/legal/#privacitat" target="_blank" rel="noopener">Privacitat</a></p>
-        <div class="account-line"><span id="accountEmail"></span><button class="text-action" id="signOut" type="button">Tancar sessió</button></div>
+        <div class="account-line"><span id="accountEmail"></span><button class="text-action" id="paywallAccountToggle" type="button">Compte</button></div>
 
       </section>
     </div>
@@ -383,11 +390,18 @@
       <div id="content" class="toplist" style="display:none"><div class="h">Millors punts</div><div id="rows"></div></div>
       <div id="msg" class="msg" style="display:none"></div>
       <div class="map-account">
-        <span class="map-account-email" id="mapAccountEmail"></span>
-        <div class="map-account-actions"><a id="manageSubscription" href="#" target="_blank" rel="noopener noreferrer" hidden>Gestionar subscripció</a><button id="mapSignOut" type="button">Tancar sessió</button></div>
+        <button class="map-account-trigger" id="mapAccountToggle" type="button" aria-haspopup="dialog" aria-controls="accountDialog">Compte<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3 6 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
     </div>
   </div>
+
+  <dialog class="account-dialog" id="accountDialog" aria-labelledby="accountDialogTitle">
+    <div class="account-dialog-shell">
+      <div class="account-dialog-head"><div><h2 id="accountDialogTitle">El teu compte</h2><span class="account-dialog-email" id="accountDialogEmail"></span></div><button class="account-dialog-close" id="accountDialogClose" type="button" aria-label="Tanca el compte">×</button></div>
+      <div class="account-primary-actions"><a id="manageSubscription" href="#" target="_blank" rel="noopener noreferrer" hidden>Gestionar subscripció</a><button id="signOut" type="button">Tancar sessió</button></div>
+      <details class="account-danger" id="accountDanger"><summary>Eliminar el compte</summary><p class="account-danger-copy">Eliminaràs immediatament el compte, l’accés i la subscripció de Boletada. No es pot desfer ni tramita automàticament cap reemborsament.</p><p class="account-verification">Per seguretat, aquesta acció requereix una sessió iniciada recentment.</p><form class="account-delete-form" id="deleteAccountForm"><label for="deleteAccountConfirmation">Escriu ELIMINAR per confirmar<input id="deleteAccountConfirmation" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" required/></label><button id="deleteAccountSubmit" type="submit" disabled>Eliminar el compte definitivament</button><p class="account-message" id="deleteAccountMessage" role="status" aria-live="polite"></p></form></details>
+    </div>
+  </dialog>
 
   <div class="bases" id="bases"></div>
   <div class="map-tools" id="mapTools">
@@ -1104,6 +1118,8 @@
       if(code==='INVALID_EMAIL_OR_PASSWORD')return 'El correu o la contrasenya no són correctes.';
       if(code==='USER_ALREADY_EXISTS')return 'Ja hi ha un compte amb aquest correu.';
       if(code==='EMAIL_NOT_VERIFIED')return 'Confirma el correu abans d’entrar.';
+      if(code==='INVALID_PASSWORD')return 'La contrasenya no és correcta.';
+      if(code==='SESSION_EXPIRED')return 'Per seguretat, tanca la sessió, torna a entrar i repeteix l’eliminació.';
       if(code==='PASSWORD_TOO_SHORT'||code==='PASSWORD_TOO_LONG')return 'La contrasenya ha de tenir entre 8 i 20 caràcters.';
       if(code==='PASSWORD_REQUIREMENTS_NOT_MET')return 'Afegeix almenys una lletra, un número i un símbol.';
       return fallback;
@@ -1122,7 +1138,7 @@
     }
     function unlockMap() {
       mapUnlocked=true;document.body.classList.add('map-authorized');
-      document.getElementById('mapAccountEmail').textContent=currentUser?.email||'';
+      document.getElementById('accountDialogEmail').textContent=currentUser?.email||'';
       if(mapReady&&!initialMapLoaded){initialMapLoaded=true;load(document.getElementById('species').value)}
       setTimeout(()=>map.resize(),0);
       setupActiveAccount();
@@ -1339,7 +1355,40 @@
       try { await request('/api/auth/sign-out',{method:'POST',body:'{}',headers:{Origin:location.origin}}); } finally { location.reload(); }
     };
     document.getElementById('signOut').addEventListener('click',signOut);
-    document.getElementById('mapSignOut').addEventListener('click',signOut);
+
+    const accountDialog=document.getElementById('accountDialog'),accountDanger=document.getElementById('accountDanger');
+    const deleteAccountForm=document.getElementById('deleteAccountForm'),deleteAccountConfirmation=document.getElementById('deleteAccountConfirmation'),deleteAccountSubmit=document.getElementById('deleteAccountSubmit'),deleteAccountMessage=document.getElementById('deleteAccountMessage');
+    const setAccountMessage=(text,type='')=>{deleteAccountMessage.textContent=text;deleteAccountMessage.className=`account-message ${type}`.trim()};
+    const updateDeleteAccountSubmit=()=>{deleteAccountSubmit.disabled=deleteAccountConfirmation.value.trim()!=='ELIMINAR'};
+    function openAccountDialog(){
+      document.getElementById('accountDialogEmail').textContent=currentUser?.email||'';
+      accountDialog.showModal();
+      setupActiveAccount();
+    }
+    document.getElementById('mapAccountToggle').addEventListener('click',openAccountDialog);
+    document.getElementById('paywallAccountToggle').addEventListener('click',openAccountDialog);
+    document.getElementById('accountDialogClose').addEventListener('click',()=>accountDialog.close());
+    accountDialog.addEventListener('click',event=>{if(event.target===accountDialog)accountDialog.close()});
+    accountDialog.addEventListener('close',()=>{accountDanger.open=false;deleteAccountForm.reset();setAccountMessage('');updateDeleteAccountSubmit()});
+    deleteAccountConfirmation.addEventListener('input',updateDeleteAccountSubmit);
+    deleteAccountForm.addEventListener('submit',async event=>{
+      event.preventDefault();
+      if(deleteAccountConfirmation.value.trim()!=='ELIMINAR'){
+        setAccountMessage('Escriu ELIMINAR per confirmar la baixa.','error');
+        return;
+      }
+      deleteAccountSubmit.disabled=true;
+      setAccountMessage('Eliminant el compte i la subscripció…');
+      try {
+        await request('/api/auth/delete-user',{method:'POST',body:'{}',headers:{Origin:location.origin}});
+        setAccountMessage('Compte eliminat. Tornant a l’inici…','success');
+        location.assign('/');
+      } catch(error) {
+        console.error('No s’ha pogut eliminar el compte',error);
+        setAccountMessage(userSafeText(error,'No s’ha pogut eliminar el compte. Torna-ho a provar o contacta amb suport.'),'error');
+        updateDeleteAccountSubmit();
+      }
+    });
 
     if(resetToken||(resetParams.get('error')&&!oauthError)) openReset();
     else {

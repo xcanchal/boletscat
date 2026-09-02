@@ -3,6 +3,7 @@ import { APIError, createAuthMiddleware } from "better-auth/api";
 import { config } from "./config.mjs";
 import { pool } from "./db.mjs";
 import { sendTransactionalEmail } from "./email.mjs";
+import { deleteRevenueCatCustomer } from "./revenuecat.mjs";
 import {
   isPasswordValid,
   PASSWORD_MAX_LENGTH,
@@ -21,6 +22,11 @@ export const auth = betterAuth({
       clientSecret: config.google.clientSecret,
     },
   } : {},
+  // Les operacions destructives de Better Auth, com eliminar el compte,
+  // exigeixen haver iniciat sessió fa menys de quinze minuts.
+  session: {
+    freshAge: 15 * 60,
+  },
   rateLimit: {
     enabled: true,
     storage: "database",
@@ -31,6 +37,7 @@ export const auth = betterAuth({
       "/sign-in/social": { window: 10, max: 10 },
       "/sign-up/email": { window: 60, max: 5 },
       "/request-password-reset": { window: 300, max: 3 },
+      "/delete-user": { window: 600, max: 3 },
     },
   },
   emailAndPassword: {
@@ -46,6 +53,18 @@ export const auth = betterAuth({
         text: `Obre aquest enllaç per crear una contrasenya nova: ${url}`,
         html: `<p>Obre aquest enllaç per crear una contrasenya nova:</p><p><a href="${url}">Restablir la contrasenya</a></p>`,
       }).catch((error) => console.error("No s’ha pogut enviar el correu de recuperació", error));
+    },
+  },
+  user: {
+    deleteUser: {
+      enabled: true,
+      // El producte web actual usa RevenueCat Billing: eliminar-ne el customer
+      // cancel·la la renovació immediatament. Si Billing no confirma la supressió,
+      // conservem la identitat local per no deixar cap cobrament sense compte.
+      // Abans d'afegir Apple/Google caldrà adaptar aquest flux a les seves botigues.
+      beforeDelete: async (user) => {
+        await deleteRevenueCatCustomer(user.id);
+      },
     },
   },
   hooks: {

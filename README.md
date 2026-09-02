@@ -4,9 +4,10 @@ Producte web de pagament que, a partir de **dades obertes** (Meteocat + ICGC), p
 on hi ha millors condicions per trobar bolets, **per espècie**. El mapa requereix
 compte i entitlement `boletada_pro`; les prediccions no són fitxers públics.
 
-El pla del directori públic d'espècies, temporada i hàbitats viu a
-[`PLA_CONTINGUT.md`](PLA_CONTINGUT.md). El contingut editorial canònic es manté
-separat del model predictiu a [`content/catalog.json`](content/catalog.json).
+L'estat operatiu i les properes prioritats viuen a
+[`ESTAT_PROJECTE.md`](ESTAT_PROJECTE.md); el pla tècnic complet, a
+[`PLA_IMPLEMENTACIO.md`](PLA_IMPLEMENTACIO.md). El contingut editorial canònic es
+manté separat del model predictiu a [`content/catalog.json`](content/catalog.json).
 
 ---
 
@@ -197,6 +198,27 @@ d'escriure sempre a `private/predictions`, mai a `public`.
 
 La landing pública es publica a `/`; el registre, el paywall i el predictor viuen
 a `/app/`. `npm run build:mobile` continua empaquetant directament el predictor.
+
+---
+
+## Compte i eliminació de dades
+
+El menú **Compte** del predictor agrupa el correu, la gestió de la subscripció,
+el tancament de sessió i l'eliminació del compte; també és accessible des del
+paywall per als comptes sense subscripció. La baixa exigeix la confirmació literal
+`ELIMINAR` i una sessió de Better Auth iniciada durant els darrers 15 minuts,
+independentment de si l'accés és amb Google o amb correu i contrasenya.
+
+| Sistema | Acció quan s'elimina el compte |
+|---|---|
+| Better Auth / PostgreSQL | Hard-delete de `user`, credencials i sessions |
+| `user_access` | Eliminació automàtica per `ON DELETE CASCADE` |
+| RevenueCat Billing | Supressió del customer i cancel·lació immediata de la subscripció |
+| Facturació/fiscalitat | El proveïdor conserva només els registres exigits legalment |
+
+La crida a RevenueCat es fa abans del hard-delete local. Si RevenueCat no confirma
+la supressió, Better Auth interromp la baixa i el compte local continua existint,
+evitant una identitat eliminada amb una renovació encara activa.
 
 ---
 
