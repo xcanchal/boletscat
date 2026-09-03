@@ -246,15 +246,17 @@ npm run cap:open:android  # obre el projecte amb Android Studio
 `build-mobile.mjs` empaqueta MapLibre dins l'app i prepara el client natiu. Els
 projectes `ios/` i `android/` contenen les metadades, icones, permisos i configuració
 de publicació pròpies de cada botiga. El control **«On soc ara»** demana la ubicació
-només quan l'usuari el prem, centra el mapa, marca la posició i consulta les
-condicions del punt. El popup identifica explícitament **«La teva ubicació»** i no
-ofereix una ruta cap al lloc on l'usuari ja és; no manté cap seguiment en segon pla.
+només quan l'usuari el prem, centra el mapa, marca la posició i, en mode per espècie,
+consulta les condicions del punt. El popup identifica explícitament **«La teva
+ubicació»** i no ofereix una ruta cap al lloc on l'usuari ja és; no manté cap
+seguiment en segon pla.
 
-El mode **«Què hi ha ara?»** carrega les prediccions disponibles, compara el score
-de totes les espècies sobre la mateixa graella i mostra un màxim de 18 zones
-representatives. A cada punt només apareix l'espècie dominant i només si arriba a
-condicions mitjanes (`score >= 0,25`). Les icones estan separades almenys 16 km per
-evitar convertir el mapa de descoberta en una representació de cada cel·la.
+El mode **«Què hi ha ara?»** el calcula l'scorer diari, no el navegador. Mentre
+puntua la graella guarda l'espècie dominant de cada cel·la, redueix el mapa a la
+millor cel·la de cada zona de 6 km i en tria fins a 18 amb `score >= 0,25`,
+separades almenys 16 km i com a màxim 4 per espècie. El resultat és
+`bolets.discovery.json`, ~1 kB que el client només ha de dibuixar: no descarrega
+ni descodifica cap ràster per obrir la descoberta.
 
 ---
 
@@ -326,6 +328,7 @@ una probabilitat estadística de trobar bolets.
 | `estacions_host.json` | Bosc dominant per estació (generat; **es versiona**, canvia poc). |
 | `bolets.<espècie>.geojson` | Sortides diàries (generades; **no** es versionen). |
 | `bolets.<espècie>.png` · `bolets.grid.json` | Ràsters diaris i georeferenciació (generats). |
+| `bolets.discovery.json` | Zones de la descoberta multiespècie (generat amb `--all`). |
 | `spike_xema.mjs` · `spike_mcsc.mjs` | Diagnòstics d'un sol ús (jubilats). |
 
 ---

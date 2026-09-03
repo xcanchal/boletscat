@@ -1,102 +1,71 @@
-import { projectedPixelAtLngLat } from "./raster-projection.mjs";
+// Selecció de les zones que representen la descoberta multiespècie. El càlcul
+// viu al costat de l'scorer: la graella diària ja té el score de cada cel·la i
+// de cada espècie, de manera que el client només ha de dibuixar el resultat.
 
 export const DISCOVERY_MIN_SCORE = 0.25;
+export const DISCOVERY_MAX_POINTS = 18;
+export const DISCOVERY_MAX_PER_SPECIES = 4;
+export const DISCOVERY_MIN_DISTANCE_M = 16000;
+export const DISCOVERY_ZONE_M = 6000;
 
-export function predictionScoreFromAlpha(alpha) {
-  return alpha <= 35 ? 0 : Math.max(0, Math.min(1, (alpha - 105) / 125));
-}
-
-export function predictionScoreAt(raster, lngLat) {
-  if (!raster?.pixels || !raster?.projection) return null;
-  const displayed = projectedPixelAtLngLat(raster.projection, lngLat.lng, lngLat.lat);
-  if (!displayed) return null;
-  const sourceIndex = raster.projection.sourceIndices[displayed.index];
-  if (sourceIndex < 0) return null;
-  const alpha = raster.pixels[sourceIndex * 4 + 3];
-  if (!alpha) return null;
-  return predictionScoreFromAlpha(alpha);
-}
-
-export function maximumPredictionScore(raster) {
-  if (!raster?.pixels) return 0;
-  let maximum = 0;
-  for (let index = 3; index < raster.pixels.length; index += 4) {
-    maximum = Math.max(maximum, predictionScoreFromAlpha(raster.pixels[index]));
+// Redueix la graella a un candidat per zona: la cel·la amb més probabilitat
+// dins de cada bloc. Evita ordenar centenars de milers de cel·les i dona un
+// punt realment representatiu en comptes d'una mostra arbitrària.
+export function zoneMaxima(best, grid, options = {}) {
+  const { zoneMeters = DISCOVERY_ZONE_M, minScore = DISCOVERY_MIN_SCORE } = options;
+  const step = Math.max(1, Math.round(zoneMeters / grid.cell));
+  const zones = new Map();
+  for (let index = 0; index < best.score.length; index++) {
+    const score = best.score[index];
+    if (!(score >= minScore)) continue;
+    const col = index % grid.width, row = (index / grid.width) | 0;
+    const key = `${(row / step) | 0}:${(col / step) | 0}`;
+    const current = zones.get(key);
+    if (current && current.score >= score) continue;
+    zones.set(key, {
+      species: best.species[index],
+      score,
+      x: grid.x0 + (col + 0.5) * grid.cell,
+      y: grid.y1 - (row + 0.5) * grid.cell,
+    });
   }
-  return maximum;
+  return [...zones.values()];
 }
 
-export function dominantPredictionAt(entries, lngLat) {
-  let dominant = null;
-  for (const entry of entries) {
-    const score = predictionScoreAt(entry.raster, lngLat);
-    if (score == null || dominant && score <= dominant.score) continue;
-    dominant = { ...entry, score, lngLat };
-  }
-  return dominant;
-}
-
-function distanceKm(a, b) {
-  const radians = Math.PI / 180;
-  const lat1 = a.lat * radians;
-  const lat2 = b.lat * radians;
-  const dLat = (b.lat - a.lat) * radians;
-  const dLng = (b.lng - a.lng) * radians;
-  const h = Math.sin(dLat / 2) ** 2
-    + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
-  return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-}
-
-export function selectDiscoveryPoints(entries, grid, options = {}) {
-  if (!entries?.length || !grid?.coordinates?.length) return [];
+// Tria les zones amb més probabilitat mantenint-les separades i sense que una
+// sola espècie ocupi tot el mapa. Les distàncies són en metres UTM: a l'escala
+// de Catalunya la diferència amb la distància geodèsica és irrellevant.
+export function selectDiscoveryPoints(candidates, options = {}) {
   const {
-    minScore = DISCOVERY_MIN_SCORE,
-    maxPoints = 18,
-    maxPerSpecies = 4,
-    minDistanceKm = 16,
-    stepLat = 0.055,
-    stepLng = 0.075,
+    maxPoints = DISCOVERY_MAX_POINTS,
+    maxPerSpecies = DISCOVERY_MAX_PER_SPECIES,
+    minDistanceMeters = DISCOVERY_MIN_DISTANCE_M,
   } = options;
-  const lngs = grid.coordinates.map(([lng]) => lng);
-  const lats = grid.coordinates.map(([, lat]) => lat);
-  const bounds = {
-    west: Math.min(...lngs),
-    east: Math.max(...lngs),
-    south: Math.min(...lats),
-    north: Math.max(...lats),
-  };
-  const candidates = [];
-  for (let lat = bounds.south + stepLat / 2; lat < bounds.north; lat += stepLat) {
-    for (let lng = bounds.west + stepLng / 2; lng < bounds.east; lng += stepLng) {
-      const dominant = dominantPredictionAt(entries, { lng, lat });
-      if (dominant?.score >= minScore) candidates.push(dominant);
-    }
-  }
-  candidates.sort((a, b) => b.score - a.score);
-
+  const sorted = [...candidates].sort((a, b) => b.score - a.score);
   const selected = [];
   const perSpecies = new Map();
-  for (const candidate of candidates) {
+  for (const candidate of sorted) {
     if (selected.length >= maxPoints) break;
     const count = perSpecies.get(candidate.species) ?? 0;
     if (count >= maxPerSpecies) continue;
-    if (selected.some((point) => distanceKm(point.lngLat, candidate.lngLat) < minDistanceKm)) continue;
+    if (selected.some((point) => Math.hypot(point.x - candidate.x, point.y - candidate.y) < minDistanceMeters)) continue;
     selected.push(candidate);
     perSpecies.set(candidate.species, count + 1);
   }
   return selected;
 }
 
-export function summarizeDiscoverySpecies(entries, points, options = {}) {
+// La llista lateral només ha de mostrar espècies que tinguin icona al mapa,
+// ordenades per la millor zona visible.
+export function summarizeDiscoverySpecies(points, options = {}) {
   const { limit = 7 } = options;
-  const bestVisibleScore = new Map();
+  const best = new Map();
   for (const point of points ?? []) {
-    const previous = bestVisibleScore.get(point.species) ?? 0;
-    if (point.score > previous) bestVisibleScore.set(point.species, point.score);
+    const previous = best.get(point.species) ?? 0;
+    if (point.score > previous) best.set(point.species, point.score);
   }
-  return (entries ?? [])
-    .filter((entry) => bestVisibleScore.has(entry.species))
-    .map((entry) => ({ ...entry, visibleScore:bestVisibleScore.get(entry.species) }))
+  return [...best.entries()]
+    .map(([species, visibleScore]) => ({ species, visibleScore }))
     .sort((a, b) => b.visibleScore - a.visibleScore)
     .slice(0, limit);
 }

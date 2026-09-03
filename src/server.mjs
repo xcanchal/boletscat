@@ -126,7 +126,7 @@ app.get("/media/boletada-promo.mp4", servePromoVideo);
 // cachejat sense suport correcte per a peticions Range d'iOS.
 app.get("/media/boletada-promo-v2.mp4", servePromoVideo);
 
-const predictionName = /^bolets\.(?:grid\.json|terrain\.png|weather\.png|[a-z0-9-]+\.(?:geojson|png))$/;
+const predictionName = /^bolets\.(?:grid\.json|discovery\.json|terrain\.png|weather\.png|[a-z0-9-]+\.(?:geojson|png))$/;
 const predictionTypes = {
   ".json": "application/json; charset=utf-8",
   ".geojson": "application/geo+json; charset=utf-8",

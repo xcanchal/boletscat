@@ -473,7 +473,6 @@
     import { ErrorCode, Purchases, PurchasesError } from '/vendor/purchases.es.js';
     import { conditionRating } from '/prediction-confidence.mjs';
     import { createRasterProjection, projectedPixelAtLngLat } from '/raster-projection.mjs';
-    import { dominantPredictionAt, selectDiscoveryPoints, summarizeDiscoverySpecies } from '/discovery-map.mjs';
     const DATA_BASE = document.querySelector('meta[name="bolets-data-base"]')?.content ?? '.';
     const dataUrl = path => DATA_BASE === '.'
       ? `/api/predictions/${encodeURIComponent(path)}`
@@ -509,18 +508,12 @@
       ou_de_reig:{ bosc:'bosc caducifoli o alzinar',         temperatura:'14–28°C', altitud:'100–1400 m',  temporada:'juliol–octubre', sol:'preferentment silícic / àcid' },
       fredolic:  { bosc:'pineda (coníferes)',                temperatura:'0–12°C',  altitud:'100–1500 m',  temporada:'octubre–gener', sol:'preferentment calcari' },
     };
-    const DISCOVERY_SPECIES = {
-      rovello:   { label:'Rovelló / pinetell', image:'rovello-ai.webp' },
-      cep:       { label:'Cep', image:'cep-ai.webp' },
-      llenega:   { label:'Llenega negra', image:'llenega-ai.webp' },
-      trompeta:  { label:'Trompeta de la mort', image:'trompeta-de-la-mort-ai.webp' },
-      rossinyol: { label:'Rossinyol', image:'rossinyol-ai.webp' },
-      camagroc:  { label:'Camagroc', image:'camagroc-ai.webp' },
-      murgola:   { label:'Múrgola', image:'murgola-ai.webp' },
-      ou_de_reig:{ label:'Ou de reig', image:'ou-de-reig-ai.webp' },
-      fredolic:  { label:'Fredolic', image:'fredolic-ai.webp' },
+    const DISCOVERY_IMAGES = {
+      rovello:'rovello-ai.webp', cep:'cep-ai.webp', llenega:'llenega-ai.webp',
+      trompeta:'trompeta-de-la-mort-ai.webp', rossinyol:'rossinyol-ai.webp', camagroc:'camagroc-ai.webp',
+      murgola:'murgola-ai.webp', ou_de_reig:'ou-de-reig-ai.webp', fredolic:'fredolic-ai.webp',
     };
-    const speciesImageUrl = species => new URL(`../media/bolets/${DISCOVERY_SPECIES[species]?.image ?? 'rovello-ai.webp'}`,document.baseURI).href;
+    const speciesImageUrl = species => new URL(`../media/bolets/${DISCOVERY_IMAGES[species] ?? 'rovello-ai.webp'}`,document.baseURI).href;
 
     // CARTO vectorial dona un mapa fosc nítid i etiquetes compartides. Relleu i
     // satèl·lit continuen sent imatges, inserides sota les etiquetes vectorials.
@@ -695,7 +688,7 @@
       if (savedIntensity!==null) predictionIntensity=Math.max(0,Math.min(1,+savedIntensity/100));
     } catch {}
     let currentRaster = null, areaRequest = 0, predictionLoadRequest=0;
-    let experienceMode='species', discoveryRequest=0, discoveryEntries=[], discoveryMarkers=[];
+    let experienceMode='species', discoveryRequest=0, discoveryMarkers=[];
     const dismissOpenPopup = () => {
       if (!popup.isOpen()) return false;
       areaRequest++;
@@ -884,15 +877,6 @@
     async function inspectUserLocation(lngLat) {
       panel.classList.add('collapsed');
       const request=++areaRequest;
-      if(experienceMode==='discovery'&&discoveryEntries.length) {
-        const best=dominantPredictionAt(discoveryEntries,lngLat);
-        showPopup(lngLat,'<div class="pop-eyebrow">⌖ La teva ubicació</div><div class="pop-nom">Comparant les espècies…</div>',true);
-        const place=await nearestPlace(lngLat);
-        if(request!==areaRequest)return;
-        if(best) showDiscoveryPopup(best,{place,userLocation:true,center:true});
-        else updatePopup(areaHTML(place,null,lngLat,0,{userLocation:true}),true);
-        return;
-      }
       const sample=nearestDetailsAt(lngLat);
       showPopup(lngLat,'<div class="pop-eyebrow">⌖ La teva ubicació</div><div class="pop-nom">Identificant la zona…</div>',true);
       const place=await nearestPlace(lngLat);
@@ -1139,11 +1123,11 @@
         <div class="pop-eyebrow">⌖ ${userLocation?'La teva ubicació':'Què hi ha ara'}</div>
         <div class="discovery-pop-head">
           <img src="${esc(speciesImageUrl(entry.species))}" alt="" />
-          <div><div class="pop-nom">${esc(entry.label)}</div><div class="discovery-pop-place">${esc(location)}</div></div>
+          <div><div class="pop-nom">${esc(speciesLabel(entry.species))}</div><div class="discovery-pop-place">${esc(location)}</div></div>
         </div>
         <div class="pop-score"><div class="pop-score-line"><span>Probabilitat estimada</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div>
           <div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div></div>
-        <button class="discovery-pop-action" type="button" data-discovery-species="${esc(entry.species)}">Veure el mapa de ${esc(entry.label.toLowerCase())} →</button>
+        <button class="discovery-pop-action" type="button" data-discovery-species="${esc(entry.species)}">Veure el mapa de ${esc(speciesLabel(entry.species).toLowerCase())} →</button>
       </div>`;
     }
     function bindDiscoveryPopupAction(entry) {
@@ -1174,19 +1158,18 @@
         element.innerHTML=`<img src="${esc(speciesImageUrl(point.species))}" alt="" />`;
         element.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openDiscoveryPoint(point)});
         const marker=new maplibregl.Marker({element,anchor:'center'}).setLngLat(point.lngLat).addTo(map);
-        element.setAttribute('aria-label',`${point.label}: ${Math.round(point.score*100)}%`);
-        element.title=`${point.label} · ${Math.round(point.score*100)}%`;
+        element.setAttribute('aria-label',`${speciesLabel(point.species)}: ${Math.round(point.score*100)}%`);
+        element.title=`${speciesLabel(point.species)} · ${Math.round(point.score*100)}%`;
         discoveryMarkers.push(marker);
       }
     }
-    function renderDiscoveryRows(entries,points) {
+    function renderDiscoveryRows(active) {
       const rows=document.getElementById('discoveryRows'); rows.innerHTML='';
-      const active=summarizeDiscoverySpecies(entries,points);
       if(!active.length)rows.innerHTML='<div class="discovery-empty">Cap espècie destaca prou avui.</div>';
       for(const entry of active) {
         const r=rating(entry.visibleScore),button=document.createElement('button');
         button.type='button'; button.className='discovery-row';
-        button.innerHTML=`<img src="${esc(speciesImageUrl(entry.species))}" alt="" /><span class="nom">${esc(entry.label)}</span><span class="sc q-${r.key}">${Math.round(entry.visibleScore*100)}% · ${r.nivell}</span>`;
+        button.innerHTML=`<img src="${esc(speciesImageUrl(entry.species))}" alt="" /><span class="nom">${esc(speciesLabel(entry.species))}</span><span class="sc q-${r.key}">${Math.round(entry.visibleScore*100)}% · ${r.nivell}</span>`;
         button.addEventListener('click',()=>setExperience('species',{species:entry.species}));
         rows.appendChild(button);
       }
@@ -1196,36 +1179,22 @@
       const message=document.getElementById('discoveryMessage');
       message.textContent='Comparant les espècies disponibles…';
       clearDiscoveryMarkers();
-      let grid;
+      let discovery;
       try {
-        const response=await fetch(dataUrl('bolets.grid.json'),{cache:'no-store',credentials:'include'});
+        const response=await fetch(dataUrl('bolets.discovery.json'),{cache:'no-store',credentials:'include'});
         if(!response.ok)throw new Error();
-        grid=await response.json();
+        discovery=await response.json();
       } catch {
         if(request===discoveryRequest)message.textContent='No s’han pogut carregar les dades de descoberta. Torna-ho a provar més tard.';
         return;
       }
-      const results=await Promise.allSettled(Object.entries(DISCOVERY_SPECIES).map(async ([species,info])=>{
-        const response=await fetch(dataUrl(`bolets.${species}.geojson`),{cache:'no-store',credentials:'include'});
-        if(!response.ok)throw new Error();
-        const geo=await response.json();
-        const version=encodeURIComponent(geo.generated??'latest');
-        const pixels=await imagePixels(`${dataUrl(`bolets.${species}.png`)}?v=${version}`,grid);
-        const raster={grid,pixels,projection:projectionForGrid(grid)};
-        return {species,label:info.label,generated:geo.generated,raster};
-      }));
       if(request!==discoveryRequest||experienceMode!=='discovery')return;
-      discoveryEntries=results.filter(result=>result.status==='fulfilled').map(result=>result.value);
-      if(!discoveryEntries.length) {
-        message.textContent='No hi ha cap espècie disponible per comparar ara mateix.';
-        return;
-      }
-      const points=selectDiscoveryPoints(discoveryEntries,grid);
-      renderDiscoveryRows(discoveryEntries,points);
+      const points=(discovery.points??[]).filter(point=>DISCOVERY_IMAGES[point.species])
+        .map(point=>({...point,lngLat:{lng:point.lng,lat:point.lat}}));
+      renderDiscoveryRows((discovery.species??[]).filter(row=>DISCOVERY_IMAGES[row.species]));
       addDiscoveryMarkers(points);
-      const newest=discoveryEntries.map(entry=>entry.generated).filter(Boolean).sort().at(-1);
-      document.getElementById('metaDate').textContent=formatGeneratedDate(newest);
-      if(newest)document.getElementById('metaDate').dateTime=newest;
+      document.getElementById('metaDate').textContent=formatGeneratedDate(discovery.generated);
+      if(discovery.generated)document.getElementById('metaDate').dateTime=discovery.generated;
       message.textContent=points.length?'':'Avui cap espècie arriba a condicions mitjanes.';
       map.easeTo({...DEFAULT_VIEW,bearing:0,pitch:0,duration:600});
     }
@@ -1257,7 +1226,7 @@
         window.umami?.track?.('map_discovery_opened');
         return;
       }
-      discoveryRequest++; discoveryEntries=[]; clearDiscoveryMarkers();
+      discoveryRequest++; clearDiscoveryMarkers();
       const selected=species??document.getElementById('species').value;
       document.getElementById('species').value=selected;
       await load(selected,{preserveView:Boolean(center)});

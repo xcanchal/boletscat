@@ -75,8 +75,8 @@ sol commit coherent amb la landing, el flux d'accés, legal i billing.
 | Sincronització després de comprar | Correcta; el mapa queda desbloquejat |
 | Mapa base | MapLibre vectorial, sense la marca d'aigua `API KEY REQUIRED` de CARTO raster |
 | Prediccions | Carregades des de l'API privada; el mapa no rep dades premium abans d'autoritzar |
-| Ubicació de l'usuari | A demanda, sense seguiment; marcador propi i popup diferenciat |
-| Descoberta multiespècie | Compara rasters, mostra l'espècie dominant per zona i permet obrir-ne el mapa |
+| Ubicació de l'usuari | A demanda, sense seguiment; marcador propi i popup diferenciat en mode per espècie |
+| Descoberta multiespècie | Precalculada per l'scorer diari; el client baixa ~1 kB i pot obrir el mapa de cada espècie |
 | Build públic | `npm run prepare:public` correcte |
 | Sintaxi del mòdul JS d'`app.html` | Correcta |
 | Estat de càrrega d'accés | Implementat: no mostra login/paywall abans de conèixer sessió i subscripció |

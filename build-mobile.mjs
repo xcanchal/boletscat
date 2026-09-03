@@ -44,10 +44,6 @@ html = html
   .replace(
     "from '/raster-projection.mjs'",
     "from './raster-projection.mjs'",
-  )
-  .replace(
-    "from '/discovery-map.mjs'",
-    "from './discovery-map.mjs'",
   );
 
 await Promise.all([
@@ -56,7 +52,6 @@ await Promise.all([
   cp(join(ROOT, "favicon.svg"), join(OUT, "favicon.svg")),
   cp(join(ROOT, "prediction-confidence.mjs"), join(OUT, "prediction-confidence.mjs")),
   cp(join(ROOT, "raster-projection.mjs"), join(OUT, "raster-projection.mjs")),
-  cp(join(ROOT, "discovery-map.mjs"), join(OUT, "discovery-map.mjs")),
   cp(join(ROOT, "media/bolets"), join(OUT, "media/bolets"), { recursive: true }),
   cp(join(ROOT, "node_modules/maplibre-gl/dist/maplibre-gl.css"), join(OUT, "vendor/maplibre-gl.css")),
   cp(join(ROOT, "node_modules/maplibre-gl/dist/maplibre-gl.js"), join(OUT, "vendor/maplibre-gl.js")),
