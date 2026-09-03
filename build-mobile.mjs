@@ -38,11 +38,11 @@ html = html
     "from './vendor/purchases.es.js'",
   )
   .replace(
-    "from '/prediction-confidence.mjs'",
+    "from '/prediction-confidence.mjs?v=20260903'",
     "from './prediction-confidence.mjs'",
   )
   .replace(
-    "from '/raster-projection.mjs'",
+    "from '/raster-projection.mjs?v=20260903'",
     "from './raster-projection.mjs'",
   );
 

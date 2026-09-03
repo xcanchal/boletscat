@@ -471,8 +471,8 @@
   <script src="/vendor/maplibre-gl.js"></script>
   <script type="module">
     import { ErrorCode, Purchases, PurchasesError } from '/vendor/purchases.es.js';
-    import { conditionRating, scoreRating } from '/prediction-confidence.mjs';
-    import { createRasterProjection, projectedPixelAtLngLat } from '/raster-projection.mjs';
+    import { conditionRating, scoreRating } from '/prediction-confidence.mjs?v=20260903';
+    import { createRasterProjection, projectedPixelAtLngLat } from '/raster-projection.mjs?v=20260903';
     const DATA_BASE = document.querySelector('meta[name="bolets-data-base"]')?.content ?? '.';
     const dataUrl = path => DATA_BASE === '.'
       ? `/api/predictions/${encodeURIComponent(path)}`
