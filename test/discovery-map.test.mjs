@@ -117,6 +117,14 @@ test("la punta del marcador s'ancora sobre la coordenada", async () => {
   // marcador directament, el gir del CSS no s'aplicaria mai i la punta no
   // estaria on diu aquest càlcul.
   assert.match(app, /wrapper\.className='discovery-pin'/);
+
+  // L'embolcall duu també la classe .maplibregl-marker. Declarar-hi `position`
+  // guanya per ordre a la regla `absolute` de MapLibre i tira el marcador al
+  // flux normal: cada icona surt 38 px més avall que l'anterior i el zoom les
+  // escampa.
+  const pin = app.match(/\.discovery-pin\{([^}]*)\}/);
+  assert.ok(pin, "cal la regla .discovery-pin");
+  assert.doesNotMatch(pin[1], /position:/);
   assert.match(app, /wrapper\.appendChild\(element\)/);
   assert.doesNotMatch(app, /new maplibregl\.Marker\(\{element,/);
 
