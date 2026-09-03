@@ -1225,7 +1225,8 @@
       discoveryRequest++; clearDiscoveryMarkers();
       const selected=species??document.getElementById('species').value;
       document.getElementById('species').value=selected;
-      await load(selected,{preserveView:Boolean(center)});
+      const rasterLoaded=await load(selected,{preserveView:Boolean(center)});
+      if(!rasterLoaded||experienceMode!=='species')return;
       const stations=currentMode==='punts';
       // hidePredictionLayers() les va amagar en entrar a la descoberta i load()
       // només actualitza la imatge: sense això el mapa tornava buit.
@@ -1334,6 +1335,7 @@
       } catch {
         hidePredictionLayers();
       }
+      if(request!==predictionLoadRequest||experienceMode!=='species')return false;
       const metaSpecies = document.getElementById('metaSpecies');
       const metaDate = document.getElementById('metaDate');
       metaSpecies.textContent = geo.speciesNom ?? species;
@@ -1363,6 +1365,7 @@
       content.style.display='block';
       if (!anyScore) { msg.style.display='block';
         msg.innerHTML = `Tot a zero: les <b>condicions observades</b> no són favorables per aquesta espècie.`; }
+      return Boolean(currentRaster);
     }
 
     let foregroundRefreshPending=false;

@@ -77,7 +77,13 @@ test("el popup consulta la mateixa reprojecció Web Mercator que la capa visual"
 // a mostrar, en sortir de "Què hi ha ara" el mapa quedava buit per a totes les
 // espècies.
 test("en tornar de la descoberta el mapa de l'espècie es torna a veure", () => {
+  assert.match(app, /const rasterLoaded=await load\(selected,\{preserveView:Boolean\(center\)\}\);\s*if\(!rasterLoaded\|\|experienceMode!=='species'\)return;/);
   assert.match(app, /for\(const layer of \['prediccio','cobertura'\]\)\s*\n\s*if\(map\.getLayer\(layer\)\)map\.setLayoutProperty\(layer,'visibility',stations\?'none':'visible'\);/);
+});
+
+test("una càrrega cancel·lada no trepitja el mode de descoberta", () => {
+  assert.match(app, /if\(request!==predictionLoadRequest\|\|experienceMode!=='species'\)return false;\s*const metaSpecies/);
+  assert.match(app, /return Boolean\(currentRaster\);/);
 });
 
 test("el commutador de mode viu només a la barra lateral", () => {
