@@ -282,7 +282,14 @@ seguiment en segon pla.
 El mode **«Què hi ha ara?»** el calcula l'scorer diari, no el navegador. Mentre
 puntua la graella guarda l'espècie dominant de cada cel·la, redueix el mapa a la
 millor cel·la de cada zona de 6 km i en tria fins a 18 amb `score >= 0,25`,
-separades almenys 16 km i com a màxim 4 per espècie. El resultat és
+separades almenys 16 km i com a màxim 4 per espècie.
+
+Una candidata només compta si té **suport**: almenys 8 cel·les de la mateixa
+espècie per damunt del llindar dins una finestra d'1,75 km de costat, és a dir
+mig km² de terreny favorable. Sense aquesta condició el màxim d'una zona pot ser una clapa de 250 m
+envoltada de no-res —un bosquet perdut o un píxel mal classificat—: una icona
+que al mapa per espècie no es veu i que sobre el terreny no és res. Si la millor
+cel·la no té suport, la zona es queda amb la millor que sí que en té. El resultat és
 `bolets.discovery.json`, ~1 kB que el client només ha de dibuixar: no descarrega
 ni descodifica cap ràster per obrir la descoberta.
 

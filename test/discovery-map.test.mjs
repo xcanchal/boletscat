@@ -3,6 +3,8 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   DISCOVERY_MIN_SCORE,
+  DISCOVERY_MIN_SUPPORT,
+  DISCOVERY_SUPPORT_RADIUS,
   selectDiscoveryPoints,
   summarizeDiscoverySpecies,
   zoneMaxima,
@@ -20,7 +22,7 @@ test("cada zona aporta només la seva millor cel·la", () => {
     [.1,.9,0,0, .3,.2,0,0, 0,0,.5,0, 0,0,0,.4],
     ["rovello","cep","rovello","rovello","rovello","cep","rovello","rovello",
      "rovello","rovello","rossinyol","rovello","rovello","rovello","rovello","cep"],
-  ), grid, { zoneMeters:2000 });
+  ), grid, { zoneMeters:2000, minSupport:1 });
 
   // La zona de baix a la dreta conté .5 i .4: només hi passa la millor.
   const scores = zones.map((zone) => +zone.score.toFixed(2)).sort((a, b) => b - a);
@@ -34,7 +36,7 @@ test("cada zona aporta només la seva millor cel·la", () => {
 
 test("les cel·les per sota del llindar no generen zona", () => {
   assert.equal(DISCOVERY_MIN_SCORE, 0.25);
-  const zones = zoneMaxima(build([.24,.1,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0], new Array(16).fill("rovello")), grid, { zoneMeters:2000 });
+  const zones = zoneMaxima(build([.24,.1,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0], new Array(16).fill("rovello")), grid, { zoneMeters:2000, minSupport:1 });
   assert.deepEqual(zones, []);
 });
 
@@ -148,4 +150,54 @@ test("el filtre de prediccions accepta els noms amb guió baix", async () => {
     assert.ok(pattern.test(name), name);
   for (const name of ["bolets.evil.txt", "../../etc/passwd", "bolets..%2Fetc.png"])
     assert.ok(!pattern.test(name), name);
+});
+
+// Una cel·la de 250 m amb bona puntuació però envoltada de no-res no és una
+// destinació: al mapa per espècie no es veu i a peu no hi ha res. El màxim de la
+// zona no pot ser un valor aïllat.
+test("una cel·la aïllada no genera icona per alta que sigui", () => {
+  const width = 9, height = 9;
+  const scores = new Float32Array(width * height);
+  const species = new Array(width * height).fill(null);
+  // Cel·la solitària excel·lent a dalt a l'esquerra.
+  scores[0] = 0.95; species[0] = "murgola";
+  // Clapa contínua i més modesta a baix a la dreta.
+  for (let row = 5; row < 9; row++) for (let col = 5; col < 9; col++) {
+    scores[row * width + col] = 0.4; species[row * width + col] = "cep";
+  }
+  const grid = { width, height, cell:250, x0:400000, y1:4600000 };
+  const zones = zoneMaxima({ score:scores, species }, grid, { zoneMeters:250 * width });
+
+  assert.equal(zones.length, 1, "només la clapa amb suport ha de sobreviure");
+  assert.equal(zones[0].species, "cep");
+});
+
+test("la clapa amb suport guanya la zona encara que un valor aïllat sigui més alt", () => {
+  const width = 9, height = 9;
+  const scores = new Float32Array(width * height);
+  const species = new Array(width * height).fill("cep");
+  for (let row = 0; row < 3; row++) for (let col = 0; col < 4; col++) scores[row * width + col] = 0.4;
+  scores[8 * width + 8] = 0.99; // aïllada, i la millor de la zona
+  const grid = { width, height, cell:250, x0:400000, y1:4600000 };
+  const [zone] = zoneMaxima({ score:scores, species }, grid, { zoneMeters:250 * width });
+
+  assert.ok(Math.abs(zone.score - 0.4) < 1e-6, `esperava la clapa, no ${zone.score}`);
+});
+
+test("el suport es compta per espècie, no per qualsevol veí favorable", () => {
+  const width = 9, height = 9;
+  const scores = new Float32Array(width * height);
+  const species = new Array(width * height).fill(null);
+  // Un ou de reig sol envoltat de rossinyols excel·lents: continua sent sol.
+  for (let i = 0; i < width * height; i++) { scores[i] = 0.6; species[i] = "rossinyol"; }
+  scores[40] = 0.9; species[40] = "ou_de_reig";
+  const grid = { width, height, cell:250, x0:400000, y1:4600000 };
+  const [zone] = zoneMaxima({ score:scores, species }, grid, { zoneMeters:250 * width });
+
+  assert.equal(zone.species, "rossinyol");
+});
+
+test("els paràmetres de suport descriuen mig km² en una finestra d'1,75 km", () => {
+  assert.equal(DISCOVERY_SUPPORT_RADIUS, 3);
+  assert.equal(DISCOVERY_MIN_SUPPORT, 8);
 });

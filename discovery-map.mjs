@@ -7,12 +7,39 @@ export const DISCOVERY_MAX_POINTS = 18;
 export const DISCOVERY_MAX_PER_SPECIES = 4;
 export const DISCOVERY_MIN_DISTANCE_M = 16000;
 export const DISCOVERY_ZONE_M = 6000;
+// Una icona diu "vine aquí": ha de marcar una zona, no una cel·la solitària.
+// El màxim d'una zona pot ser una clapa de 250 m envoltada de no-res —un bosquet
+// perdut o un píxel mal classificat—, que al mapa per espècie no es veu i que a
+// peu no és res. Exigim mig km² de terreny favorable de la mateixa espècie dins
+// una finestra d'1,75 km de costat (uns 750 m al voltant de la candidata).
+export const DISCOVERY_SUPPORT_RADIUS = 3;
+export const DISCOVERY_MIN_SUPPORT = 8;
+
+function hasSupport(best, grid, index, { minScore, supportRadius, minSupport }) {
+  const species = best.species[index];
+  const col = index % grid.width, row = (index / grid.width) | 0;
+  const firstRow = Math.max(0, row - supportRadius), lastRow = Math.min(grid.height - 1, row + supportRadius);
+  const firstCol = Math.max(0, col - supportRadius), lastCol = Math.min(grid.width - 1, col + supportRadius);
+  let found = 0;
+  for (let r = firstRow; r <= lastRow; r++) {
+    for (let c = firstCol; c <= lastCol; c++) {
+      const i = r * grid.width + c;
+      if (best.species[i] === species && best.score[i] >= minScore && ++found >= minSupport) return true;
+    }
+  }
+  return false;
+}
 
 // Redueix la graella a un candidat per zona: la cel·la amb més probabilitat
 // dins de cada bloc. Evita ordenar centenars de milers de cel·les i dona un
 // punt realment representatiu en comptes d'una mostra arbitrària.
 export function zoneMaxima(best, grid, options = {}) {
-  const { zoneMeters = DISCOVERY_ZONE_M, minScore = DISCOVERY_MIN_SCORE } = options;
+  const {
+    zoneMeters = DISCOVERY_ZONE_M,
+    minScore = DISCOVERY_MIN_SCORE,
+    supportRadius = DISCOVERY_SUPPORT_RADIUS,
+    minSupport = DISCOVERY_MIN_SUPPORT,
+  } = options;
   const step = Math.max(1, Math.round(zoneMeters / grid.cell));
   const zones = new Map();
   for (let index = 0; index < best.score.length; index++) {
@@ -22,6 +49,9 @@ export function zoneMaxima(best, grid, options = {}) {
     const key = `${(row / step) | 0}:${(col / step) | 0}`;
     const current = zones.get(key);
     if (current && current.score >= score) continue;
+    // Només ho comprovem per a qui guanyaria la zona: si una cel·la aïllada no
+    // passa, la zona conserva el millor candidat que sí que té suport.
+    if (!hasSupport(best, grid, index, { minScore, supportRadius, minSupport })) continue;
     zones.set(key, {
       species: best.species[index],
       score,
