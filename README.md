@@ -245,7 +245,16 @@ npm run cap:open:android  # obre el projecte amb Android Studio
 
 `build-mobile.mjs` empaqueta MapLibre dins l'app i prepara el client natiu. Els
 projectes `ios/` i `android/` contenen les metadades, icones, permisos i configuració
-de publicació pròpies de cada botiga.
+de publicació pròpies de cada botiga. El control **«On soc ara»** demana la ubicació
+només quan l'usuari el prem, centra el mapa, marca la posició i consulta les
+condicions del punt. El popup identifica explícitament **«La teva ubicació»** i no
+ofereix una ruta cap al lloc on l'usuari ja és; no manté cap seguiment en segon pla.
+
+El mode **«Què hi ha ara?»** carrega les prediccions disponibles, compara el score
+de totes les espècies sobre la mateixa graella i mostra un màxim de 18 zones
+representatives. A cada punt només apareix l'espècie dominant i només si arriba a
+condicions mitjanes (`score >= 0,25`). Les icones estan separades almenys 16 km per
+evitar convertir el mapa de descoberta en una representació de cada cel·la.
 
 ---
 
@@ -291,7 +300,6 @@ una probabilitat estadística de trobar bolets.
 2. Contrastar el proxy geològic amb cartografia edafològica local o observacions
    de camp abans d'endurir-ne el pes.
 3. Considerar **Tn (glaçades)**, orientació del vessant (DEM), o espècie fina (MCSC complet) si cal.
-4. PWA: instal·lable + geolocalització "on soc ara".
 
 ---
 

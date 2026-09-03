@@ -80,6 +80,24 @@
       background-repeat:no-repeat;background-position:right 12px center}
     select option{background:#1a201a}
 
+    .experience-switch{display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-top:14px;padding:3px;
+      border:1px solid var(--edge);border-radius:10px;background:rgba(8,12,8,.22)}
+    .experience-switch button{position:relative;isolation:isolate;border:1px solid transparent;border-radius:7px;
+      padding:7px 8px;background:transparent;color:var(--muted);font:600 11.5px var(--ui);cursor:pointer;transition:color .15s,background .15s}
+    .experience-switch button:hover{color:var(--text)}
+    .experience-switch button.on{background:rgba(232,226,214,.10);color:var(--text)}
+    @keyframes discovery-border{to{background-position:0 0,220% 0}}
+    .discovery-list{margin-top:14px;padding-top:2px}
+    .discovery-list .h{margin-bottom:7px;color:var(--muted);font-size:11px;letter-spacing:.8px;text-transform:uppercase}
+    .discovery-row{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:9px;
+      margin:0 -8px;padding:6px 8px;border:0;border-radius:8px;background:transparent;color:var(--text);
+      width:calc(100% + 16px);font:inherit;text-align:left;cursor:pointer}
+    .discovery-row:hover{background:rgba(232,226,214,.06)}
+    .discovery-row img{width:30px;height:30px;border-radius:50%;object-fit:cover;border:1px solid rgba(236,233,223,.16)}
+    .discovery-row .nom{min-width:0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .discovery-row .sc{font-size:11.5px;font-weight:650;white-space:nowrap}
+    .discovery-empty{color:var(--muted);font-size:12px;line-height:1.45}
+
     .map-caption{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.4}
     .legend{margin:9px 0 4px}
     .legend .bar{height:8px;border-radius:6px;
@@ -112,6 +130,14 @@
       padding:6px 12px;border-radius:8px;cursor:pointer;transition:all .15s}
     .bases button:hover{color:var(--text)}
     .bases button.on{background:rgba(232,226,214,.10);color:var(--text)}
+
+    .discovery-fab{display:none;position:absolute;z-index:3;left:max(16px,env(safe-area-inset-left));
+      bottom:max(61px,calc(env(safe-area-inset-bottom) + 61px));padding:8px 12px;border:1.5px solid transparent;
+      border-radius:999px;background:linear-gradient(#182016,#182016) padding-box,
+        linear-gradient(105deg,#e8722a,#d6ad42,#81954d,#e8722a) border-box;
+      background-size:100% 100%,220% 100%;animation:discovery-border 4s linear infinite;
+      box-shadow:0 8px 24px rgba(0,0,0,.45);color:var(--text);font:650 12px var(--ui);cursor:pointer}
+    .discovery-fab.is-active{animation:none;border-color:var(--edge);background:var(--panel);color:#d7d9cf}
 
     /* Eina de camp persistent: el mode sempre és accessible encara que el panell estigui plegat. */
     .map-tools{position:absolute;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:2;display:flex;align-items:center;gap:8px;
@@ -152,12 +178,25 @@
       .intensity-control input{width:100%}
       .map-tools.stations{width:auto}
       .panel:not(.collapsed) ~ .map-tools{display:none}
-      body.panel-open .bases,body.panel-open .maplibregl-ctrl-bottom-right{display:none}
+      .discovery-fab{display:block}
+      body.panel-open .bases,body.panel-open .discovery-fab,body.panel-open .maplibregl-ctrl-bottom-right{display:none}
     }
 
     /* Manté els controls fora del home indicator i evita el doble toc de zoom d'iOS. */
     .maplibregl-ctrl-bottom-right{right:env(safe-area-inset-right);bottom:env(safe-area-inset-bottom)}
     .maplibregl-ctrl-group button{touch-action:manipulation}
+    .maplibregl-ctrl-locate{display:grid!important;place-items:center}
+    .maplibregl-ctrl-locate svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+    .maplibregl-ctrl-locate.has-location{color:var(--rovello)}
+    .maplibregl-ctrl-locate.is-locating svg{animation:locate-pulse .8s ease-in-out infinite alternate}
+    @keyframes locate-pulse{to{opacity:.35;transform:scale(.86)}}
+    .map-status{position:absolute;z-index:4;left:50%;bottom:max(72px,calc(env(safe-area-inset-bottom) + 72px));
+      width:max-content;max-width:calc(100vw - 32px);transform:translateX(-50%);padding:9px 12px;
+      border:1px solid var(--edge);border-radius:9px;background:rgba(20,27,19,.94);backdrop-filter:blur(10px);
+      box-shadow:0 8px 28px rgba(0,0,0,.42);color:var(--text);font-size:12px;line-height:1.35;text-align:center}
+    @media (prefers-reduced-motion:reduce){
+      .maplibregl-ctrl-locate.is-locating svg,.discovery-fab{animation:none}
+    }
 
     .maplibregl-popup{width:min(320px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)!important}
     .maplibregl-popup-content{display:flex;flex-direction:column;width:100%;background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--edge);
@@ -171,6 +210,8 @@
     .maplibregl-popup-close-button:hover{background:rgba(232,226,214,.11);color:var(--text);border-color:var(--edge)}
     .maplibregl-popup-close-button:focus-visible{outline:2px solid var(--rovello);outline-offset:2px}
     .pop-nom{font-family:var(--display);font-weight:600;font-size:16px;margin-bottom:2px;padding-right:38px}
+    .pop-eyebrow{display:flex;align-items:center;gap:5px;margin-bottom:4px;color:#ef8a4a;font-size:9.5px;
+      font-weight:700;letter-spacing:.9px;text-transform:uppercase}
     .pop-score{margin-top:9px;font-variant-numeric:tabular-nums}.pop-score-line{display:flex;align-items:baseline;justify-content:space-between;gap:18px;font-size:11px}
     .pop-score-line span{color:var(--muted);white-space:nowrap}.pop-score-line strong{font-size:12px;font-weight:700;white-space:nowrap}
     .pop-probability{height:6px;margin-top:6px;overflow:hidden;border-radius:999px;background:rgba(232,226,214,.09)}
@@ -194,6 +235,19 @@
     .pop-map{display:inline-flex;align-items:center;padding:5px 8px;border:1px solid var(--edge);
       border-radius:7px;color:var(--text);font-size:11.5px;font-weight:600;text-decoration:none;transition:all .15s}
     .pop-map:hover{border-color:var(--rovello);color:var(--rovello);background:rgba(232,114,42,.07)}
+    .discovery-pop-head{display:grid;grid-template-columns:42px minmax(0,1fr);align-items:center;gap:10px;padding-right:38px}
+    .discovery-pop-head img{width:42px;height:42px;border-radius:50%;object-fit:cover;border:1px solid rgba(236,233,223,.18)}
+    .discovery-pop-head .pop-nom{padding-right:0}
+    .discovery-pop-place{margin-top:1px;color:var(--muted);font-size:10.5px;line-height:1.35}
+    .discovery-pop-action{width:100%;margin-top:10px;padding:7px 9px;border:1px solid var(--edge);border-radius:7px;
+      background:rgba(232,226,214,.05);color:var(--text);font:650 11.5px var(--ui);cursor:pointer;text-align:left}
+    .discovery-pop-action:hover{border-color:var(--rovello);color:#f08a49}
+    .discovery-marker{position:relative;width:38px;height:38px;padding:0;border:2px solid var(--marker-color,#e8722a);
+      border-radius:50% 50% 50% 18%;overflow:hidden;background:#151b14;box-shadow:0 5px 14px rgba(0,0,0,.55);
+      cursor:pointer;transform:rotate(-45deg);transition:transform .15s,filter .15s}
+    .discovery-marker img{width:100%;height:100%;object-fit:cover;transform:rotate(45deg) scale(1.25)}
+    .discovery-marker:hover,.discovery-marker:focus-visible{transform:rotate(-45deg) scale(1.12);filter:brightness(1.08)}
+    body.discovery-mode .map-tools{display:none}
     .maplibregl-ctrl-attrib{font-size:10px}
 
     [hidden]{display:none!important}
@@ -208,7 +262,7 @@
     body:not(.map-authorized) #map{filter:saturate(.92) brightness(.9);transition:filter .35s ease}
     body:not(.map-authorized) #map::after{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;
       background:url('./preview-map.webp?v=20260826d') 32% center/cover no-repeat}
-    body:not(.map-authorized) .panel,body:not(.map-authorized) .map-tools,body:not(.map-authorized) .bases{
+    body:not(.map-authorized) .panel,body:not(.map-authorized) .map-tools,body:not(.map-authorized) .bases,body:not(.map-authorized) .discovery-fab{
       opacity:0;visibility:hidden;pointer-events:none}
     .gate-shell{width:min(1280px,100%);min-height:100%;margin:auto;padding:max(24px,env(safe-area-inset-top)) 34px max(24px,env(safe-area-inset-bottom));
       display:grid;grid-template-columns:1fr;grid-template-rows:auto 1fr;gap:24px}
@@ -367,21 +421,31 @@
       </button>
     </div>
     <div class="body" id="panelBody">
-      <select id="species">
-        <option value="rovello">Rovelló / pinetell</option><option value="cep">Cep</option>
-        <option value="llenega">Llenega negra</option><option value="trompeta">Trompeta de la mort</option>
-        <option value="rossinyol">Rossinyol</option><option value="camagroc">Camagroc</option>
-        <option value="murgola">Múrgola</option><option value="ou_de_reig">Ou de reig</option>
-        <option value="fredolic">Fredolic</option>
-      </select>
-      <div class="info-section" id="infoSection">
-        <dl class="info-body" id="infoBody"></dl>
+      <div class="experience-switch" id="experienceSwitch" role="group" aria-label="Mode d’exploració">
+        <button type="button" data-experience="species" class="on" aria-pressed="true">Per espècie</button>
+        <button type="button" data-experience="discovery" class="discover-choice" aria-pressed="false">Què hi ha ara?</button>
       </div>
-      <div class="map-caption" id="modecap">Probabilitat estimada avui.</div>
-      <div class="legend" id="mapLegend"><div class="bar"></div>
-        <div class="ticks"><span>Molt baixa</span><span>Mitjana</span><span>Molt alta</span></div></div>
-      <div id="content" class="toplist" style="display:none"><div class="h">Millors punts</div><div id="rows"></div></div>
-      <div id="msg" class="msg" style="display:none"></div>
+      <div id="speciesView">
+        <select id="species" aria-label="Espècie de bolet">
+          <option value="rovello">Rovelló / pinetell</option><option value="cep">Cep</option>
+          <option value="llenega">Llenega negra</option><option value="trompeta">Trompeta de la mort</option>
+          <option value="rossinyol">Rossinyol</option><option value="camagroc">Camagroc</option>
+          <option value="murgola">Múrgola</option><option value="ou_de_reig">Ou de reig</option>
+          <option value="fredolic">Fredolic</option>
+        </select>
+        <div class="info-section" id="infoSection">
+          <dl class="info-body" id="infoBody"></dl>
+        </div>
+        <div class="map-caption" id="modecap">Probabilitat estimada avui.</div>
+        <div class="legend" id="mapLegend"><div class="bar"></div>
+          <div class="ticks"><span>Molt baixa</span><span>Mitjana</span><span>Molt alta</span></div></div>
+        <div id="content" class="toplist" style="display:none"><div class="h">Millors punts</div><div id="rows"></div></div>
+        <div id="msg" class="msg" style="display:none"></div>
+      </div>
+      <div id="discoveryView" hidden>
+        <div class="discovery-list"><div class="h">Millors espècies avui</div><div id="discoveryRows"></div></div>
+        <div id="discoveryMessage" class="msg" role="status" aria-live="polite"></div>
+      </div>
       <div class="map-account">
         <span class="map-account-email" id="mapAccountEmail"></span>
         <div class="map-account-actions"><a id="manageSubscription" href="#" target="_blank" rel="noopener noreferrer" hidden>Gestionar subscripció</a><button id="mapSignOut" type="button">Tancar sessió</button></div>
@@ -390,6 +454,7 @@
   </div>
 
   <div class="bases" id="bases"></div>
+  <button class="discovery-fab" id="discoveryFab" type="button">Què hi ha ara?</button>
   <div class="map-tools" id="mapTools">
     <div class="map-mode-switch" id="mapModes" role="group" aria-label="Vista del mapa">
       <button data-mode="detallat" class="on" aria-pressed="true">Detallat</button>
@@ -401,12 +466,14 @@
       <output id="intensityValue" for="heatmapIntensity">100%</output>
     </label>
   </div>
+  <div class="map-status" id="mapStatus" role="status" aria-live="polite" hidden></div>
 
   <script src="/vendor/maplibre-gl.js"></script>
   <script type="module">
     import { ErrorCode, Purchases, PurchasesError } from '/vendor/purchases.es.js';
     import { conditionRating } from '/prediction-confidence.mjs';
     import { createRasterProjection, projectedPixelAtLngLat } from '/raster-projection.mjs';
+    import { dominantPredictionAt, maximumPredictionScore, selectDiscoveryPoints, summarizeDiscoverySpecies } from '/discovery-map.mjs';
     const DATA_BASE = document.querySelector('meta[name="bolets-data-base"]')?.content ?? '.';
     const dataUrl = path => DATA_BASE === '.'
       ? `/api/predictions/${encodeURIComponent(path)}`
@@ -442,6 +509,18 @@
       ou_de_reig:{ bosc:'bosc caducifoli o alzinar',         temperatura:'14–28°C', altitud:'100–1400 m',  temporada:'juliol–octubre', sol:'preferentment silícic / àcid' },
       fredolic:  { bosc:'pineda (coníferes)',                temperatura:'0–12°C',  altitud:'100–1500 m',  temporada:'octubre–gener', sol:'preferentment calcari' },
     };
+    const DISCOVERY_SPECIES = {
+      rovello:   { label:'Rovelló / pinetell', image:'rovello-ai.webp' },
+      cep:       { label:'Cep', image:'cep-ai.webp' },
+      llenega:   { label:'Llenega negra', image:'llenega-ai.webp' },
+      trompeta:  { label:'Trompeta de la mort', image:'trompeta-de-la-mort-ai.webp' },
+      rossinyol: { label:'Rossinyol', image:'rossinyol-ai.webp' },
+      camagroc:  { label:'Camagroc', image:'camagroc-ai.webp' },
+      murgola:   { label:'Múrgola', image:'murgola-ai.webp' },
+      ou_de_reig:{ label:'Ou de reig', image:'ou-de-reig-ai.webp' },
+      fredolic:  { label:'Fredolic', image:'fredolic-ai.webp' },
+    };
+    const speciesImageUrl = species => new URL(`../media/bolets/${DISCOVERY_SPECIES[species]?.image ?? 'rovello-ai.webp'}`,document.baseURI).href;
 
     // CARTO vectorial dona un mapa fosc nítid i etiquetes compartides. Relleu i
     // satèl·lit continuen sent imatges, inserides sota les etiquetes vectorials.
@@ -474,6 +553,14 @@
     });
     let labelsBeforeLayer=null, vectorLabelLayers=[];
     const popup = new maplibregl.Popup({ closeButton:true, closeOnClick:false, focusAfterOpen:false, offset:12 });
+    const mapStatus=document.getElementById('mapStatus');
+    let mapStatusTimer=0;
+    const showMapStatus=(message,duration=4500)=>{
+      clearTimeout(mapStatusTimer);
+      mapStatus.textContent=message;
+      mapStatus.hidden=false;
+      mapStatusTimer=setTimeout(()=>{ mapStatus.hidden=true; },duration);
+    };
 
     // El control natiu amplia respecte del centre del mapa. Si el popup és lluny
     // del centre, diversos clics el fan sortir de pantalla. Aquest control conserva
@@ -509,6 +596,39 @@
       }
     }
     map.addControl(new PopupAwareZoomControl(), 'bottom-right');
+    class UserLocationControl {
+      onAdd(controlMap) {
+        this.map=controlMap;
+        this.container=document.createElement('div');
+        this.container.className='maplibregl-ctrl maplibregl-ctrl-group';
+        this.button=document.createElement('button');
+        this.button.type='button';
+        this.button.className='maplibregl-ctrl-locate';
+        this.button.title='On soc ara';
+        this.button.setAttribute('aria-label','Mostra la meva ubicació');
+        this.button.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg>';
+        this.button.addEventListener('click',this.onClick=event=>{
+          event.preventDefault(); event.stopPropagation(); this.button.blur();
+          locateUser(this);
+        });
+        this.container.appendChild(this.button);
+        return this.container;
+      }
+      setState(state) {
+        this.button?.classList.toggle('is-locating',state==='locating');
+        this.button?.classList.toggle('has-location',state==='located');
+        if(this.button) {
+          this.button.disabled=state==='locating';
+          this.button.setAttribute('aria-busy',String(state==='locating'));
+        }
+      }
+      onRemove() {
+        this.button?.removeEventListener('click',this.onClick);
+        this.container?.remove(); this.map=undefined;
+      }
+    }
+    const userLocationControl=new UserLocationControl();
+    map.addControl(userLocationControl,'bottom-right');
     const popupViewport = () => {
       const viewport=window.visualViewport;
       let left=(viewport?.offsetLeft??0)+12, top=(viewport?.offsetTop??0)+12;
@@ -574,7 +694,8 @@
       const savedIntensity=localStorage.getItem('prediction-intensity');
       if (savedIntensity!==null) predictionIntensity=Math.max(0,Math.min(1,+savedIntensity/100));
     } catch {}
-    let currentRaster = null, areaRequest = 0;
+    let currentRaster = null, areaRequest = 0, predictionLoadRequest=0;
+    let experienceMode='species', discoveryRequest=0, discoveryEntries=[], discoveryMarkers=[];
     const dismissOpenPopup = () => {
       if (!popup.isOpen()) return false;
       areaRequest++;
@@ -611,7 +732,7 @@
       return `<div class="pop-map-footer"><a class="pop-map" href="https://www.google.com/maps/dir/?api=1&amp;destination=${destination}"
         target="_blank" rel="noopener noreferrer" aria-label="Com arribar-hi amb Google Maps">Com arribar-hi ↗</a></div>`;
     };
-    const popHTML = (p,lngLat) => {
+    const popHTML = (p,lngLat,{ eyebrow='',showMapLink=true }={}) => {
       const r = rating(p);
       const percentage=Math.round((+p.score)*100);
       const qualifier=temperatureQualifier(p.fT);
@@ -623,6 +744,7 @@
       const soil=knownHTML(p.substrate,value => esc(sentenceCase(SOIL[value] ?? value)));
       return `
       <div class="pop-scroll">
+      ${eyebrow?`<div class="pop-eyebrow">⌖ ${esc(eyebrow)}</div>`:''}
       <div class="pop-nom">${esc(p.nom ?? p.codi)}</div>
       <div class="pop-score">
         <div class="pop-score-line"><span>Probabilitat estimada</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div>
@@ -639,7 +761,7 @@
         </div>
       </div>
       </div>
-      ${mapLinkHTML(lngLat)}`;
+      ${showMapLink?mapLinkHTML(lngLat):''}`;
     };
 
     function wgs84ToUtm31(lon, lat) {
@@ -715,17 +837,91 @@
         placeCache.set(key,place); return place;
       } catch { return null; }
     }
-    const areaHTML = (place,details,lngLat,distance=0) => {
+    const areaHTML = (place,details,lngLat,distance=0,{ userLocation=false }={}) => {
       const title=place ? `A prop de ${place}` : `${lngLat.lat.toFixed(4)}, ${lngLat.lng.toFixed(4)}`;
-      if (details==null) return `<div class="pop-scroll"><div class="pop-nom">${esc(title)}</div><div class="pop-index">No hi ha cap estimació forestal prou a prop d’aquest punt.</div></div>${mapLinkHTML(lngLat)}`;
-      const nearby=distance>0?`<div class="pop-nearby">Estimació forestal més propera · ${distance<1000?`${Math.round(distance/50)*50} m`:`${(distance/1000).toFixed(1)} km`} del punt tocat</div>`:'';
-      if (details.fH==null) { const r=rating(details),percentage=Math.round(details.score*100); return `<div class="pop-scroll"><div class="pop-nom">${esc(title)}</div>${nearby}<div class="pop-score"><div class="pop-score-line"><span>Probabilitat estimada</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div><div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div></div></div>${mapLinkHTML(lngLat)}`; }
-      return popHTML({ nom:title, ...details },lngLat).replace('<div class="pop-score">',`${nearby}<div class="pop-score">`);
+      const eyebrow=userLocation?'<div class="pop-eyebrow">⌖ La teva ubicació</div>':'';
+      const footer=userLocation?'':mapLinkHTML(lngLat);
+      if (details==null) return `<div class="pop-scroll">${eyebrow}<div class="pop-nom">${esc(title)}</div><div class="pop-index">No hi ha cap estimació forestal prou a prop d’aquest punt.</div></div>${footer}`;
+      const nearby=distance>0?`<div class="pop-nearby">Estimació forestal més propera · ${distance<1000?`${Math.round(distance/50)*50} m`:`${(distance/1000).toFixed(1)} km`} ${userLocation?'de la teva ubicació':'del punt tocat'}</div>`:'';
+      if (details.fH==null) { const r=rating(details),percentage=Math.round(details.score*100); return `<div class="pop-scroll">${eyebrow}<div class="pop-nom">${esc(title)}</div>${nearby}<div class="pop-score"><div class="pop-score-line"><span>Probabilitat estimada</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div><div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div></div></div>${footer}`; }
+      return popHTML({ nom:title, ...details },lngLat,{eyebrow:userLocation?'La teva ubicació':'',showMapLink:!userLocation}).replace('<div class="pop-score">',`${nearby}<div class="pop-score">`);
     };
     const locationHTML = (place,lngLat) => {
       const title=place ? `A prop de ${place}` : `${lngLat.lat.toFixed(4)}, ${lngLat.lng.toFixed(4)}`;
       return `<div class="pop-scroll"><div class="pop-nom">${esc(title)}</div></div>${mapLinkHTML(lngLat)}`;
     };
+    function showUserLocation(lngLat) {
+      const data={type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:[lngLat.lng,lngLat.lat]},properties:{}}]};
+      const source=map.getSource('user-location');
+      if(source) source.setData(data);
+      else {
+        map.addSource('user-location',{type:'geojson',data});
+        map.addLayer({id:'user-location-pulse',type:'circle',source:'user-location',paint:{
+          'circle-radius':7,'circle-color':'transparent','circle-stroke-width':2,'circle-stroke-color':'#fff','circle-stroke-opacity':.75
+        }},labelsBeforeLayer??undefined);
+        map.addLayer({id:'user-location-halo',type:'circle',source:'user-location',paint:{
+          'circle-radius':13,'circle-color':'rgba(232,114,42,.24)','circle-blur':.35
+        }},labelsBeforeLayer??undefined);
+        map.addLayer({id:'user-location-dot',type:'circle',source:'user-location',paint:{
+          'circle-radius':5.5,'circle-color':'#e8722a','circle-stroke-width':2.5,'circle-stroke-color':'#fff'
+        }},labelsBeforeLayer??undefined);
+      }
+      map.setPaintProperty('user-location-pulse','circle-radius-transition',{duration:0});
+      map.setPaintProperty('user-location-pulse','circle-stroke-opacity-transition',{duration:0});
+      map.setPaintProperty('user-location-pulse','circle-radius',7);
+      map.setPaintProperty('user-location-pulse','circle-stroke-opacity',.75);
+      if(matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        map.setPaintProperty('user-location-pulse','circle-stroke-opacity',0);
+        return;
+      }
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        map.setPaintProperty('user-location-pulse','circle-radius-transition',{duration:850});
+        map.setPaintProperty('user-location-pulse','circle-stroke-opacity-transition',{duration:850});
+        map.setPaintProperty('user-location-pulse','circle-radius',24);
+        map.setPaintProperty('user-location-pulse','circle-stroke-opacity',0);
+      }));
+    }
+    async function inspectUserLocation(lngLat) {
+      panel.classList.add('collapsed');
+      const request=++areaRequest;
+      if(experienceMode==='discovery'&&discoveryEntries.length) {
+        const best=dominantPredictionAt(discoveryEntries,lngLat);
+        showPopup(lngLat,'<div class="pop-eyebrow">⌖ La teva ubicació</div><div class="pop-nom">Comparant les espècies…</div>',true);
+        const place=await nearestPlace(lngLat);
+        if(request!==areaRequest)return;
+        if(best) showDiscoveryPopup(best,{place,userLocation:true,center:true});
+        else updatePopup(areaHTML(place,null,lngLat,0,{userLocation:true}),true);
+        return;
+      }
+      const sample=nearestDetailsAt(lngLat);
+      showPopup(lngLat,'<div class="pop-eyebrow">⌖ La teva ubicació</div><div class="pop-nom">Identificant la zona…</div>',true);
+      const place=await nearestPlace(lngLat);
+      if(request!==areaRequest)return;
+      updatePopup(areaHTML(place,sample?.details??null,lngLat,sample?.distance??0,{userLocation:true}),true);
+    }
+    function locateUser(control) {
+      if(!mapReady) { showMapStatus('El mapa encara s’està preparant. Torna-ho a provar en un moment.'); return; }
+      if(!navigator.geolocation) { showMapStatus('Aquest dispositiu no permet obtenir la ubicació.'); return; }
+      control.setState('locating');
+      showMapStatus('Buscant la teva ubicació…',12000);
+      navigator.geolocation.getCurrentPosition(position=>{
+        const lngLat={lng:position.coords.longitude,lat:position.coords.latitude};
+        clearTimeout(mapStatusTimer); mapStatus.hidden=true;
+        control.setState('located');
+        showUserLocation(lngLat);
+        map.flyTo({center:[lngLat.lng,lngLat.lat],zoom:Math.max(map.getZoom(),13),duration:650});
+        inspectUserLocation(lngLat);
+        window.umami?.track?.('map_location_used');
+      },error=>{
+        control.setState('idle');
+        const message=error.code===error.PERMISSION_DENIED
+          ? 'Activa el permís d’ubicació per veure on ets al mapa.'
+          : error.code===error.TIMEOUT
+            ? 'La ubicació triga massa. Torna-ho a provar.'
+            : 'No s’ha pogut determinar la ubicació. Comprova el senyal i torna-ho a provar.';
+        showMapStatus(message);
+      },{enableHighAccuracy:true,timeout:10000,maximumAge:30000});
+    }
 
     // Botons del selector de capa
     const basesEl = document.getElementById('bases');
@@ -789,6 +985,13 @@
     if ('ResizeObserver' in window) new ResizeObserver(syncPanelHeight).observe(panel);
     window.addEventListener('resize',syncPanelHeight); syncPanelHeight(); syncPanelState();
     collapseButton.addEventListener('click', () => panel.classList.toggle('collapsed'));
+    document.getElementById('experienceSwitch').addEventListener('click',event=>{
+      const button=event.target.closest('button[data-experience]');
+      if(button)setExperience(button.dataset.experience);
+    });
+    document.getElementById('discoveryFab').addEventListener('click',()=>{
+      setExperience(experienceMode==='discovery'?'species':'discovery');
+    });
 
     map.on('load', () => {
       document.getElementById('previewCredit').hidden=true;
@@ -825,6 +1028,7 @@
       map.on('zoomstart', markUserNavigation);
       map.on('click', async e => {
         panel.classList.add('collapsed');
+        if(experienceMode==='discovery') { dismissOpenPopup(); return; }
         if (currentMode==='punts' && map.queryRenderedFeatures(e.point,{ layers:['punt'] }).length) return;
         if (dismissOpenPopup()) return;
         const mode=currentMode, request=++areaRequest;
@@ -923,6 +1127,146 @@
       return {url:smoothed.toDataURL('image/png'),coordinates:projection.coordinates};
     }
 
+    const discoveryColor = score => score>=.8?'#ee682e':score>=.4?'#d99935':score>=.25?'#b6b94f':'#9aa39b';
+    function clearDiscoveryMarkers() {
+      discoveryMarkers.forEach(marker=>marker.remove());
+      discoveryMarkers=[];
+    }
+    function discoveryPopupHTML(entry,{place=null,userLocation=false}={}) {
+      const r=rating(entry.score),percentage=Math.round(entry.score*100);
+      const location=place?`A prop de ${place}`:`${entry.lngLat.lat.toFixed(4)}, ${entry.lngLat.lng.toFixed(4)}`;
+      return `<div class="pop-scroll">
+        <div class="pop-eyebrow">⌖ ${userLocation?'La teva ubicació':'Què hi ha ara'}</div>
+        <div class="discovery-pop-head">
+          <img src="${esc(speciesImageUrl(entry.species))}" alt="" />
+          <div><div class="pop-nom">${esc(entry.label)}</div><div class="discovery-pop-place">${esc(location)}</div></div>
+        </div>
+        <div class="pop-score"><div class="pop-score-line"><span>Probabilitat estimada</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div>
+          <div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div></div>
+        <button class="discovery-pop-action" type="button" data-discovery-species="${esc(entry.species)}">Veure el mapa de ${esc(entry.label.toLowerCase())} →</button>
+      </div>`;
+    }
+    function bindDiscoveryPopupAction(entry) {
+      popup.getElement()?.querySelector('[data-discovery-species]')?.addEventListener('click',event=>{
+        event.stopPropagation();
+        setExperience('species',{species:entry.species,center:entry.lngLat});
+      });
+    }
+    function showDiscoveryPopup(entry,{place=null,userLocation=false,center=false,update=false}={}) {
+      const html=discoveryPopupHTML(entry,{place,userLocation});
+      if(update) updatePopup(html,center); else showPopup(entry.lngLat,html,center);
+      bindDiscoveryPopupAction(entry);
+    }
+    async function openDiscoveryPoint(entry) {
+      panel.classList.add('collapsed');
+      const request=++areaRequest;
+      showDiscoveryPopup(entry,{center:true});
+      const place=await nearestPlace(entry.lngLat);
+      if(request!==areaRequest||experienceMode!=='discovery')return;
+      showDiscoveryPopup(entry,{place,center:true,update:true});
+    }
+    function addDiscoveryMarkers(points) {
+      clearDiscoveryMarkers();
+      for(const point of points) {
+        const element=document.createElement('button');
+        element.type='button'; element.className='discovery-marker';
+        element.style.setProperty('--marker-color',discoveryColor(point.score));
+        element.innerHTML=`<img src="${esc(speciesImageUrl(point.species))}" alt="" />`;
+        element.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openDiscoveryPoint(point)});
+        const marker=new maplibregl.Marker({element,anchor:'center'}).setLngLat(point.lngLat).addTo(map);
+        element.setAttribute('aria-label',`${point.label}: ${Math.round(point.score*100)}%`);
+        element.title=`${point.label} · ${Math.round(point.score*100)}%`;
+        discoveryMarkers.push(marker);
+      }
+    }
+    function renderDiscoveryRows(entries,points) {
+      const rows=document.getElementById('discoveryRows'); rows.innerHTML='';
+      const active=summarizeDiscoverySpecies(entries,points);
+      if(!active.length)rows.innerHTML='<div class="discovery-empty">Cap espècie destaca prou avui.</div>';
+      for(const entry of active) {
+        const r=rating(entry.visibleScore),button=document.createElement('button');
+        button.type='button'; button.className='discovery-row';
+        button.innerHTML=`<img src="${esc(speciesImageUrl(entry.species))}" alt="" /><span class="nom">${esc(entry.label)}</span><span class="sc q-${r.key}">${Math.round(entry.visibleScore*100)}% · ${r.nivell}</span>`;
+        button.addEventListener('click',()=>setExperience('species',{species:entry.species}));
+        rows.appendChild(button);
+      }
+    }
+    async function loadDiscovery() {
+      const request=++discoveryRequest;
+      const message=document.getElementById('discoveryMessage');
+      message.textContent='Comparant les espècies disponibles…';
+      clearDiscoveryMarkers();
+      let grid;
+      try {
+        const response=await fetch(dataUrl('bolets.grid.json'),{cache:'no-store',credentials:'include'});
+        if(!response.ok)throw new Error();
+        grid=await response.json();
+      } catch {
+        if(request===discoveryRequest)message.textContent='No s’han pogut carregar les dades de descoberta. Torna-ho a provar més tard.';
+        return;
+      }
+      const results=await Promise.allSettled(Object.entries(DISCOVERY_SPECIES).map(async ([species,info])=>{
+        const response=await fetch(dataUrl(`bolets.${species}.geojson`),{cache:'no-store',credentials:'include'});
+        if(!response.ok)throw new Error();
+        const geo=await response.json();
+        const version=encodeURIComponent(`${geo.generated??'latest'}-${Date.now()}`);
+        const pixels=await imagePixels(`${dataUrl(`bolets.${species}.png`)}?v=${version}`,grid);
+        const raster={grid,pixels,projection:projectionForGrid(grid)};
+        return {species,label:info.label,generated:geo.generated,raster,maxScore:maximumPredictionScore(raster)};
+      }));
+      if(request!==discoveryRequest||experienceMode!=='discovery')return;
+      discoveryEntries=results.filter(result=>result.status==='fulfilled').map(result=>result.value);
+      if(!discoveryEntries.length) {
+        message.textContent='No hi ha cap espècie disponible per comparar ara mateix.';
+        return;
+      }
+      const points=selectDiscoveryPoints(discoveryEntries,grid);
+      renderDiscoveryRows(discoveryEntries,points);
+      addDiscoveryMarkers(points);
+      const newest=discoveryEntries.map(entry=>entry.generated).filter(Boolean).sort().at(-1);
+      document.getElementById('metaDate').textContent=formatGeneratedDate(newest);
+      if(newest)document.getElementById('metaDate').dateTime=newest;
+      message.textContent=points.length?'':'Avui cap espècie arriba a condicions mitjanes.';
+      map.easeTo({...DEFAULT_VIEW,bearing:0,pitch:0,duration:600});
+    }
+
+    async function setExperience(mode,{species=null,center=null}={}) {
+      if(!mapReady)return;
+      const discovery=mode==='discovery';
+      if((discovery?'discovery':'species')===experienceMode&&!species&&!center)return;
+      experienceMode=discovery?'discovery':'species';
+      document.body.classList.toggle('discovery-mode',discovery);
+      document.getElementById('speciesView').hidden=discovery;
+      document.getElementById('discoveryView').hidden=!discovery;
+      document.querySelectorAll('[data-experience]').forEach(button=>{
+        const active=button.dataset.experience===experienceMode;
+        button.classList.toggle('on',active); button.setAttribute('aria-pressed',String(active));
+      });
+      const fab=document.getElementById('discoveryFab');
+      fab.textContent=discovery?'Veure per espècie':'Què hi ha ara?';
+      fab.classList.toggle('is-active',discovery);
+      areaRequest++; popup.remove();
+      if(discovery) {
+        predictionLoadRequest++;
+        hidePredictionLayers();
+        if(map.getLayer('halo'))map.setLayoutProperty('halo','visibility','none');
+        if(map.getLayer('punt'))map.setLayoutProperty('punt','visibility','none');
+        document.getElementById('metaSpecies').textContent='Què hi ha ara?';
+        document.getElementById('metaDate').textContent='';
+        await loadDiscovery();
+        window.umami?.track?.('map_discovery_opened');
+        return;
+      }
+      discoveryRequest++; discoveryEntries=[]; clearDiscoveryMarkers();
+      const selected=species??document.getElementById('species').value;
+      document.getElementById('species').value=selected;
+      await load(selected,{preserveView:Boolean(center)});
+      const stations=currentMode==='punts';
+      if(map.getLayer('halo'))map.setLayoutProperty('halo','visibility',stations?'visible':'none');
+      if(map.getLayer('punt'))map.setLayoutProperty('punt','visibility',stations?'visible':'none');
+      if(center)map.flyTo({center:[center.lng,center.lat],zoom:11,duration:650});
+    }
+
     function renderSpeciesInfo(species) {
       const info = SPECIES_INFO[species];
       const infoBody = document.getElementById('infoBody');
@@ -952,7 +1296,8 @@
       }
     }
 
-    async function load(species) {
+    async function load(species,{preserveView=false}={}) {
+      const request=++predictionLoadRequest;
       lastPredictionLoadAt = Date.now();
       renderSpeciesInfo(species);
       const msg = document.getElementById('msg'), content = document.getElementById('content');
@@ -962,6 +1307,7 @@
         if (!res.ok) throw new Error();
         geo = await res.json();
       } catch(error) {
+        if(request!==predictionLoadRequest||experienceMode!=='species')return;
         console.error('No s’han pogut carregar les dades de predicció', { species, error });
         map.getSource('estacions').setData({ type:'FeatureCollection', features:[] });
         hidePredictionLayers();
@@ -972,6 +1318,7 @@
         document.getElementById('metaDate').removeAttribute('datetime');
         return;
       }
+      if(request!==predictionLoadRequest||experienceMode!=='species')return;
       msg.style.display='none';
       map.getSource('estacions').setData(geo);
       try {
@@ -979,6 +1326,7 @@
         const version=encodeURIComponent(`${geo.generated ?? 'latest'}-${Date.now()}`);
         const imageUrl=`${dataUrl(`bolets.${species}.png`)}?v=${version}`;
         const pixels=await imagePixels(imageUrl,grid);
+        if(request!==predictionLoadRequest||experienceMode!=='species')return;
         const raster={ grid, pixels, model:geo.model, projection:projectionForGrid(grid) };
         currentRaster=raster;
         const image=displayRaster(pixels,grid,'prediction');
@@ -1026,7 +1374,7 @@
 
       const b = new maplibregl.LngLatBounds();
       geo.features.forEach(f => b.extend(f.geometry.coordinates));
-      if (!b.isEmpty()) map.fitBounds(b, { padding:60, maxZoom:9, duration:600 });
+      if (!preserveView&&!b.isEmpty()) map.fitBounds(b, { padding:60, maxZoom:9, duration:600 });
 
       const top = [...geo.features].sort((a,b)=>b.properties.score-a.properties.score).slice(0,8);
       const rows = document.getElementById('rows'); rows.innerHTML='';
@@ -1050,7 +1398,7 @@
 
     let foregroundRefreshPending=false;
     function refreshPredictionOnReturn() {
-      if (document.visibilityState === 'hidden' || !mapUnlocked || !mapReady || !initialMapLoaded || foregroundRefreshPending) return;
+      if (document.visibilityState === 'hidden' || experienceMode!=='species' || !mapUnlocked || !mapReady || !initialMapLoaded || foregroundRefreshPending) return;
       if (Date.now() - lastPredictionLoadAt < FOREGROUND_REFRESH_INTERVAL) return;
       foregroundRefreshPending=true;
       Promise.resolve(load(document.getElementById('species').value))

@@ -1,6 +1,6 @@
 # Pla d'implementació · Boletada
 
-> Estat actualitzat: **28 d'agost de 2026, després de validar el checkout sandbox**
+> Estat actualitzat: **2 de setembre de 2026, amb geolocalització i descoberta multiespècie validades en local**
 
 ## Objectiu
 
@@ -75,6 +75,8 @@ sol commit coherent amb la landing, el flux d'accés, legal i billing.
 | Sincronització després de comprar | Correcta; el mapa queda desbloquejat |
 | Mapa base | MapLibre vectorial, sense la marca d'aigua `API KEY REQUIRED` de CARTO raster |
 | Prediccions | Carregades des de l'API privada; el mapa no rep dades premium abans d'autoritzar |
+| Ubicació de l'usuari | A demanda, sense seguiment; marcador propi i popup diferenciat |
+| Descoberta multiespècie | Compara rasters, mostra l'espècie dominant per zona i permet obrir-ne el mapa |
 | Build públic | `npm run prepare:public` correcte |
 | Sintaxi del mòdul JS d'`app.html` | Correcta |
 | Estat de càrrega d'accés | Implementat: no mostra login/paywall abans de conèixer sessió i subscripció |
@@ -126,6 +128,7 @@ de base de dades.
 | Després del tall | `$rc_annual` → `boletada_annual`; no eliminar ni desassociar el producte pioner |
 | Persistència local | Cap canvi; `user_access` continua reflectint l'entitlement actiu |
 | Social login | Google implementat al web/PWA amb Better Auth; apps natives pendents de deep links |
+| Geolocalització | `On soc ara` implementat sota demanda; sense seguiment ni permís en segon pla |
 | Web billing | RevenueCat Billing amb Stripe com a passarel·la |
 | Billing natiu | StoreKit a iOS i Google Play Billing a Android, mitjançant RevenueCat |
 | Ordre de lliurament | Nucli compartit → web → iOS → Android |
@@ -143,8 +146,8 @@ la moneda i els impostos de la plataforma.
   `/legal/`, amb HTML, CSS i JavaScript vanilla.
 - Landing: disseny, CTA únic, preu anual, vídeo Remotion, favicon, app icon, logo i
   imatge Open Graph integrats.
-- Mapa: MapLibre GL amb mapa base vectorial, sense la marca d'aigua de la capa CARTO
-  antiga, i predicció forestal superposada.
+- Mapa: MapLibre GL amb mapa base vectorial, predicció forestal superposada,
+  ubicació puntual de l'usuari i mode **«Què hi ha ara?»** per comparar espècies.
 - Servidor: Node.js 22 + Hono, amb Better Auth, healthchecks, API privada de
   prediccions i sincronització de RevenueCat.
 - Dades: PNG, GeoJSON i JSON dins de `private/predictions/`; les antigues URL

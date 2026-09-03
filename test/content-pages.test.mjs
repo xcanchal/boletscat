@@ -9,7 +9,7 @@ const contentCss = await readFile(new URL("../content/content.css", import.meta.
 const app = await readFile(new URL("../app.html", import.meta.url), "utf8");
 
 test("una predicció absent no conserva les dades ni la capa de l’espècie anterior", () => {
-  assert.match(app, /async function load\(species\) \{[\s\S]*?renderSpeciesInfo\(species\);/);
+  assert.match(app, /async function load\(species,\{preserveView=false\}=\{\}\) \{[\s\S]*?renderSpeciesInfo\(species\);/);
   assert.match(app, /catch\(error\) \{[\s\S]*?hidePredictionLayers\(\);[\s\S]*?speciesLabel\(species\)/);
   assert.match(app, /function hidePredictionLayers\(\) \{[\s\S]*?\['prediccio','cobertura'\]/);
 });
