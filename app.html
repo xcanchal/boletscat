@@ -242,6 +242,7 @@
     .discovery-pop-action{width:100%;margin-top:10px;padding:7px 9px;border:1px solid var(--edge);border-radius:7px;
       background:rgba(232,226,214,.05);color:var(--text);font:650 11.5px var(--ui);cursor:pointer;text-align:left}
     .discovery-pop-action:hover{border-color:var(--rovello);color:#f08a49}
+    .discovery-pin{position:relative;width:38px;height:38px;display:grid;place-items:center}
     .discovery-marker{position:relative;width:38px;height:38px;padding:0;border:2px solid var(--marker-color,#e8722a);
       border-radius:50% 50% 50% 18%;overflow:hidden;background:#151b14;box-shadow:0 5px 14px rgba(0,0,0,.55);
       cursor:pointer;transform:rotate(-45deg);transition:transform .15s,filter .15s}
@@ -1159,12 +1160,15 @@
     function addDiscoveryMarkers(points) {
       clearDiscoveryMarkers();
       for(const point of points) {
+        const wrapper=document.createElement('div');
+        wrapper.className='discovery-pin';
         const element=document.createElement('button');
         element.type='button'; element.className='discovery-marker';
         element.style.setProperty('--marker-color',RATING_COLOR[scoreRating(point.score).key]);
         element.innerHTML=`<img src="${esc(speciesImageUrl(point.species))}" alt="" />`;
         element.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openDiscoveryPoint(point)});
-        const marker=new maplibregl.Marker({element,anchor:'center',offset:[0,-DISCOVERY_MARKER_TIP_PX]}).setLngLat(point.lngLat).addTo(map);
+        wrapper.appendChild(element);
+        const marker=new maplibregl.Marker({element:wrapper,anchor:'center',offset:[0,-DISCOVERY_MARKER_TIP_PX]}).setLngLat(point.lngLat).addTo(map);
         element.setAttribute('aria-label',`${speciesLabel(point.species)}: ${Math.round(point.score*100)}%`);
         element.title=`${speciesLabel(point.species)} · ${Math.round(point.score*100)}%`;
         discoveryMarkers.push(marker);

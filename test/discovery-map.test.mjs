@@ -111,7 +111,14 @@ test("la punta del marcador s'ancora sobre la coordenada", async () => {
   const size = app.match(/const DISCOVERY_MARKER_PX = (\d+);/);
   assert.ok(size, "cal declarar la mida del marcador al costat del càlcul");
   assert.match(app, /const DISCOVERY_MARKER_TIP_PX = DISCOVERY_MARKER_PX \/ Math\.SQRT2;/);
-  assert.match(app, /new maplibregl\.Marker\(\{element,anchor:'center',offset:\[0,-DISCOVERY_MARKER_TIP_PX\]\}\)/);
+  assert.match(app, /new maplibregl\.Marker\(\{element:wrapper,anchor:'center',offset:\[0,-DISCOVERY_MARKER_TIP_PX\]\}\)/);
+
+  // MapLibre escriu `transform` a l'element que li passem: si li donéssim el
+  // marcador directament, el gir del CSS no s'aplicaria mai i la punta no
+  // estaria on diu aquest càlcul.
+  assert.match(app, /wrapper\.className='discovery-pin'/);
+  assert.match(app, /wrapper\.appendChild\(element\)/);
+  assert.doesNotMatch(app, /new maplibregl\.Marker\(\{element,/);
 
   // El càlcul només val mentre el CSS mantingui aquesta mida i aquest gir.
   const rule = app.match(/\.discovery-marker\{([^}]*)\}/);
