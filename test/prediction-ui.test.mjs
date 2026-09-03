@@ -4,9 +4,13 @@ import test from "node:test";
 
 const app = await readFile(new URL("../app.html", import.meta.url), "utf8");
 
-test("el mapa presenta la puntuació amb el copy de probabilitat", () => {
-  assert.match(app, /Probabilitat estimada avui/);
-  assert.match(app, /<span>Probabilitat estimada<\/span>/);
+test("el mapa presenta la puntuació com un índex, no com una probabilitat", () => {
+  assert.match(app, /Condicions estimades avui/);
+  assert.match(app, /<span>Condicions<\/span>/);
+  // El score és un producte de sis factors sobre 1, no una probabilitat de
+  // trobar bolets: el signe % convidava a llegir-lo com si ho fos.
+  assert.doesNotMatch(app, /Probabilitat estimada/);
+  assert.match(app, /\$\{percentage\}\/100 · \$\{r\.nivell\}/);
   assert.match(app, /class="pop-probability/);
   assert.doesNotMatch(app, /Índex de condicions \$\{/);
 });
@@ -20,7 +24,7 @@ test("el popup identifica dades desconegudes i carrega l'estructura forestal", (
 
 test("el popup concentra les xifres útils i no publica els factors interns", () => {
   assert.match(app, /Condicions del punt/);
-  assert.match(app, /\$\{percentage\}% · \$\{r\.nivell\}/);
+  assert.match(app, /\$\{percentage\}\/100 · \$\{r\.nivell\}/);
   assert.match(app, /°C · \$\{direction\}/);
   assert.doesNotMatch(app, /class="pop-fit/);
   assert.doesNotMatch(app, /fitBarHTML/);

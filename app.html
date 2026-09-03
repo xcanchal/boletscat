@@ -437,7 +437,7 @@
         <div class="info-section" id="infoSection">
           <dl class="info-body" id="infoBody"></dl>
         </div>
-        <div class="map-caption" id="modecap">Probabilitat estimada avui.</div>
+        <div class="map-caption" id="modecap">Condicions estimades avui.</div>
         <div class="legend" id="mapLegend"><div class="bar"></div>
           <div class="ticks"><span>Molt baixa</span><span>Mitjana</span><span>Molt alta</span></div></div>
         <div id="content" class="toplist" style="display:none"><div class="h">Millors punts</div><div id="rows"></div></div>
@@ -741,7 +741,7 @@
       ${eyebrow?`<div class="pop-eyebrow">⌖ ${esc(eyebrow)}</div>`:''}
       <div class="pop-nom">${esc(p.nom ?? p.codi)}</div>
       <div class="pop-score">
-        <div class="pop-score-line"><span>Probabilitat estimada</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div>
+        <div class="pop-score-line"><span>Condicions</span><strong class="q-${r.key}">${percentage}/100 · ${r.nivell}</strong></div>
         <div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div>
       </div>
       <div class="pop-conditions">
@@ -837,7 +837,7 @@
       const footer=userLocation?'':mapLinkHTML(lngLat);
       if (details==null) return `<div class="pop-scroll">${eyebrow}<div class="pop-nom">${esc(title)}</div><div class="pop-index">No hi ha cap estimació forestal prou a prop d’aquest punt.</div></div>${footer}`;
       const nearby=distance>0?`<div class="pop-nearby">Estimació forestal més propera · ${distance<1000?`${Math.round(distance/50)*50} m`:`${(distance/1000).toFixed(1)} km`} ${userLocation?'de la teva ubicació':'del punt tocat'}</div>`:'';
-      if (details.fH==null) { const r=rating(details),percentage=Math.round(details.score*100); return `<div class="pop-scroll">${eyebrow}<div class="pop-nom">${esc(title)}</div>${nearby}<div class="pop-score"><div class="pop-score-line"><span>Probabilitat estimada</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div><div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div></div></div>${footer}`; }
+      if (details.fH==null) { const r=rating(details),percentage=Math.round(details.score*100); return `<div class="pop-scroll">${eyebrow}<div class="pop-nom">${esc(title)}</div>${nearby}<div class="pop-score"><div class="pop-score-line"><span>Condicions</span><strong class="q-${r.key}">${percentage}/100 · ${r.nivell}</strong></div><div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div></div></div>${footer}`; }
       return popHTML({ nom:title, ...details },lngLat,{eyebrow:userLocation?'La teva ubicació':'',showMapLink:!userLocation}).replace('<div class="pop-score">',`${nearby}<div class="pop-score">`);
     };
     const locationHTML = (place,lngLat) => {
@@ -1052,7 +1052,7 @@
         mapLegend.hidden=punts;
         cap.textContent = punts
           ? "Estacions meteorològiques de referència."
-          : "Probabilitat estimada avui.";
+          : "Condicions estimades avui.";
         [...modeGroup.children].forEach(button=>{
           const active=button.dataset.mode===mode; button.classList.toggle('on',active); button.setAttribute('aria-pressed',String(active));
         });
@@ -1133,7 +1133,7 @@
           <img src="${esc(speciesImageUrl(entry.species))}" alt="" />
           <div><div class="pop-nom">${esc(speciesLabel(entry.species))}</div><div class="discovery-pop-place">${esc(location)}</div></div>
         </div>
-        <div class="pop-score"><div class="pop-score-line"><span>Probabilitat estimada</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div>
+        <div class="pop-score"><div class="pop-score-line"><span>Condicions</span><strong class="q-${r.key}">${percentage}/100 · ${r.nivell}</strong></div>
           <div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div></div>
         <button class="discovery-pop-action" type="button" data-discovery-species="${esc(entry.species)}">Veure el mapa de ${esc(speciesLabel(entry.species).toLowerCase())} →</button>
       </div>`;
@@ -1169,8 +1169,8 @@
         element.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openDiscoveryPoint(point)});
         wrapper.appendChild(element);
         const marker=new maplibregl.Marker({element:wrapper,anchor:'center',offset:[0,-DISCOVERY_MARKER_TIP_PX]}).setLngLat(point.lngLat).addTo(map);
-        element.setAttribute('aria-label',`${speciesLabel(point.species)}: ${Math.round(point.score*100)}%`);
-        element.title=`${speciesLabel(point.species)} · ${Math.round(point.score*100)}%`;
+        element.setAttribute('aria-label',`${speciesLabel(point.species)}: ${Math.round(point.score*100)}/100`);
+        element.title=`${speciesLabel(point.species)} · ${Math.round(point.score*100)}/100`;
         discoveryMarkers.push(marker);
       }
     }
@@ -1180,7 +1180,7 @@
       for(const entry of active) {
         const r=scoreRating(entry.visibleScore),button=document.createElement('button');
         button.type='button'; button.className='discovery-row';
-        button.innerHTML=`<img src="${esc(speciesImageUrl(entry.species))}" alt="" /><span class="nom">${esc(speciesLabel(entry.species))}</span><span class="sc q-${r.key}">${Math.round(entry.visibleScore*100)}% · ${r.nivell}</span>`;
+        button.innerHTML=`<img src="${esc(speciesImageUrl(entry.species))}" alt="" /><span class="nom">${esc(speciesLabel(entry.species))}</span><span class="sc q-${r.key}">${Math.round(entry.visibleScore*100)}/100 · ${r.nivell}</span>`;
         button.addEventListener('click',()=>setExperience('species',{species:entry.species}));
         rows.appendChild(button);
       }

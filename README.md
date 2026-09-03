@@ -301,12 +301,21 @@ No hi ha ground truth ("on he trobat X"). Validem per:
 El calendari no substitueix les condicions observades.*
 
 El mapa tradueix l'índex tècnic a cinc nivells ordenats: **Molt baixa · Baixa ·
-Mitjana · Alta · Molt alta**. `Molt alta` exigeix com a mínim `0,80` i que siguin
+Mitjana · Alta · Molt alta**. `Alta` exigeix com a mínim `0,50` —mig índex— i
+`Molt alta` com a mínim `0,80` i que siguin
 coneguts el tipus i l'estructura del bosc i el substrat. Si falta alguna d'aquestes
 dades, l'índex queda limitat a `0,79` i el popup ho identifica com a `Desconegut`.
 Al detall també dona una recomanació breu (`No hi vagis`, `Pots provar`, `Ves-hi`...).
 El valor `0..1` es manté per poder auditar el model; és un índex de condicions, no
-una probabilitat estadística de trobar bolets.
+una probabilitat estadística de trobar bolets. La interfície el diu igual: mostra
+**Condicions** i el número sobre 100 (`47/100`), no un percentatge. El signe `%`
+convidava a llegir-lo com la probabilitat de trobar-ne, que és una afirmació molt
+més forta de la que el model pot fer.
+
+El topall de l'escala el defineix el model —els sis factors alhora al seu òptim—,
+no el millor dia observat. Reescalar-lo contra un màxim empíric el faria canviar
+de significat cada cop que arribés un dia millor, i un setembre mediocre es
+llegiria igual que la millor setmana de la temporada.
 
 ---
 

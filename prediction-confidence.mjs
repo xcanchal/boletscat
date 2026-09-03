@@ -2,7 +2,7 @@ const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
 
 export const CONDITION_RATINGS = [
   { min:0.8, key:"very-high", nivell:"Molt alta", recomanacio:"Ves-hi" },
-  { min:0.4, key:"high",      nivell:"Alta",      recomanacio:"Bona opció" },
+  { min:0.5, key:"high",      nivell:"Alta",      recomanacio:"Bona opció" },
   { min:0.25,key:"medium",    nivell:"Mitjana",   recomanacio:"Pots provar" },
   { min:0.1, key:"low",       nivell:"Baixa",     recomanacio:"No compensa" },
   { min:0,   key:"very-low",  nivell:"Molt baixa",recomanacio:"No hi vagis" },

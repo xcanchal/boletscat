@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  CONDITION_RATINGS,
   capConditionScore,
   conditionRating,
   hasCompleteEnvironmentalData,
@@ -39,4 +40,10 @@ test("els mòduls ES s'importen amb versió i el build mòbil la sap desfer", as
     assert.ok(version, `${path} s'importa sense versió`);
     assert.ok(build.includes(`"from '${path}${version}'"`), `build-mobile no reescriu ${path}${version}`);
   }
+});
+
+test("Alta exigeix mig índex: a mitja escala encara no és una bona opció", () => {
+  assert.equal(conditionRating(0.49).nivell, "Mitjana");
+  assert.equal(conditionRating(0.5).nivell, "Alta");
+  assert.equal(CONDITION_RATINGS.find((item) => item.key === "high").min, 0.5);
 });
