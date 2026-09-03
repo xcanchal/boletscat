@@ -471,7 +471,7 @@
   <script src="/vendor/maplibre-gl.js"></script>
   <script type="module">
     import { ErrorCode, Purchases, PurchasesError } from '/vendor/purchases.es.js';
-    import { conditionRating } from '/prediction-confidence.mjs';
+    import { conditionRating, scoreRating } from '/prediction-confidence.mjs';
     import { createRasterProjection, projectedPixelAtLngLat } from '/raster-projection.mjs';
     const DATA_BASE = document.querySelector('meta[name="bolets-data-base"]')?.content ?? '.';
     const dataUrl = path => DATA_BASE === '.'
@@ -1111,13 +1111,13 @@
       return {url:smoothed.toDataURL('image/png'),coordinates:projection.coordinates};
     }
 
-    const discoveryColor = score => score>=.8?'#ee682e':score>=.4?'#d99935':score>=.25?'#b6b94f':'#9aa39b';
+    const RATING_COLOR = {'very-high':'#ee682e',high:'#d99935',medium:'#b6b94f',low:'#9aa39b','very-low':'#9aa39b'};
     function clearDiscoveryMarkers() {
       discoveryMarkers.forEach(marker=>marker.remove());
       discoveryMarkers=[];
     }
     function discoveryPopupHTML(entry,{place=null,userLocation=false}={}) {
-      const r=rating(entry.score),percentage=Math.round(entry.score*100);
+      const r=scoreRating(entry.score),percentage=Math.round(entry.score*100);
       const location=place?`A prop de ${place}`:`${entry.lngLat.lat.toFixed(4)}, ${entry.lngLat.lng.toFixed(4)}`;
       return `<div class="pop-scroll">
         <div class="pop-eyebrow">⌖ ${userLocation?'La teva ubicació':'Què hi ha ara'}</div>
@@ -1154,7 +1154,7 @@
       for(const point of points) {
         const element=document.createElement('button');
         element.type='button'; element.className='discovery-marker';
-        element.style.setProperty('--marker-color',discoveryColor(point.score));
+        element.style.setProperty('--marker-color',RATING_COLOR[scoreRating(point.score).key]);
         element.innerHTML=`<img src="${esc(speciesImageUrl(point.species))}" alt="" />`;
         element.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openDiscoveryPoint(point)});
         const marker=new maplibregl.Marker({element,anchor:'center'}).setLngLat(point.lngLat).addTo(map);
@@ -1167,7 +1167,7 @@
       const rows=document.getElementById('discoveryRows'); rows.innerHTML='';
       if(!active.length)rows.innerHTML='<div class="discovery-empty">Cap espècie destaca prou avui.</div>';
       for(const entry of active) {
-        const r=rating(entry.visibleScore),button=document.createElement('button');
+        const r=scoreRating(entry.visibleScore),button=document.createElement('button');
         button.type='button'; button.className='discovery-row';
         button.innerHTML=`<img src="${esc(speciesImageUrl(entry.species))}" alt="" /><span class="nom">${esc(speciesLabel(entry.species))}</span><span class="sc q-${r.key}">${Math.round(entry.visibleScore*100)}% · ${r.nivell}</span>`;
         button.addEventListener('click',()=>setExperience('species',{species:entry.species}));

@@ -22,12 +22,19 @@ export function capConditionScore(score, data = {}) {
   return hasCompleteEnvironmentalData(data) ? normalized : Math.min(normalized, 0.79);
 }
 
+// Categoria d'un score que ja és definitiu, és a dir que ja ha passat per
+// capConditionScore. Tornar a aplicar-hi el límit de confiança el degradaria
+// dues vegades i faria inabastable la categoria màxima.
+export function scoreRating(score) {
+  const value = clamp01(score);
+  return CONDITION_RATINGS.find((item) => value >= item.min) ?? CONDITION_RATINGS.at(-1);
+}
+
 export function conditionRating(dataOrScore) {
   const data = typeof dataOrScore === "object" && dataOrScore !== null
     ? dataOrScore
     : { score:dataOrScore };
-  const score = clamp01(data.score);
-  const rating = CONDITION_RATINGS.find((item) => score >= item.min) ?? CONDITION_RATINGS.at(-1);
+  const rating = scoreRating(data.score);
   if (rating.key !== "very-high" || hasCompleteEnvironmentalData(data)) return rating;
   return CONDITION_RATINGS.find((item) => item.key === "high");
 }

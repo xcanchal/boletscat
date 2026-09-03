@@ -163,9 +163,12 @@ app.use("*", async (c, next) => {
       // L'HTML conté un gate d'autenticació: no reutilitzem una vista anterior
       // (per exemple, el formulari de login) mentre es resol la sessió actual.
       c.header("Cache-Control", "no-store");
-    } else if (c.req.path === "/sw.js") {
+    } else if (c.req.path === "/sw.js" || c.req.path.endsWith(".mjs")) {
       // El service worker ha de poder-se actualitzar (o desactivar) de seguida:
-      // amb `max-age` el CDN el serviria antic durant una hora.
+      // amb `max-age` el CDN el serviria antic durant una hora. Els mòduls ES
+      // tenen el mateix problema per un altre motiu: l'HTML que els importa no
+      // es cacheja mai, així que una versió nova podria demanar-li a un mòdul
+      // vell un export que encara no té i quedar-se penjada.
       c.header("Cache-Control", "no-cache");
     } else {
       c.header("Cache-Control", c.req.path === "/" || c.req.path.endsWith(".html") ? "no-cache" : "public, max-age=3600");
