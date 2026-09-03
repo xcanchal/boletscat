@@ -43,6 +43,7 @@ import { capConditionScore } from "./prediction-confidence.mjs";
 import { DISCOVERY_MIN_SCORE, selectDiscoveryPoints, summarizeDiscoverySpecies, zoneMaxima } from "./discovery-map.mjs";
 import { SPECIES, trapezoid } from "./src/species-model.mjs";
 import { temperatureTrendFactor } from "./src/temperature-trend.mjs";
+import { seasonPrior } from "./src/season-prior.mjs";
 
 const BASE = "https://analisi.transparenciacatalunya.cat/resource";
 const DS_MESURES = `${BASE}/nzvn-apee.json`, DS_ESTACIONS = `${BASE}/yqwd-vj5e.json`;
@@ -221,6 +222,7 @@ async function main() {
   const ref = refArg ? new Date(refArg.slice(7) + "T23:59:59") : new Date();
   const refISO = ref.toISOString().slice(0, 19);
   const refDay = Date.parse(`${refISO.slice(0, 10)}T00:00:00Z`) / 864e5;
+  const refMonth = ref.getUTCMonth() + 1;
   const daysAgo = (value) => refDay - Date.parse(`${String(value).slice(0, 10)}T00:00:00Z`) / 864e5;
   const desdePluja = new Date(ref - DIES * 864e5).toISOString().slice(0, 19);
   const desdeTemp  = new Date(ref - DIES_TEMP * 864e5).toISOString().slice(0, 19);
@@ -306,6 +308,7 @@ async function main() {
 
   for (const spKey of spKeys) {
     const sp = SPECIES[spKey];
+    const fSeason = seasonPrior(refMonth, sp.mesos, sp.spread);
     const files = [];
     for (const [codi, m] of meta) {
       if (!m.lat || !m.lon) continue;
@@ -317,14 +320,14 @@ async function main() {
       const substrate=SUBSTRATE_BY_CODE[substrateCode], fSoil=substrateFactor(substrateCode,sp);
       const fT = trapezoid(tMean, ...sp.temp), fAlt = trapezoid(m.alt, ...sp.alt), fHost = hostFactor(codi, sp);
       const host=HOST?.[codi]?.host ?? null, forestFrac=HOST?.[codi]?.forestFrac;
-      const score = capConditionScore(hScore * fT * fTrend * fAlt * fHost * fSoil, { host, substrate, forestFrac });
+      const score = capConditionScore(hScore * fT * fTrend * fAlt * fHost * fSoil * fSeason, { host, substrate, forestFrac });
       files.push({ codi, ...m, h, reserve, recentRain: recentRain.get(codi) ?? 0,
                    tMean, tTrend, host, substrate, forestFrac, score,
-                   fH: hScore, fT, fTrend, fAlt, fHost, fSoil });
+                   fH: hScore, fT, fTrend, fAlt, fHost, fSoil, fSeason });
     }
     files.sort((a, b) => b.score - a.score);
 
-    console.log(`── ${sp.nom}  (bosc: ${sp.host.join("/")} · tendència: ${sp.trend})`);
+    console.log(`── ${sp.nom}  (bosc: ${sp.host.join("/")} · tendència: ${sp.trend} · estació: ${fSeason.toFixed(2)}${fSeason < .05 ? " · FORA DE TEMPORADA" : ""})`);
     for (const f of files.slice(0, all ? 5 : 15))
       console.log(`   ${(f.codi ?? "").padEnd(4)} ${(f.nom ?? "").slice(0,22).padEnd(23)} ` +
         `${String(Math.round(f.alt||0)).padStart(4)}m ${(f.host ?? "—").padEnd(10)} ` +
@@ -332,13 +335,13 @@ async function main() {
 
     const geojson = {
       type: "FeatureCollection", species: spKey, speciesNom: sp.nom, generated: refISO.slice(0, 10),
-      model: { scoreVersion:4, host:sp.host, substrate:sp.substrate ?? [], alt:sp.alt, temp:sp.temp, trend:sp.trend, typicalMonths:sp.mesos },
+      model: { scoreVersion:5, host:sp.host, substrate:sp.substrate ?? [], alt:sp.alt, temp:sp.temp, trend:sp.trend, typicalMonths:sp.mesos, season:+fSeason.toFixed(3) },
       features: files.map((f) => ({
         type: "Feature", geometry: { type: "Point", coordinates: [f.lon, f.lat] },
         properties: { codi:f.codi, nom:f.nom, alt:f.alt, host:f.host, substrate:f.substrate, forestFrac:f.forestFrac,
                       H:+f.h.toFixed(1), reserve:+f.reserve.toFixed(1), recentRain:+f.recentRain.toFixed(1),
                       tMean:f.tMean, tTrend:f.tTrend, score:+f.score.toFixed(3),
-                      fH:+f.fH.toFixed(2), fT:+f.fT.toFixed(2), fTrend:+f.fTrend.toFixed(2), fAlt:+f.fAlt.toFixed(2), fHost:+f.fHost.toFixed(2), fSoil:+f.fSoil.toFixed(2) },
+                      fH:+f.fH.toFixed(2), fT:+f.fT.toFixed(2), fTrend:+f.fTrend.toFixed(2), fAlt:+f.fAlt.toFixed(2), fHost:+f.fHost.toFixed(2), fSoil:+f.fSoil.toFixed(2), fSeason:+f.fSeason.toFixed(2) },
       })),
     };
     writeFileSync(join(OUT, `bolets.${spKey}.geojson`), JSON.stringify(geojson));
@@ -348,7 +351,7 @@ async function main() {
         const {host,alt,substrate,forestStructure}=terrainCell(grid,i); if(!host||alt===-32768) continue;
         const fH=humidityFactor(gridWeather.outH[i],gridWeather.outR[i]), fT=trapezoid(gridWeather.outT[i],...sp.temp), fTrend=temperatureTrendFactor(gridWeather.outTrend[i],sp.trend), fAlt=trapezoid(alt,...sp.alt);
         const fHost=wanted.has(host)?1:.25, fSoil=substrateFactor(substrate,sp);
-        const score=capConditionScore(fH*fT*fTrend*fAlt*fHost*fSoil,{ host,substrate,forestStructure });
+        const score=capConditionScore(fH*fT*fTrend*fAlt*fHost*fSoil*fSeason,{ host,substrate,forestStructure });
         const [red,green,blue]=scoreColor(score), p=i*4;
         rgba[p]=red; rgba[p+1]=green; rgba[p+2]=blue; rgba[p+3]=score<.01?35:Math.round(105+Math.min(1,score)*125);
         if (best && score>best.score[i]) { best.score[i]=score; best.species[i]=spKey; }

@@ -6,6 +6,12 @@
 // comparteixen una cua de 700 m per sobre del seu òptim; així les altres
 // condicions encara poden compensar parcialment l'alta muntanya.
 export const ALTITUDE_UPPER_FADE_M = 700;
+
+// `mesos` és la temporada típica i `spread` l'amplada, en mesos, de la caiguda
+// del prior estacional fora d'aquesta banda. Ample per a les espècies que
+// fructifiquen sempre que plou (un cep d'agost és possible); estret per a les
+// que depenen d'un senyal estacional que no es repeteix (una múrgola respon a
+// l'escalfament del sòl de primavera, no a la pluja de setembre).
 const altitudeBand = (minimum, idealMinimum, idealMaximum) => [
   minimum,
   idealMinimum,
@@ -14,23 +20,23 @@ const altitudeBand = (minimum, idealMinimum, idealMaximum) => [
 ];
 
 export const SPECIES = {
-  rovello:   { nom: "Rovelló / pinetell",               mesos:[9,10,11],    host:["conifer"], trend:"cooling",
+  rovello:   { nom: "Rovelló / pinetell",               mesos:[9,10,11],    host:["conifer"], trend:"cooling", spread:1.5,
                alt:altitudeBand(0,200,1500),   temp:[2,8,20,26] },
-  cep:       { nom: "Cep (grup Boletus edulis)",        mesos:[6,9,10,11],  host:["conifer","deciduous","sclerophyll"], trend:"cooling",
+  cep:       { nom: "Cep (grup Boletus edulis)",        mesos:[6,9,10,11],  host:["conifer","deciduous","sclerophyll"], trend:"cooling", spread:1.5,
                substrate:["siliceous"], alt:altitudeBand(400,800,1600), temp:[2,8,18,24] },
-  llenega:   { nom: "Llenega negra (Hygrophorus latitabundus)", mesos:[10,11,12], host:["conifer"], trend:"cooling",
+  llenega:   { nom: "Llenega negra (Hygrophorus latitabundus)", mesos:[10,11,12], host:["conifer"], trend:"cooling", spread:1.2,
                substrate:["calcareous"], alt:altitudeBand(100,300,1300), temp:[0,4,14,20] },
-  trompeta:  { nom: "Trompeta de la mort (Craterellus)",mesos:[9,10,11],    host:["deciduous","sclerophyll"], trend:"cooling",
+  trompeta:  { nom: "Trompeta de la mort (Craterellus)",mesos:[9,10,11],    host:["deciduous","sclerophyll"], trend:"cooling", spread:1.2,
                alt:altitudeBand(200,400,1300), temp:[2,8,18,24] },
-  rossinyol: { nom: "Rossinyol (Cantharellus cibarius)",mesos:[6,7,8,9,10], host:["conifer","deciduous","sclerophyll"], trend:"neutral",
+  rossinyol: { nom: "Rossinyol (Cantharellus cibarius)",mesos:[6,7,8,9,10], host:["conifer","deciduous","sclerophyll"], trend:"neutral", spread:1.5,
                substrate:["siliceous"], alt:altitudeBand(200,400,1500), temp:[4,10,22,28] },
-  camagroc:  { nom: "Camagroc (Cantharellus lutescens)",mesos:[10,11,12,1], host:["conifer"], trend:"cooling",
+  camagroc:  { nom: "Camagroc (Cantharellus lutescens)",mesos:[10,11,12,1], host:["conifer"], trend:"cooling", spread:1.2,
                substrate:["calcareous"], alt:altitudeBand(300,500,1500), temp:[-2,2,14,20] },
-  murgola:   { nom: "Múrgola (Morchella)",              mesos:[3,4,5],      host:["ribera","deciduous"], trend:"warming",
+  murgola:   { nom: "Múrgola (Morchella)",              mesos:[3,4,5],      host:["ribera","deciduous"], trend:"warming", spread:0.6,
                alt:altitudeBand(100,300,1200), temp:[2,8,18,24] },
-  ou_de_reig:{ nom: "Ou de reig (Amanita caesarea)",    mesos:[7,8,9,10],   host:["deciduous","sclerophyll"], trend:"neutral",
+  ou_de_reig:{ nom: "Ou de reig (Amanita caesarea)",    mesos:[7,8,9,10],   host:["deciduous","sclerophyll"], trend:"neutral", spread:1.2,
                substrate:["siliceous"], alt:altitudeBand(0,100,1400), temp:[8,14,28,32] },
-  fredolic:  { nom: "Fredolic (Tricholoma terreum)",     mesos:[1,10,11,12], host:["conifer"], trend:"cooling",
+  fredolic:  { nom: "Fredolic (Tricholoma terreum)",     mesos:[1,10,11,12], host:["conifer"], trend:"cooling", spread:1.2,
                substrate:["calcareous"], alt:altitudeBand(0,100,1500), temp:[-5,0,12,18] },
 };
 

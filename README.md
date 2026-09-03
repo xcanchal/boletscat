@@ -18,7 +18,7 @@ temperatura recent i la seva tendència, altitud, **tipus de bosc** i, quan est�
 s'interpola sobre una graella forestal de 250 m; el terreny es precalcula un cop.
 
 ```
-score = humitat × temperatura × tendència × altitud × hoste × substrat
+score = humitat × temperatura × tendència × altitud × hoste × substrat × estació
                                                                 (cada factor 0..1)
 ```
 
@@ -64,8 +64,36 @@ límit òptim. Aquesta regla evita excloure de cop els boscos de muntanya: el ra
 òptim continua sent propi de cada espècie i, per damunt, l'altitud penalitza
 progressivament fins a zero mentre la resta de factors continuen comptant.
 La tendència compara els últims 5 dies amb els 9 anteriors i només pot ajustar el
-resultat un màxim del 10%. Els mesos habituals es conserven per al calendari i les
-fitxes, però no participen en el score.
+resultat un màxim del 10%.
+
+### Estació (`seasonPrior`) — per espècie
+El score respon dues preguntes diferents i convé no barrejar-les: si les
+condicions d'avui són bones, i si l'espècie pot fructificar en aquesta època de
+l'any. Els factors anteriors resolen la primera; aquest resol la segona.
+
+La primera versió era una porta dura: dins de `mesos` valia 1, a un mes 0,35 i a
+dos mesos o més 0. Deixava fora un cep d'agost, que amb pluja és perfectament
+possible, i per això es va retirar. Sense cap prior, però, una múrgola puntuava
+alt al setembre: la *Morchella* respon a l'escalfament del sòl després de
+l'hivern, i cap pluja de tardor no la fa sortir.
+
+La caiguda és ara gaussiana i, sobretot, l'amplada és **per espècie**:
+
+```
+fSeason = exp(−distància² / (2 × spread²))      distància = mesos fins a `mesos`, circular
+```
+
+`spread` ample (1,5) per a les espècies oportunistes i estret (0,6) per a les que
+depenen d'un senyal estacional concret. Amb això un cep d'agost conserva el 80% i
+una múrgola de setembre queda a zero, sense cap esglaó al canvi de mes.
+
+| Espècie | `mesos` | `spread` | Agost | Setembre |
+|---|---|---|---|---|
+| Rovelló, cep, rossinyol | — | 1,5 | 0,80 | 1,00 |
+| Llenega, trompeta, camagroc, ou de reig, fredolic | — | 1,2 | 0,71 | segons mes |
+| Múrgola | 3,4,5 | 0,6 | 0,00 | 0,00 |
+
+Els valors de `spread` són priors, no mesures: s'han d'afinar amb observacions.
 
 ### Hoste (`hostFactor`) — via MCSC
 Es precalcula un cop (`buildHost.mjs`): per a cada estació, mostrejant una **graella de
@@ -329,6 +357,7 @@ una probabilitat estadística de trobar bolets.
 | `bolets.<espècie>.geojson` | Sortides diàries (generades; **no** es versionen). |
 | `bolets.<espècie>.png` · `bolets.grid.json` | Ràsters diaris i georeferenciació (generats). |
 | `bolets.discovery.json` | Zones de la descoberta multiespècie (generat amb `--all`). |
+| `src/season-prior.mjs` | Prior estacional suau per espècie. |
 | `spike_xema.mjs` · `spike_mcsc.mjs` | Diagnòstics d'un sol ús (jubilats). |
 
 ---
@@ -337,7 +366,7 @@ una probabilitat estadística de trobar bolets.
 
 `score_estacions.mjs`: `CAP`, `LAG_RISE`/`LAG_FALL`, `RESERVE_FALL`,
 `TRIGGER_IDEAL`/`RESERVE_IDEAL` (humitat) · el bloc `SPECIES`
-(mesos informatius, altitud, temperatura, tendència tèrmica, bosc i substrat per espècie) · els factors dins
+(mesos i `spread` estacional, altitud, temperatura, tendència tèrmica, bosc i substrat per espècie) · els factors dins
 `hostFactor` i `substrateFactor` (duresa de cada penalització).
 `buildGrid.mjs`: `COVER_SAMPLES_PER_CELL` (resolució senar del mostreig d'àrea forestal).
 `buildHost.mjs`: `GRID`/`STEP` (radi i densitat del mostreig).

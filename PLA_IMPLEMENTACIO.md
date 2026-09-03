@@ -77,6 +77,7 @@ sol commit coherent amb la landing, el flux d'accés, legal i billing.
 | Prediccions | Carregades des de l'API privada; el mapa no rep dades premium abans d'autoritzar |
 | Ubicació de l'usuari | A demanda, sense seguiment; marcador propi i popup diferenciat en mode per espècie |
 | Descoberta multiespècie | Precalculada per l'scorer diari; el client baixa ~1 kB i pot obrir el mapa de cada espècie |
+| Prior estacional | Caiguda gaussiana per espècie: manté el cep d'agost i descarta la múrgola de setembre |
 | Build públic | `npm run prepare:public` correcte |
 | Sintaxi del mòdul JS d'`app.html` | Correcta |
 | Estat de càrrega d'accés | Implementat: no mostra login/paywall abans de conèixer sessió i subscripció |
