@@ -100,3 +100,23 @@ test("la versió mòbil empaqueta les imatges de descoberta i no el mòdul del s
   assert.match(build, /media\/bolets/);
   assert.doesNotMatch(build, /discovery-map\.mjs/);
 });
+
+// La icona és una gota girada -45°: la punta cau a mig diagonal per sota del
+// centre. Amb `anchor:"center"` MapLibre hi ancorava el centre i la punta —
+// que és el que l'ull llegeix— quedava desplaçada un nombre fix de píxels, és
+// a dir desenes de km allunyat i uns metres a prop.
+test("la punta del marcador s'ancora sobre la coordenada", async () => {
+  const app = await readProjectFile("app.html");
+
+  const size = app.match(/const DISCOVERY_MARKER_PX = (\d+);/);
+  assert.ok(size, "cal declarar la mida del marcador al costat del càlcul");
+  assert.match(app, /const DISCOVERY_MARKER_TIP_PX = DISCOVERY_MARKER_PX \/ Math\.SQRT2;/);
+  assert.match(app, /new maplibregl\.Marker\(\{element,anchor:'center',offset:\[0,-DISCOVERY_MARKER_TIP_PX\]\}\)/);
+
+  // El càlcul només val mentre el CSS mantingui aquesta mida i aquest gir.
+  const rule = app.match(/\.discovery-marker\{([^}]*)\}/);
+  assert.ok(rule, "cal la regla .discovery-marker");
+  assert.match(rule[1], new RegExp(`width:${size[1]}px;height:${size[1]}px`));
+  assert.match(rule[1], /transform:rotate\(-45deg\)/);
+  assert.match(rule[1], /border-radius:50% 50% 50% 18%/);
+});

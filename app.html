@@ -1112,6 +1112,13 @@
     }
 
     const RATING_COLOR = {'very-high':'#ee682e',high:'#d99935',medium:'#b6b94f',low:'#9aa39b','very-low':'#9aa39b'};
+    // La icona és una gota: un quadrat de 38 px amb la cantonada inferior
+    // esquerra en punta i girat -45°, cosa que deixa la punta just a sota del
+    // centre, a mig diagonal. MapLibre ancora el centre, així que cal apujar el
+    // marcador aquesta distància perquè la punta caigui sobre la coordenada; si
+    // no, l'error és de píxels constants i, allunyat, són desenes de km.
+    const DISCOVERY_MARKER_PX = 38;
+    const DISCOVERY_MARKER_TIP_PX = DISCOVERY_MARKER_PX / Math.SQRT2;
     function clearDiscoveryMarkers() {
       discoveryMarkers.forEach(marker=>marker.remove());
       discoveryMarkers=[];
@@ -1157,7 +1164,7 @@
         element.style.setProperty('--marker-color',RATING_COLOR[scoreRating(point.score).key]);
         element.innerHTML=`<img src="${esc(speciesImageUrl(point.species))}" alt="" />`;
         element.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openDiscoveryPoint(point)});
-        const marker=new maplibregl.Marker({element,anchor:'center'}).setLngLat(point.lngLat).addTo(map);
+        const marker=new maplibregl.Marker({element,anchor:'center',offset:[0,-DISCOVERY_MARKER_TIP_PX]}).setLngLat(point.lngLat).addTo(map);
         element.setAttribute('aria-label',`${speciesLabel(point.species)}: ${Math.round(point.score*100)}%`);
         element.title=`${speciesLabel(point.species)} · ${Math.round(point.score*100)}%`;
         discoveryMarkers.push(marker);
