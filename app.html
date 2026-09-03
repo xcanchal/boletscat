@@ -473,7 +473,7 @@
     import { ErrorCode, Purchases, PurchasesError } from '/vendor/purchases.es.js';
     import { conditionRating } from '/prediction-confidence.mjs';
     import { createRasterProjection, projectedPixelAtLngLat } from '/raster-projection.mjs';
-    import { dominantPredictionAt, maximumPredictionScore, selectDiscoveryPoints, summarizeDiscoverySpecies } from '/discovery-map.mjs';
+    import { dominantPredictionAt, selectDiscoveryPoints, summarizeDiscoverySpecies } from '/discovery-map.mjs';
     const DATA_BASE = document.querySelector('meta[name="bolets-data-base"]')?.content ?? '.';
     const dataUrl = path => DATA_BASE === '.'
       ? `/api/predictions/${encodeURIComponent(path)}`
@@ -1209,10 +1209,10 @@
         const response=await fetch(dataUrl(`bolets.${species}.geojson`),{cache:'no-store',credentials:'include'});
         if(!response.ok)throw new Error();
         const geo=await response.json();
-        const version=encodeURIComponent(`${geo.generated??'latest'}-${Date.now()}`);
+        const version=encodeURIComponent(geo.generated??'latest');
         const pixels=await imagePixels(`${dataUrl(`bolets.${species}.png`)}?v=${version}`,grid);
         const raster={grid,pixels,projection:projectionForGrid(grid)};
-        return {species,label:info.label,generated:geo.generated,raster,maxScore:maximumPredictionScore(raster)};
+        return {species,label:info.label,generated:geo.generated,raster};
       }));
       if(request!==discoveryRequest||experienceMode!=='discovery')return;
       discoveryEntries=results.filter(result=>result.status==='fulfilled').map(result=>result.value);
