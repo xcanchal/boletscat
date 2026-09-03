@@ -10,7 +10,7 @@ test("el mapa presenta la puntuació com un índex, no com una probabilitat", ()
   // El score és un producte de sis factors sobre 1, no una probabilitat de
   // trobar bolets: el signe % convidava a llegir-lo com si ho fos.
   assert.doesNotMatch(app, /Probabilitat estimada/);
-  assert.match(app, /\$\{percentage\}\/100 · \$\{r\.nivell\}/);
+  assert.match(app, /\$\{percentage\}% · \$\{r\.nivell\}/);
   assert.match(app, /class="pop-probability/);
   assert.doesNotMatch(app, /Índex de condicions \$\{/);
 });
@@ -24,7 +24,7 @@ test("el popup identifica dades desconegudes i carrega l'estructura forestal", (
 
 test("el popup concentra les xifres útils i no publica els factors interns", () => {
   assert.match(app, /Condicions del punt/);
-  assert.match(app, /\$\{percentage\}\/100 · \$\{r\.nivell\}/);
+  assert.match(app, /\$\{percentage\}% · \$\{r\.nivell\}/);
   assert.match(app, /°C · \$\{direction\}/);
   assert.doesNotMatch(app, /class="pop-fit/);
   assert.doesNotMatch(app, /fitBarHTML/);
@@ -70,4 +70,17 @@ test("el popup consulta la mateixa reprojecció Web Mercator que la capa visual"
   assert.match(app, /const displayed=projectedPixelAtLngLat\(currentRaster\.projection,lngLat\.lng,lngLat\.lat\)/);
   assert.match(app, /const index=currentRaster\.projection\.sourceIndices\[displayed\.index\]/);
   assert.doesNotMatch(app, /coordinates:grid\.coordinates/);
+});
+
+// hidePredictionLayers() amaga 'prediccio' i 'cobertura' en entrar a la
+// descoberta, i load() només actualitza la imatge de la capa. Sense tornar-les
+// a mostrar, en sortir de "Què hi ha ara" el mapa quedava buit per a totes les
+// espècies.
+test("en tornar de la descoberta el mapa de l'espècie es torna a veure", () => {
+  assert.match(app, /for\(const layer of \['prediccio','cobertura'\]\)\s*\n\s*if\(map\.getLayer\(layer\)\)map\.setLayoutProperty\(layer,'visibility',stations\?'none':'visible'\);/);
+});
+
+test("el commutador de mode viu només a la barra lateral", () => {
+  assert.doesNotMatch(app, /discoveryFab|discovery-fab/);
+  assert.match(app, /data-experience="discovery"/);
 });

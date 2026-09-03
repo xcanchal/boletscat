@@ -135,3 +135,17 @@ test("la punta del marcador s'ancora sobre la coordenada", async () => {
   assert.match(rule[1], /transform:rotate\(-45deg\)/);
   assert.match(rule[1], /border-radius:50% 50% 50% 18%/);
 });
+
+// L'ou de reig és l'única espècie amb guió baix: el filtre de noms del servidor
+// no l'acceptava i la seva predicció responia 404 des del primer desplegament.
+test("el filtre de prediccions accepta els noms amb guió baix", async () => {
+  const server = await readProjectFile("src/server.mjs");
+  const line = server.match(/const predictionName = (\/.*\/);/);
+  assert.ok(line, "cal el filtre de noms");
+  const pattern = new RegExp(line[1].slice(1, -1));
+
+  for (const name of ["bolets.ou_de_reig.geojson", "bolets.ou_de_reig.png", "bolets.rovello.geojson", "bolets.discovery.json"])
+    assert.ok(pattern.test(name), name);
+  for (const name of ["bolets.evil.txt", "../../etc/passwd", "bolets..%2Fetc.png"])
+    assert.ok(!pattern.test(name), name);
+});

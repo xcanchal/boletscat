@@ -131,13 +131,6 @@
     .bases button:hover{color:var(--text)}
     .bases button.on{background:rgba(232,226,214,.10);color:var(--text)}
 
-    .discovery-fab{display:none;position:absolute;z-index:3;left:max(16px,env(safe-area-inset-left));
-      bottom:max(61px,calc(env(safe-area-inset-bottom) + 61px));padding:8px 12px;border:1.5px solid transparent;
-      border-radius:999px;background:linear-gradient(#182016,#182016) padding-box,
-        linear-gradient(105deg,#e8722a,#d6ad42,#81954d,#e8722a) border-box;
-      background-size:100% 100%,220% 100%;animation:discovery-border 4s linear infinite;
-      box-shadow:0 8px 24px rgba(0,0,0,.45);color:var(--text);font:650 12px var(--ui);cursor:pointer}
-    .discovery-fab.is-active{animation:none;border-color:var(--edge);background:var(--panel);color:#d7d9cf}
 
     /* Eina de camp persistent: el mode sempre és accessible encara que el panell estigui plegat. */
     .map-tools{position:absolute;top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));z-index:2;display:flex;align-items:center;gap:8px;
@@ -178,8 +171,7 @@
       .intensity-control input{width:100%}
       .map-tools.stations{width:auto}
       .panel:not(.collapsed) ~ .map-tools{display:none}
-      .discovery-fab{display:block}
-      body.panel-open .bases,body.panel-open .discovery-fab,body.panel-open .maplibregl-ctrl-bottom-right{display:none}
+      body.panel-open .bases,body.panel-open .maplibregl-ctrl-bottom-right{display:none}
     }
 
     /* Manté els controls fora del home indicator i evita el doble toc de zoom d'iOS. */
@@ -195,7 +187,7 @@
       border:1px solid var(--edge);border-radius:9px;background:rgba(20,27,19,.94);backdrop-filter:blur(10px);
       box-shadow:0 8px 28px rgba(0,0,0,.42);color:var(--text);font-size:12px;line-height:1.35;text-align:center}
     @media (prefers-reduced-motion:reduce){
-      .maplibregl-ctrl-locate.is-locating svg,.discovery-fab{animation:none}
+      .maplibregl-ctrl-locate.is-locating svg{animation:none}
     }
 
     .maplibregl-popup{width:min(320px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)!important}
@@ -263,7 +255,7 @@
     body:not(.map-authorized) #map{filter:saturate(.92) brightness(.9);transition:filter .35s ease}
     body:not(.map-authorized) #map::after{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;
       background:url('./preview-map.webp?v=20260826d') 32% center/cover no-repeat}
-    body:not(.map-authorized) .panel,body:not(.map-authorized) .map-tools,body:not(.map-authorized) .bases,body:not(.map-authorized) .discovery-fab{
+    body:not(.map-authorized) .panel,body:not(.map-authorized) .map-tools,body:not(.map-authorized) .bases{
       opacity:0;visibility:hidden;pointer-events:none}
     .gate-shell{width:min(1280px,100%);min-height:100%;margin:auto;padding:max(24px,env(safe-area-inset-top)) 34px max(24px,env(safe-area-inset-bottom));
       display:grid;grid-template-columns:1fr;grid-template-rows:auto 1fr;gap:24px}
@@ -455,7 +447,6 @@
   </div>
 
   <div class="bases" id="bases"></div>
-  <button class="discovery-fab" id="discoveryFab" type="button">Què hi ha ara?</button>
   <div class="map-tools" id="mapTools">
     <div class="map-mode-switch" id="mapModes" role="group" aria-label="Vista del mapa">
       <button data-mode="detallat" class="on" aria-pressed="true">Detallat</button>
@@ -741,7 +732,7 @@
       ${eyebrow?`<div class="pop-eyebrow">⌖ ${esc(eyebrow)}</div>`:''}
       <div class="pop-nom">${esc(p.nom ?? p.codi)}</div>
       <div class="pop-score">
-        <div class="pop-score-line"><span>Condicions</span><strong class="q-${r.key}">${percentage}/100 · ${r.nivell}</strong></div>
+        <div class="pop-score-line"><span>Condicions</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div>
         <div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div>
       </div>
       <div class="pop-conditions">
@@ -837,7 +828,7 @@
       const footer=userLocation?'':mapLinkHTML(lngLat);
       if (details==null) return `<div class="pop-scroll">${eyebrow}<div class="pop-nom">${esc(title)}</div><div class="pop-index">No hi ha cap estimació forestal prou a prop d’aquest punt.</div></div>${footer}`;
       const nearby=distance>0?`<div class="pop-nearby">Estimació forestal més propera · ${distance<1000?`${Math.round(distance/50)*50} m`:`${(distance/1000).toFixed(1)} km`} ${userLocation?'de la teva ubicació':'del punt tocat'}</div>`:'';
-      if (details.fH==null) { const r=rating(details),percentage=Math.round(details.score*100); return `<div class="pop-scroll">${eyebrow}<div class="pop-nom">${esc(title)}</div>${nearby}<div class="pop-score"><div class="pop-score-line"><span>Condicions</span><strong class="q-${r.key}">${percentage}/100 · ${r.nivell}</strong></div><div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div></div></div>${footer}`; }
+      if (details.fH==null) { const r=rating(details),percentage=Math.round(details.score*100); return `<div class="pop-scroll">${eyebrow}<div class="pop-nom">${esc(title)}</div>${nearby}<div class="pop-score"><div class="pop-score-line"><span>Condicions</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div><div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div></div></div>${footer}`; }
       return popHTML({ nom:title, ...details },lngLat,{eyebrow:userLocation?'La teva ubicació':'',showMapLink:!userLocation}).replace('<div class="pop-score">',`${nearby}<div class="pop-score">`);
     };
     const locationHTML = (place,lngLat) => {
@@ -973,9 +964,6 @@
     document.getElementById('experienceSwitch').addEventListener('click',event=>{
       const button=event.target.closest('button[data-experience]');
       if(button)setExperience(button.dataset.experience);
-    });
-    document.getElementById('discoveryFab').addEventListener('click',()=>{
-      setExperience(experienceMode==='discovery'?'species':'discovery');
     });
 
     map.on('load', () => {
@@ -1133,7 +1121,7 @@
           <img src="${esc(speciesImageUrl(entry.species))}" alt="" />
           <div><div class="pop-nom">${esc(speciesLabel(entry.species))}</div><div class="discovery-pop-place">${esc(location)}</div></div>
         </div>
-        <div class="pop-score"><div class="pop-score-line"><span>Condicions</span><strong class="q-${r.key}">${percentage}/100 · ${r.nivell}</strong></div>
+        <div class="pop-score"><div class="pop-score-line"><span>Condicions</span><strong class="q-${r.key}">${percentage}% · ${r.nivell}</strong></div>
           <div class="pop-probability q-${r.key}" aria-hidden="true"><i style="width:${percentage}%"></i></div></div>
         <button class="discovery-pop-action" type="button" data-discovery-species="${esc(entry.species)}">Veure el mapa de ${esc(speciesLabel(entry.species).toLowerCase())} →</button>
       </div>`;
@@ -1169,8 +1157,8 @@
         element.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openDiscoveryPoint(point)});
         wrapper.appendChild(element);
         const marker=new maplibregl.Marker({element:wrapper,anchor:'center',offset:[0,-DISCOVERY_MARKER_TIP_PX]}).setLngLat(point.lngLat).addTo(map);
-        element.setAttribute('aria-label',`${speciesLabel(point.species)}: ${Math.round(point.score*100)}/100`);
-        element.title=`${speciesLabel(point.species)} · ${Math.round(point.score*100)}/100`;
+        element.setAttribute('aria-label',`${speciesLabel(point.species)}: ${Math.round(point.score*100)}%`);
+        element.title=`${speciesLabel(point.species)} · ${Math.round(point.score*100)}%`;
         discoveryMarkers.push(marker);
       }
     }
@@ -1180,7 +1168,7 @@
       for(const entry of active) {
         const r=scoreRating(entry.visibleScore),button=document.createElement('button');
         button.type='button'; button.className='discovery-row';
-        button.innerHTML=`<img src="${esc(speciesImageUrl(entry.species))}" alt="" /><span class="nom">${esc(speciesLabel(entry.species))}</span><span class="sc q-${r.key}">${Math.round(entry.visibleScore*100)}/100 · ${r.nivell}</span>`;
+        button.innerHTML=`<img src="${esc(speciesImageUrl(entry.species))}" alt="" /><span class="nom">${esc(speciesLabel(entry.species))}</span><span class="sc q-${r.key}">${Math.round(entry.visibleScore*100)}% · ${r.nivell}</span>`;
         button.addEventListener('click',()=>setExperience('species',{species:entry.species}));
         rows.appendChild(button);
       }
@@ -1222,9 +1210,6 @@
         const active=button.dataset.experience===experienceMode;
         button.classList.toggle('on',active); button.setAttribute('aria-pressed',String(active));
       });
-      const fab=document.getElementById('discoveryFab');
-      fab.textContent=discovery?'Veure per espècie':'Què hi ha ara?';
-      fab.classList.toggle('is-active',discovery);
       areaRequest++; popup.remove();
       if(discovery) {
         predictionLoadRequest++;
@@ -1242,6 +1227,10 @@
       document.getElementById('species').value=selected;
       await load(selected,{preserveView:Boolean(center)});
       const stations=currentMode==='punts';
+      // hidePredictionLayers() les va amagar en entrar a la descoberta i load()
+      // només actualitza la imatge: sense això el mapa tornava buit.
+      for(const layer of ['prediccio','cobertura'])
+        if(map.getLayer(layer))map.setLayoutProperty(layer,'visibility',stations?'none':'visible');
       if(map.getLayer('halo'))map.setLayoutProperty('halo','visibility',stations?'visible':'none');
       if(map.getLayer('punt'))map.setLayoutProperty('punt','visibility',stations?'visible':'none');
       if(center)map.flyTo({center:[center.lng,center.lat],zoom:11,duration:650});
