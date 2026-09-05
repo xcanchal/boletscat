@@ -14,6 +14,6 @@ until npm run db:migrate; do
 done
 
 echo "Generant mapa i punts inicials…"
-node score_estacions.mjs --all --out=private/predictions || \
+node score_estacions.mjs --all || \
   echo "(avís: no s'ha pogut generar el mapa a l'arrencada; el cron ho reintentarà)"
 exec npm start

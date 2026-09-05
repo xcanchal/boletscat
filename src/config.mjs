@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { resolve } from "node:path";
+import { resolvePredictionDir } from "./prediction-path.mjs";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -44,7 +45,7 @@ export const config = {
     apiUrl: process.env.EMAIL_PROVIDER_URL?.trim() || "https://api.resend.com/emails",
   },
   publicDir: resolve(process.env.PUBLIC_DIR || "public"),
-  predictionDir: resolve(process.env.PREDICTION_DIR || "private/predictions"),
+  predictionDir: resolvePredictionDir(),
   revenueCat: {
     secretApiKey: process.env.REVENUECAT_SECRET_API_KEY?.trim() || "",
     apiUrl: process.env.REVENUECAT_API_URL?.trim() || "https://api.revenuecat.com/v1",

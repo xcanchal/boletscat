@@ -36,7 +36,7 @@
  */
 
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { encodeRgbaPng } from "./raster.mjs";
 import { SUBSTRATE_BY_CODE } from "./substrate.mjs";
 import { capConditionScore } from "./prediction-confidence.mjs";
@@ -44,6 +44,7 @@ import { DISCOVERY_MIN_SCORE, selectDiscoveryPoints, summarizeDiscoverySpecies, 
 import { SPECIES, trapezoid } from "./src/species-model.mjs";
 import { temperatureTrendFactor } from "./src/temperature-trend.mjs";
 import { seasonPrior } from "./src/season-prior.mjs";
+import { resolvePredictionDir } from "./src/prediction-path.mjs";
 
 const BASE = "https://analisi.transparenciacatalunya.cat/resource";
 const DS_MESURES = `${BASE}/nzvn-apee.json`, DS_ESTACIONS = `${BASE}/yqwd-vj5e.json`;
@@ -212,7 +213,8 @@ async function main() {
     for (const [k, s] of Object.entries(SPECIES)) console.log(`  ${k.padEnd(10)} ${s.nom}  ·  bosc ${s.host.join("/")}  ·  mesos ${s.mesos.join(",")}`);
     return;
   }
-  const OUT = args.find((a) => a.startsWith("--out="))?.slice(6) || ".";  // on escriure els geojson
+  const outArg = args.find((a) => a.startsWith("--out="))?.slice(6);
+  const OUT = outArg ? resolve(outArg) : resolvePredictionDir();
   mkdirSync(OUT, { recursive:true });
   const all = args.includes("--all");
   const spKeys = all ? Object.keys(SPECIES) : [(args.find((a) => a.startsWith("--species="))?.slice(10)) || "rovello"];
@@ -226,7 +228,8 @@ async function main() {
   const daysAgo = (value) => refDay - Date.parse(`${String(value).slice(0, 10)}T00:00:00Z`) / 864e5;
   const desdePluja = new Date(ref - DIES * 864e5).toISOString().slice(0, 19);
   const desdeTemp  = new Date(ref - DIES_TEMP * 864e5).toISOString().slice(0, 19);
-  console.log(`Data de referència: ${refISO.slice(0, 10)}\n`);
+  console.log(`Data de referència: ${refISO.slice(0, 10)}`);
+  console.log(`Directori de prediccions: ${OUT}\n`);
 
   // ── Dades meteo un sol cop ───────────────────────────────────────────────
   const est = await soda(DS_ESTACIONS, { $limit: 1000 });

@@ -216,12 +216,13 @@ npm run db:migrate
 node buildGrid.mjs
 
 # Prediccions privades + servidor web
-node score_estacions.mjs --all --out=private/predictions
+node score_estacions.mjs --all
 npm run dev            # http://localhost:8080
 ```
 
-`npm run prepare:public` genera només el client i els vendors públics. El scorer ha
-d'escriure sempre a `private/predictions`, mai a `public`.
+`npm run prepare:public` genera només el client i els vendors públics. El scorer i
+el servidor comparteixen `PREDICTION_DIR` (per defecte, `private/predictions`), mai
+`public`.
 
 La landing pública es publica a `/`; el registre, el paywall i el predictor viuen
 a `/app/`. `npm run build:mobile` continua empaquetant directament el predictor.
@@ -248,7 +249,9 @@ docker run --env-file .env -p 8080:8080 boletada
 3. Configurar les variables de `.env.example` amb secrets reals.
    Per activar Google, crear un client OAuth web i autoritzar
    `https://boletada.cat/api/auth/callback/google` com a URI de redirecció.
-4. **Scheduled Task**: `node score_estacions.mjs --all --out=private/predictions`, freqüència `0 6 * * *`.
+4. **Scheduled Task**: `node score_estacions.mjs --all`, freqüència `0 6 * * *`.
+   El log ha de mostrar la data de referència i el directori absolut on s'han
+   escrit les prediccions.
 
 **Notes honestes:**
 - El cron de Coolify va en **UTC** (`0 6 * * *` ≈ 7-8 h a casa). Diari a qualsevol hora ja va bé.
