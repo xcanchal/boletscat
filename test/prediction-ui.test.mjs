@@ -78,7 +78,7 @@ test("el popup consulta la mateixa reprojecció Web Mercator que la capa visual"
 // espècies.
 test("en tornar de la descoberta el mapa de l'espècie es torna a veure", () => {
   assert.match(app, /const rasterLoaded=await load\(selected,\{preserveView:Boolean\(center\)\}\);\s*if\(!rasterLoaded\|\|experienceMode!=='species'\)return;/);
-  assert.match(app, /for\(const layer of \['prediccio','cobertura'\]\)\s*\n\s*if\(map\.getLayer\(layer\)\)map\.setLayoutProperty\(layer,'visibility',stations\?'none':'visible'\);/);
+  assert.match(app, /for\(const layer of \['prediccio','cobertura'\]\)\s*\n\s*if\(map\.getLayer\(layer\)\)map\.setLayoutProperty\(layer,'visibility','visible'\);/);
 });
 
 test("una càrrega cancel·lada no trepitja el mode de descoberta", () => {
@@ -86,16 +86,22 @@ test("una càrrega cancel·lada no trepitja el mode de descoberta", () => {
   assert.match(app, /return Boolean\(currentRaster\);/);
 });
 
-test("el commutador de mode viu només a la barra lateral", () => {
+test("el mapa públic només conserva els modes de producte", () => {
   assert.doesNotMatch(app, /discoveryFab|discovery-fab/);
   assert.match(app, /data-experience="discovery"/);
+  assert.doesNotMatch(app, /data-mode=|id="mapModes"|>Estacions<|id:'punt'|id:'halo'/);
 });
 
-test("la llista lateral segueix el mode: zones del ràster o millors estacions", () => {
-  assert.match(app, /const stations=currentMode==='punts'/);
-  assert.match(app, /const usesRasterAreas=!stations&&Array\.isArray\(geo\.topAreas\)/);
-  assert.match(app, /stations\?geo\.features:\(usesRasterAreas\?geo\.topAreas:geo\.features\)/);
-  assert.match(app, /\?'Millors estacions'\s*:\(usesRasterAreas\?'Millors zones':'Estacions de referència'\)/);
-  assert.match(app, /if \(experienceMode==='species' && currentSpeciesGeo\) renderSpeciesRanking\(currentSpeciesGeo\)/);
+test("la llista lateral prioritza sempre les millors zones del ràster", () => {
+  assert.match(app, /const usesRasterAreas=Array\.isArray\(geo\.topAreas\)/);
+  assert.match(app, /usesRasterAreas\?geo\.topAreas:geo\.features/);
+  assert.match(app, /usesRasterAreas\?'Millors zones':'Punts de referència'/);
+  assert.doesNotMatch(app, /Millors estacions/);
   assert.match(app, /if\(p\.area\) \{ void openTopArea\(f\); return; \}/);
+});
+
+test("obrir una millor zona reutilitza la cerca de la cel·la forestal més propera", () => {
+  assert.match(app, /const sample=nearestDetailsAt\(rankedLngLat\),target=sample\?\.lngLat\?\?rankedLngLat/);
+  assert.match(app, /areaHTML\(null,sample\?\.details\?\?null,target,sample\?\.distance\?\?0\)/);
+  assert.match(app, /areaHTML\(place,sample\?\.details\?\?null,target,sample\?\.distance\?\?0\)/);
 });

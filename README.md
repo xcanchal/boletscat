@@ -282,16 +282,17 @@ consulta les condicions del punt. El popup identifica explícitament **«La teva
 ubicació»** i no ofereix una ruta cap al lloc on l'usuari ja és; no manté cap
 seguiment en segon pla.
 
-La llista lateral segueix la vista seleccionada. A **«Detallat»**, **«Millors
-zones»** surt del mateix ràster de 250 m que es pinta i es consulta en tocar el
-mapa. A **«Estacions»**, **«Millors estacions»** ordena els punts meteorològics
-pel seu score. Les versions antigues del GeoJSON sense `topAreas` mostren
-temporalment «Estacions de referència» com a fallback a la vista detallada.
+La vista pública per espècie mostra sempre el mapa detallat. **«Millors zones»**
+surt del mateix ràster de 250 m que es pinta i es consulta en tocar el mapa.
+Les estacions meteorològiques es mantenen com a entrada interna de l'scorer,
+però no com un mode de navegació: són punts de mesura escassos i no representen
+necessàriament una zona forestal. Les versions antigues del GeoJSON sense
+`topAreas` mostren temporalment «Punts de referència» com a fallback.
 
 | Llista/capa | Font | Selecció |
 |---|---|---|
 | Millors zones | Score de cel·les forestals | Fins a 8 clapes amb suport, separades 16 km |
-| Millors estacions | XEMA + bosc aproximat de l'entorn | Punts d'observació ordenats pel seu score |
+| Estacions meteorològiques | XEMA | Entrada interna del càlcul; no es mostra com a capa pública |
 | Heatmap i popup | Mateixa graella forestal | Score local de la cel·la |
 
 El mode **«Què hi ha ara?»** el calcula l'scorer diari, no el navegador. Mentre
