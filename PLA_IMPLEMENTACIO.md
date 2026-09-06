@@ -10,10 +10,11 @@ El contracte i el desplegament d'OPS-01 estan documentats a
 
 | Àmbit | Estat verificat |
 |---|---|
-| OPS-01: generacions completes i publicació atòmica | Implementat localment a `codex/prediction-generations`, base `c1f4ec6`; sense commit ni push |
-| Validació | 98 tests, builds web/Capacitor i generació completa amb dades meteo reals |
-| Producció | No modificada; bloquejada fins a implementar la compatibilitat expand/contract i validar smoke test autenticat i configuració |
-| Clients existents | Només web/PWA; cap app nativa distribuïda. Mantenir URLs antigues mentre migren els clients; no tallar-les amb 409 |
+| OPS-01: generacions completes i publicació atòmica | Implementat a `codex/prediction-generations`, sincronitzat amb `main` (`df3d01e`) |
+| Compatibilitat expand | Implementada: URLs antigues i generacionals comparteixen validació, autorització i emmagatzematge immutable |
+| Validació | 107 tests, builds web/Capacitor i scorer real amb dades deterministes; preparat per smoke test a staging |
+| Producció | No modificada; bloquejada fins a validar staging autenticat, volum, cron, readiness i rollback |
+| Clients existents | Només web/PWA; cap app nativa distribuïda. Les URLs antigues es mantenen durant la migració |
 | Algorisme | Fórmules de scoring preservades; OPS-02/03 i experiments de model pendents |
 
 La resta del document es conserva com a historial; no executeu els seus passos

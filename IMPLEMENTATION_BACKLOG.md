@@ -1,6 +1,6 @@
 # Boletada: review and implementation backlog
 
-Review date: 2026-09-05. Reviewed baseline: `main` at `c1f4ec6`.
+Review date: 2026-09-06. Reviewed baseline: `main` at `df3d01e`.
 
 This document is a handoff for an implementer agent. It separates operational
 fixes from changes that require scientific validation or product decisions.
@@ -62,14 +62,13 @@ claim that every item is a currently observed production incident.
 
 ## OPS-01 — Publish coherent generations
 
-**Rollout update:** the generation core is implemented locally, but OPS-01 is not
-release-ready. The owner confirmed no native apps are distributed. Existing
-browser/PWA sessions must retain access: implement the expand/contract phases in
-`docs/PREDICTION_GENERATIONS.md` on the implementation branch before deployment.
-Add a private legacy-URL adapter, build-version checks with an update notice,
-aggregate compatibility usage monitoring and old/new-client rollout tests.
-The current legacy HTTP 409 behavior is a blocker. Do not retire legacy support
-on a timer or assume a new notice can reach already-open old JavaScript.
+**Rollout update:** the generation core and private legacy-URL adapter are
+implemented and locally verified. OPS-01 is ready for staging validation, not
+production. The owner confirmed no native apps are distributed. Existing
+browser/PWA sessions retain their flat URLs while new clients pin immutable
+generations. Build-version checks, aggregate compatibility monitoring and the
+authenticated old/new-client staging run remain pending. Do not retire legacy
+support on a timer or assume a new notice can reach already-open JavaScript.
 
 Evidence: `score_estacions.mjs` overwrites shared weather/terrain files, then
 species GeoJSON/PNG files, then discovery. `src/server.mjs` serves those filenames
@@ -522,7 +521,7 @@ items and link to reproducible evidence rather than only stating “tests pass.�
 
 | Item | Status | Commit / changed files | Verification | Operational setup remaining |
 |---|---|---|---|---|
-| OPS-01 | Core implemented; compatibility rollout not implemented; not release-ready | Uncommitted branch `codex/prediction-generations`; phased contract in `docs/PREDICTION_GENERATIONS.md` | 98 core tests; web/mobile builds; real-weather scorer run for nine species; compatibility/update tests pending | Implement legacy adapter and build-update notice; validate old/new browser/PWA sessions; shared store and first generation; expanded-server rollback; explicit legacy retirement decision; no push/deploy |
+| OPS-01 | Core + expand adapter implemented; ready for staging, not production | `codex/prediction-generations`; phased contract in `docs/PREDICTION_GENERATIONS.md` | 107 tests; all 23 legacy assets return 200 in fixtures; generation race/integrity tests; web/mobile builds; deterministic scorer run | Validate authenticated old/new clients, persistent store, first generation, cron, readiness and rollback; implement build-update notice and aggregate monitoring before production |
 | OPS-02 | Open | — | — | — |
 | OPS-03 | Open | — | — | — |
 | BILL-01 | Open | — | — | — |

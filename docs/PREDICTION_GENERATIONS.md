@@ -1,8 +1,9 @@
 # Prediction generation publication (OPS-01)
 
-Core implemented on `codex/prediction-generations`, based on `c1f4ec6`.
-**Not production-ready: the expand/contract compatibility work below is pending.**
-Production is unchanged. This change preserves the scoring formulas.
+Core and expand compatibility adapter implemented on
+`codex/prediction-generations`, synchronized with `main` at `df3d01e`.
+**Ready for staging validation, not production.** Production is unchanged. This
+change preserves the scoring formulas.
 The owner confirmed that no native apps have been deployed; the migration must
 support existing browser tabs and installed PWAs, not distributed native binaries.
 
@@ -51,6 +52,8 @@ It does not yet measure data freshness (OPS-03). Liveness remains separate.
 - `GET /api/predictions/current.json` selects a generation.
 - `GET /api/predictions/generations/:generation/:filename` reads only files
   listed in that generation's manifest.
+- `GET /api/predictions/:filename` is the expand-phase adapter for existing
+  clients; each request resolves through the current validated generation.
 - All routes require session and entitlement authorization. Responses remain
   `private, no-store`; immutable filenames do not make paid files public.
 - Species views load and decode the full bundle before installing it. Popups
@@ -59,27 +62,24 @@ It does not yet measure data freshness (OPS-03). Liveness remains separate.
 - A failed or obsolete load must not replace newer state. A 410 retry discards
   the old bundle rather than replacing individual assets with newer ones.
 
-The current implementation returns `409 client_update_required` from legacy flat
-endpoints. **This is a known rollout blocker, not the approved migration contract.**
-Already-open old clients cannot understand newly added update handling until they
-reload; returning 409 alone can leave paying users with generic loading errors.
-Replace this behavior with the compatibility adapter below before deployment.
-New clients must never fall back to flat URLs.
+The compatibility adapter now preserves legacy flat endpoints with the same
+authorization, allowlist, integrity checks and private cache policy. New clients
+never fall back to flat URLs and retain full snapshot consistency.
 
-## Expand/contract rollout — approved design, not yet implemented
+## Expand/contract rollout — expand implemented, staging validation pending
 
 This rollout separates additive API support from client adoption and eventual
 removal. A new deployment cannot remotely install JavaScript into an old tab.
 PWAs can remain suspended for a long time, so elapsed time or zero recent legacy
 traffic alone cannot prove that every old client has upgraded.
 
-| Phase | Server and scorer | Browser/PWA | Exit gate |
-|---|---|---|---|
-| 0 — Prepare | Implement and test compatibility adapter, build-version endpoint and request counters | Test old and new clients side by side | Authenticated smoke tests; volume, readiness and rollback checks pass |
-| 1 — Expand | Serve both flat and generation APIs; publish complete generations | Existing tabs keep working without a mandatory reload | Old client works across a publication and redeploy; all routes remain private |
-| 2 — Migrate | Keep both APIs and required client assets available | Newly loaded client pins generations and checks for app updates | Observe successful publication, species/discovery flows, PWA resume and update handling |
-| 3 — Observe | Monitor aggregate legacy/new requests and failures; retain compatibility | Long-lived old clients still work; upgraded clients receive update notices | No unresolved regressions; explicit decision on legacy support lifetime |
-| 4 — Contract (optional) | Remove legacy routes only under an explicitly approved support policy | Supported clients use generation URLs | Owner accepts residual old-tab risk; support/recovery message and rollback tested |
+| Phase | Status | Server and scorer | Browser/PWA | Exit gate |
+|---|---|---|---|---|
+| 0 — Prepare | In progress | Adapter complete; build-version endpoint and counters pending | Fixture tests complete; authenticated staging test pending | Volume, readiness and rollback checks pass |
+| 1 — Expand | Ready for staging | Both flat and generation APIs serve complete generations | Existing tabs retain flat URLs without mandatory reload | Old client works across publication/redeploy; routes stay private |
+| 2 — Migrate | Client implemented; operations pending | Keep both APIs and client assets | New client pins generations; update notice pending | Species/discovery, PWA resume and update handling observed |
+| 3 — Observe | Pending | Monitor aggregate legacy/new requests and failures | Long-lived old clients remain supported | No unresolved regressions; explicit legacy-lifetime decision |
+| 4 — Contract (optional) | Not planned | Remove legacy routes only under an approved policy | Supported clients use generation URLs | Owner accepts residual risk; recovery and rollback tested |
 
 There is no automatic date-based retirement. Keeping the small legacy adapter is
 the default if old-session safety cannot be established. No native migration gate
@@ -139,8 +139,8 @@ button. A notice added now does not notify already-open pre-migration clients.
 - Test the new client concurrently; verify every bundle stays pinned, including
   discovery drilldown, during publication and on whole-bundle retry.
 - Repeat session/entitlement rejection, path/integrity rejection and cold-start
-  readiness tests for both API shapes. Replace the existing legacy-409 expectation
-  with compatibility tests; retain 409 only for an approved future contract phase.
+  readiness tests for both API shapes. The suite now expects compatibility; HTTP
+  409 may return only in a separately approved future contract phase.
 - Test browser focus/PWA resume, offline recovery, unchanged/new build IDs, repeat
   events and failed update reloads. Production auth and Coolify checks are still
   required; fixture auth is not an end-to-end release test.
@@ -154,9 +154,9 @@ button. A notice added now does not notify already-open pre-migration clients.
 
 ## Deployment and recovery
 
-1. Complete phase 0 above, then run the tests and web/mobile builds. Verify the
-   deployment supports both legacy and generation clients. Do not deploy the
-   current legacy-409 implementation as-is.
+1. Deploy the expanded build to staging, then verify both legacy and generation
+   clients with an authenticated subscription. Do not promote it directly to
+   production without the remaining acceptance checks.
 2. Prefer a persistent prediction volume owned by the application user. This
    retains last-good output across redeployments/upstream outages. Without it,
    every new container must generate a complete dataset before readiness passes.
@@ -231,30 +231,28 @@ weather fixtures, verifies complete output and confirms single-species experimen
 cannot modify the active generation. Public and Capacitor packaging include the
 new browser-only module; scoring code and server modules remain private.
 
-Local verification completed: 98 tests passed, web and Capacitor builds passed,
+Local verification completed: 107 tests passed, web and Capacitor builds passed,
 and `git diff --check` passed. A full `--all` run using real upstream weather
 successfully published all nine species and discovery in an isolated temporary
 prediction directory (reference date `2026-09-05`). Production was not modified.
 Authenticated browser smoke testing and deployment checks above remain pending.
-These 98 tests validate the core implementation, not the proposed expand/contract
-rollout. Compatibility, build-version handling and rollout tests are still to be
-implemented; do not count this design update as release verification.
+The automated suite now validates the core and expand adapter. Build-version
+handling, aggregate monitoring and authenticated staging checks remain pending;
+do not treat local verification as production release approval.
 
 ### Rollout probe — 6 September 2026
 
-Reran all 98 tests and both builds successfully. Separately published a complete
-fixture generation and requested every legacy filename (including cache-busting
-query strings) through the actual Hono prediction routes, with fixture active
-authorization. This probe requires HTTP 200 for old-client compatibility.
+The initial probe ran 98 tests and exposed the HTTP 409 blocker. After implementing
+the adapter, the combined suite runs 107 tests and requests every legacy filename
+(including cache-busting query strings) through the actual Hono routes with
+fixture active authorization. Compatibility requires HTTP 200.
 
 | Check | Observed result | Release implication |
 |---|---|---|
-| 23 legacy asset requests | All returned HTTP 409 | FAIL: already-open old clients cannot reload prediction data |
-| Existing generation suite | 98 passed | Core verified; existing legacy test explicitly expects 409 |
+| 23 legacy asset requests | All return HTTP 200 from the validated active generation | PASS locally; repeat with an authenticated saved client on staging |
+| Combined generation suite | 107 passed | Core, compatibility, latest map and PWA behavior verified together |
 | Web and Capacitor builds | Passed | Packaging verified, not browser compatibility |
 
-The separate compatibility probe exited with failure as intended. This confirms
-the blocker rather than just inferring it from the design. No real accounts,
-production services or deployments were modified. Browser/PWA end-to-end testing
-remains outstanding; the adapter must be implemented before that release gate
-can pass.
+The earlier HTTP 409 blocker is resolved locally. No real accounts or production
+services were modified. Browser/PWA end-to-end testing remains outstanding and is
+the purpose of the staging deployment.

@@ -262,8 +262,10 @@ docker run --env-file .env -p 8080:8080 boletada
 La migració segueix fases **expandir → migrar → observar → retirar**: primer
 cal suportar les URLs antigues i les noves, i completar una execució `--all`.
 Les pestanyes i PWA ja obertes han de continuar funcionant. No hi ha apps natives
-distribuïdes. El codi actual encara retorna HTTP 409 a les URLs antigues: **no està
-preparat per desplegar** fins a implementar la compatibilitat i validar-la.
+distribuïdes. L'adaptador expand manté les URLs antigues sobre la generació activa,
+mentre el client nou fixa tots els fitxers a una generació immutable. Aquesta fase
+està preparada per validar-se a staging; producció continua bloquejada fins al
+smoke test autenticat, la comprovació del volum i el rollback.
 El [runbook](docs/PREDICTION_GENERATIONS.md) defineix les fases, els avisos
 d'actualització, els criteris de retirada i el rollback.
 
@@ -376,10 +378,11 @@ llegiria igual que la millor setmana de la temporada.
 ## Següents passos
 
 El [backlog d'implementació](IMPLEMENTATION_BACKLOG.md) defineix les prioritats
-operatives i de producte. El nucli d'OPS-01 està verificat localment, però la
-compatibilitat expand/contract i els avisos d'actualització estan pendents
-d'implementar abans del desplegament. OPS-02 (qualitat de dades meteo) i OPS-03 (frescor i
-monitoratge) continuen pendents: publicar coherentment no garanteix dades fresques.
+operatives i de producte. El nucli d'OPS-01 i l'adaptador de compatibilitat expand
+estan verificats localment i preparats per staging. L'avís de versió, el monitoratge
+i el smoke test operatiu continuen pendents abans de producció. OPS-02 (qualitat de
+dades meteo) i OPS-03 (frescor i monitoratge) també continuen pendents: publicar
+coherentment no garanteix dades fresques.
 Les idees de model següents requereixen avaluació separada.
 
 Hotfix: [actualització de prediccions en tornar a la PWA](docs/PWA_REFRESH.md).

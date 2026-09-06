@@ -34,10 +34,28 @@ test('all manifest/assets/legacy paths are guarded and traversal never reaches f
   for (const tail of ['..%2F..%2F.env', 'manifest.json', 'bolets.evil.png', 'bolets..%2F.env.png']) {
     assert.equal((await fetchImpl(`/api/predictions/generations/${manifest.generationId}/${tail}`)).status, 404);
   }
-  assert.equal((await fetchImpl('/api/predictions/bolets.rovello.png')).status, 409);
+  for (const filename of Object.keys(manifest.files)) {
+    const legacy = await fetchImpl(`/api/predictions/${filename}?v=old-client`);
+    assert.equal(legacy.status, 200, filename);
+    assert.equal(Number(legacy.headers.get('Content-Length') ?? (await legacy.arrayBuffer()).byteLength), manifest.files[filename].bytes);
+  }
   const path = join(root, 'generations', manifest.generationId, 'bolets.rovello.png');
   await rm(path); await symlink(join(root, 'current.json'), path);
   assert.equal((await fetchImpl(`/api/predictions/generations/${manifest.generationId}/bolets.rovello.png`)).status, 404);
+  assert.equal((await fetchImpl('/api/predictions/bolets.rovello.png')).status, 503);
+});
+
+test('legacy flat clients follow complete active generations across publications', async t => {
+  const root = await tempRoot(t), first = await publishGeneration(root, writeFixture);
+  const { fetchImpl } = harness(root);
+  const before = await (await fetchImpl('/api/predictions/bolets.rovello.geojson?cache=old')).json();
+  assert.equal(before.generationId, first.generationId);
+  assert.equal(before.features[0].properties.score, .6);
+
+  const second = await publishGeneration(root, (dir, id) => writeFixture(dir, id, { value: .2 }));
+  const after = await (await fetchImpl('/api/predictions/bolets.rovello.geojson?cache=older')).json();
+  assert.equal(after.generationId, second.generationId);
+  assert.equal(after.features[0].properties.score, .2);
 });
 
 test('a publication between manifest and assets cannot mix a client bundle; discovery drilldown stays pinned', async t => {
