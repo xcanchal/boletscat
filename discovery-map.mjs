@@ -14,6 +14,8 @@ export const DISCOVERY_ZONE_M = 6000;
 // una finestra d'1,75 km de costat (uns 750 m al voltant de la candidata).
 export const DISCOVERY_SUPPORT_RADIUS = 3;
 export const DISCOVERY_MIN_SUPPORT = 8;
+export const SPECIES_AREAS_MAX_POINTS = 8;
+export const SPECIES_AREAS_MIN_SCORE = 0.01;
 
 function hasSupport(best, grid, index, { minScore, supportRadius, minSupport }) {
   const species = best.species[index];
@@ -39,6 +41,7 @@ export function zoneMaxima(best, grid, options = {}) {
     minScore = DISCOVERY_MIN_SCORE,
     supportRadius = DISCOVERY_SUPPORT_RADIUS,
     minSupport = DISCOVERY_MIN_SUPPORT,
+    supportRatio = 0,
   } = options;
   const step = Math.max(1, Math.round(zoneMeters / grid.cell));
   const zones = new Map();
@@ -51,7 +54,8 @@ export function zoneMaxima(best, grid, options = {}) {
     if (current && current.score >= score) continue;
     // Només ho comprovem per a qui guanyaria la zona: si una cel·la aïllada no
     // passa, la zona conserva el millor candidat que sí que té suport.
-    if (!hasSupport(best, grid, index, { minScore, supportRadius, minSupport })) continue;
+    const supportMinScore=Math.max(minScore,score*supportRatio);
+    if (!hasSupport(best, grid, index, { minScore:supportMinScore, supportRadius, minSupport })) continue;
     zones.set(key, {
       species: best.species[index],
       score,
@@ -83,6 +87,29 @@ export function selectDiscoveryPoints(candidates, options = {}) {
     perSpecies.set(candidate.species, count + 1);
   }
   return selected;
+}
+
+// La barra lateral d'una espècie ha de resumir el mateix ràster que veu
+// l'usuari, no les estacions meteorològiques que només alimenten el model.
+// Conservem el filtre de suport i separem les destinacions perquè vuit màxims
+// veïns no ocupin tota la llista.
+export function selectSpeciesAreas(scores, grid, species, options = {}) {
+  const {
+    maxPoints = SPECIES_AREAS_MAX_POINTS,
+    minScore = SPECIES_AREAS_MIN_SCORE,
+    minDistanceMeters = DISCOVERY_MIN_DISTANCE_M,
+    supportRatio = .75,
+    ...zoneOptions
+  } = options;
+  const candidates = zoneMaxima({
+    score:scores,
+    species:new Array(scores.length).fill(species),
+  }, grid, { minScore, supportRatio, ...zoneOptions });
+  return selectDiscoveryPoints(candidates, {
+    maxPoints,
+    maxPerSpecies:maxPoints,
+    minDistanceMeters,
+  });
 }
 
 // La llista lateral només ha de mostrar espècies que tinguin icona al mapa,

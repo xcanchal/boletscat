@@ -90,3 +90,12 @@ test("el commutador de mode viu només a la barra lateral", () => {
   assert.doesNotMatch(app, /discoveryFab|discovery-fab/);
   assert.match(app, /data-experience="discovery"/);
 });
+
+test("la llista lateral segueix el mode: zones del ràster o millors estacions", () => {
+  assert.match(app, /const stations=currentMode==='punts'/);
+  assert.match(app, /const usesRasterAreas=!stations&&Array\.isArray\(geo\.topAreas\)/);
+  assert.match(app, /stations\?geo\.features:\(usesRasterAreas\?geo\.topAreas:geo\.features\)/);
+  assert.match(app, /\?'Millors estacions'\s*:\(usesRasterAreas\?'Millors zones':'Estacions de referència'\)/);
+  assert.match(app, /if \(experienceMode==='species' && currentSpeciesGeo\) renderSpeciesRanking\(currentSpeciesGeo\)/);
+  assert.match(app, /if\(p\.area\) \{ void openTopArea\(f\); return; \}/);
+});

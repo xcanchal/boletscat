@@ -432,7 +432,7 @@
         <div class="map-caption" id="modecap">Condicions estimades avui.</div>
         <div class="legend" id="mapLegend"><div class="bar"></div>
           <div class="ticks"><span>Molt baixa</span><span>Mitjana</span><span>Molt alta</span></div></div>
-        <div id="content" class="toplist" style="display:none"><div class="h">Millors punts</div><div id="rows"></div></div>
+        <div id="content" class="toplist" style="display:none"><div class="h" id="topListTitle">Millors zones</div><div id="rows"></div></div>
         <div id="msg" class="msg" style="display:none"></div>
       </div>
       <div id="discoveryView" hidden>
@@ -679,7 +679,7 @@
       const savedIntensity=localStorage.getItem('prediction-intensity');
       if (savedIntensity!==null) predictionIntensity=Math.max(0,Math.min(1,+savedIntensity/100));
     } catch {}
-    let currentRaster = null, areaRequest = 0, predictionLoadRequest=0;
+    let currentRaster = null, currentSpeciesGeo = null, areaRequest = 0, predictionLoadRequest=0;
     let experienceMode='species', discoveryRequest=0, discoveryMarkers=[];
     const dismissOpenPopup = () => {
       if (!popup.isOpen()) return false;
@@ -835,6 +835,16 @@
       const title=place ? `A prop de ${place}` : `${lngLat.lat.toFixed(4)}, ${lngLat.lng.toFixed(4)}`;
       return `<div class="pop-scroll"><div class="pop-nom">${esc(title)}</div></div>${mapLinkHTML(lngLat)}`;
     };
+    async function openTopArea(feature) {
+      panel.classList.add('collapsed');
+      const coordinates=feature.geometry.coordinates,lngLat={lng:coordinates[0],lat:coordinates[1]};
+      const details=detailsAt(lngLat),request=++areaRequest;
+      map.flyTo({center:coordinates,zoom:11,speed:.8});
+      showPopup(coordinates,areaHTML(null,details,lngLat),true);
+      const place=await nearestPlace(lngLat);
+      if(request!==areaRequest||experienceMode!=='species')return;
+      updatePopup(areaHTML(place,details,lngLat),true);
+    }
     function showUserLocation(lngLat) {
       const data={type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:[lngLat.lng,lngLat.lat]},properties:{}}]};
       const source=map.getSource('user-location');
@@ -1044,6 +1054,7 @@
         [...modeGroup.children].forEach(button=>{
           const active=button.dataset.mode===mode; button.classList.toggle('on',active); button.setAttribute('aria-pressed',String(active));
         });
+        if (experienceMode==='species' && currentSpeciesGeo) renderSpeciesRanking(currentSpeciesGeo);
       };
       modeGroup.addEventListener('click',e=>{
         const btn=e.target.closest('button[data-mode]'); if(btn)setMode(btn.dataset.mode);
@@ -1267,9 +1278,43 @@
       }
     }
 
+    function renderSpeciesRanking(geo) {
+      const stations=currentMode==='punts';
+      const usesRasterAreas=!stations&&Array.isArray(geo.topAreas);
+      const top=[...(stations?geo.features:(usesRasterAreas?geo.topAreas:geo.features))]
+        .sort((a,b)=>b.properties.score-a.properties.score)
+        .slice(0,8);
+      const rows=document.getElementById('rows'); rows.innerHTML='';
+      document.getElementById('topListTitle').textContent=stations
+        ?'Millors estacions'
+        :(usesRasterAreas?'Millors zones':'Estacions de referència');
+      const anyScore=top[0]&&top[0].properties.score>0;
+      top.forEach((f,i)=>{
+        const p=f.properties, r=p.area?scoreRating(p.score):rating(p);
+        const el=document.createElement('div'); el.className='row';
+        const name=p.area?(p.nearbyStation?`A prop de ${p.nearbyStation}`:`Zona ${i+1}`):(p.nom??p.codi);
+        el.innerHTML=`<span class="rank">${i+1}</span><span class="nom">${esc(name)}</span>
+                      <span class="sc q-${r.key}" title="${r.recomanacio} · Índex ${(+p.score).toFixed(3)} / 1">${r.nivell}</span>`;
+        el.onclick=()=>{
+          if(p.area) { void openTopArea(f); return; }
+          panel.classList.add('collapsed'); map.flyTo({ center:f.geometry.coordinates, zoom:11, speed:0.8 });
+          showPopup(f.geometry.coordinates,popHTML(p,f.geometry.coordinates));
+        };
+        rows.appendChild(el);
+      });
+      document.getElementById('content').style.display='block';
+      const msg=document.getElementById('msg');
+      if(anyScore) msg.style.display='none';
+      else {
+        msg.style.display='block';
+        msg.innerHTML=`Tot a zero: les <b>condicions observades</b> no són favorables per aquesta espècie.`;
+      }
+    }
+
     async function load(species,{preserveView=false}={}) {
       const request=++predictionLoadRequest;
       lastPredictionLoadAt = Date.now();
+      currentSpeciesGeo=null;
       renderSpeciesInfo(species);
       const msg = document.getElementById('msg'), content = document.getElementById('content');
       let geo;
@@ -1347,25 +1392,8 @@
       const b = new maplibregl.LngLatBounds();
       geo.features.forEach(f => b.extend(f.geometry.coordinates));
       if (!preserveView&&!b.isEmpty()) map.fitBounds(b, { padding:60, maxZoom:9, duration:600 });
-
-      const top = [...geo.features].sort((a,b)=>b.properties.score-a.properties.score).slice(0,8);
-      const rows = document.getElementById('rows'); rows.innerHTML='';
-      const anyScore = top[0] && top[0].properties.score > 0;
-      top.forEach((f,i) => {
-        const p = f.properties, r = rating(p);
-        const el = document.createElement('div'); el.className='row';
-        el.innerHTML = `<span class="rank">${i+1}</span><span class="nom">${p.nom ?? p.codi}</span>
-                        <span class="sc q-${r.key}" title="${r.recomanacio} · Índex ${(+p.score).toFixed(3)} / 1">${r.nivell}</span>`;
-        el.onclick = () => {
-          panel.classList.add('collapsed');
-          map.flyTo({ center:f.geometry.coordinates, zoom:11, speed:0.8 });
-          showPopup(f.geometry.coordinates,popHTML(p,f.geometry.coordinates));
-        };
-        rows.appendChild(el);
-      });
-      content.style.display='block';
-      if (!anyScore) { msg.style.display='block';
-        msg.innerHTML = `Tot a zero: les <b>condicions observades</b> no són favorables per aquesta espècie.`; }
+      currentSpeciesGeo=geo;
+      renderSpeciesRanking(geo);
       return Boolean(currentRaster);
     }
 

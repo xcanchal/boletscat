@@ -6,6 +6,7 @@ import {
   DISCOVERY_MIN_SUPPORT,
   DISCOVERY_SUPPORT_RADIUS,
   selectDiscoveryPoints,
+  selectSpeciesAreas,
   summarizeDiscoverySpecies,
   zoneMaxima,
 } from "../discovery-map.mjs";
@@ -67,12 +68,26 @@ test("la llista resumeix la millor zona visible de cada espècie", () => {
   ]);
 });
 
+test("les millors zones d'una espècie provenen del ràster, tenen suport i estan separades", () => {
+  const areaGrid={width:80,height:9,cell:250,x0:400000,y1:4600000};
+  const scores=new Float32Array(areaGrid.width*areaGrid.height);
+  for(const [centerCol,score] of [[4,.43],[72,.31]])
+    for(let row=3;row<=5;row++)for(let col=centerCol-1;col<=centerCol+1;col++)scores[row*areaGrid.width+col]=score;
+  scores.fill(.02,10,31);
+  scores[20]=.9; // pic envoltat de valors baixos: no representa una clapa de .9
+  const areas=selectSpeciesAreas(scores,areaGrid,"ou_de_reig");
+  assert.deepEqual(areas.map(area=>+area.score.toFixed(2)),[.43,.31]);
+  assert.ok(Math.hypot(areas[0].x-areas[1].x,areas[0].y-areas[1].y)>=16000);
+  assert.ok(areas.every(area=>area.species==="ou_de_reig"));
+});
+
 test("l'scorer publica la descoberta només quan puntua totes les espècies", async () => {
   const scorer = await readProjectFile("score_estacions.mjs");
 
   assert.match(scorer, /if \(best && score>best\.score\[i\]\) \{ best\.score\[i\]=score; best\.species\[i\]=spKey; \}/);
   assert.match(scorer, /if \(best && all\) \{[\s\S]*?bolets\.discovery\.json/);
   assert.match(scorer, /selectDiscoveryPoints\(zoneMaxima\(best, grid\)\)/);
+  assert.match(scorer, /geojson\.topAreas = selectSpeciesAreas\(rasterScores, grid, spKey\)/);
 });
 
 test("la descoberta arriba al client com una sola descàrrega servida", async () => {
