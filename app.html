@@ -638,6 +638,15 @@
         if (Math.abs(x)>.5||Math.abs(y)>.5) map.panBy([x,y],{ duration:300 });
       });
     };
+    const panelBody=panel.querySelector('.body');
+    panelBody?.addEventListener('transitionend',event=>{
+      if (event.target!==panelBody||event.propertyName!=='max-height') return;
+      if (!panel.classList.contains('collapsed')||!popup.isOpen()) return;
+      // A sidebar result can open the popup while the panel is still folding.
+      // Recalculate once its final height is known so the transient viewport
+      // does not leave a permanently truncated, scroll-only popup.
+      centerPopup();
+    });
     const preparePopupCloseButton = () => {
       const button=popup.getElement()?.querySelector('.maplibregl-popup-close-button');
       if (!button) return;
