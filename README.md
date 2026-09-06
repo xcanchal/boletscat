@@ -299,6 +299,19 @@ consulta les condicions del punt. El popup identifica explícitament **«La teva
 ubicació»** i no ofereix una ruta cap al lloc on l'usuari ja és; no manté cap
 seguiment en segon pla.
 
+La vista pública per espècie mostra sempre el mapa detallat. **«Millors zones»**
+surt del mateix ràster de 250 m que es pinta i es consulta en tocar el mapa.
+Les estacions meteorològiques es mantenen com a entrada interna de l'scorer,
+però no com un mode de navegació: són punts de mesura escassos i no representen
+necessàriament una zona forestal. Les versions antigues del GeoJSON sense
+`topAreas` mostren temporalment «Punts de referència» com a fallback.
+
+| Llista/capa | Font | Selecció |
+|---|---|---|
+| Millors zones | Score de cel·les forestals | Fins a 8 clapes amb suport, separades 16 km |
+| Estacions meteorològiques | XEMA | Entrada interna del càlcul; no es mostra com a capa pública |
+| Heatmap i popup | Mateixa graella forestal | Score local de la cel·la |
+
 El mode **«Què hi ha ara?»** el calcula l'scorer diari, no el navegador. Mentre
 puntua la graella guarda l'espècie dominant de cada cel·la, redueix el mapa a la
 millor cel·la de cada zona de 6 km i en tria fins a 18 amb `score >= 0,25`,
@@ -368,6 +381,10 @@ compatibilitat expand/contract i els avisos d'actualització estan pendents
 d'implementar abans del desplegament. OPS-02 (qualitat de dades meteo) i OPS-03 (frescor i
 monitoratge) continuen pendents: publicar coherentment no garanteix dades fresques.
 Les idees de model següents requereixen avaluació separada.
+
+Hotfix: [actualització de prediccions en tornar a la PWA](docs/PWA_REFRESH.md).
+Inclou els dos modes del mapa i preserva la vista; cal verificar el desplegament
+i la suspensió real a iPhone després de publicar-lo.
 
 1. **Calibrar** paràmetres i la duresa de l'hoste contra floracions recordades.
 2. Contrastar el proxy geològic amb cartografia edafològica local o observacions

@@ -41,7 +41,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { encodeRgbaPng } from "./raster.mjs";
 import { SUBSTRATE_BY_CODE } from "./substrate.mjs";
 import { capConditionScore } from "./prediction-confidence.mjs";
-import { DISCOVERY_MIN_SCORE, selectDiscoveryPoints, summarizeDiscoverySpecies, zoneMaxima } from "./discovery-map.mjs";
+import { DISCOVERY_MIN_SCORE, selectDiscoveryPoints, selectSpeciesAreas, summarizeDiscoverySpecies, zoneMaxima } from "./discovery-map.mjs";
 import { SPECIES, trapezoid } from "./src/species-model.mjs";
 import { temperatureTrendFactor } from "./src/temperature-trend.mjs";
 import { seasonPrior } from "./src/season-prior.mjs";
@@ -369,20 +369,39 @@ async function generate(args, OUT, generationId) {
                       fH:+f.fH.toFixed(2), fT:+f.fT.toFixed(2), fTrend:+f.fTrend.toFixed(2), fAlt:+f.fAlt.toFixed(2), fHost:+f.fHost.toFixed(2), fSoil:+f.fSoil.toFixed(2), fSeason:+f.fSeason.toFixed(2) },
       })),
     };
-    writeFileSync(join(OUT, `bolets.${spKey}.geojson`), JSON.stringify(geojson));
     if (grid && gridWeather) {
-      const rgba=new Uint8Array(grid.width*grid.height*4), wanted=new Set(sp.host.map(h=>HOST_CODE[h]));
+      const rgba=new Uint8Array(grid.width*grid.height*4), rasterScores=new Float32Array(grid.width*grid.height);
+      const wanted=new Set(sp.host.map(h=>HOST_CODE[h]));
       for(let i=0;i<grid.width*grid.height;i++) {
         const {host,alt,substrate,forestStructure}=terrainCell(grid,i); if(!host||alt===-32768) continue;
         const fH=humidityFactor(gridWeather.outH[i],gridWeather.outR[i]), fT=trapezoid(gridWeather.outT[i],...sp.temp), fTrend=temperatureTrendFactor(gridWeather.outTrend[i],sp.trend), fAlt=trapezoid(alt,...sp.alt);
         const fHost=wanted.has(host)?1:.25, fSoil=substrateFactor(substrate,sp);
         const score=capConditionScore(fH*fT*fTrend*fAlt*fHost*fSoil*fSeason,{ host,substrate,forestStructure });
+        rasterScores[i]=score;
         const [red,green,blue]=scoreColor(score), p=i*4;
         rgba[p]=red; rgba[p+1]=green; rgba[p+2]=blue; rgba[p+3]=score<.01?35:Math.round(105+Math.min(1,score)*125);
         if (best && score>best.score[i]) { best.score[i]=score; best.species[i]=spKey; }
       }
+      geojson.topAreas = selectSpeciesAreas(rasterScores, grid, spKey).map((point) => {
+        const [lng,lat]=utm31ToLngLat(point.x,point.y);
+        let nearest=null,nearestDistance=Infinity;
+        for(const station of files) {
+          const [x,y]=wgs84ToUtm31(station.lon,station.lat),distance=Math.hypot(x-point.x,y-point.y);
+          if(distance<nearestDistance) { nearest=station; nearestDistance=distance; }
+        }
+        return {
+          type:"Feature",
+          geometry:{ type:"Point",coordinates:[+lng.toFixed(5),+lat.toFixed(5)] },
+          properties:{
+            area:true,
+            score:+point.score.toFixed(3),
+            nearbyStation:nearest?.nom?.replace(/\s*\([\d.]+\s*m\)/,"")??null,
+          },
+        };
+      });
       writeFileSync(join(OUT,`bolets.${spKey}.png`),encodeRgbaPng(grid.width,grid.height,rgba));
     }
+    writeFileSync(join(OUT, `bolets.${spKey}.geojson`), JSON.stringify(geojson));
     console.log(`   ✓ → ${join(OUT, `bolets.${spKey}.geojson`)}${grid ? ` + bolets.${spKey}.png` : ""}\n`);
   }
 
