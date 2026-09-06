@@ -17,6 +17,7 @@ await Promise.all([
   cp(join(root, "index.html"), join(out, "index.html")),
   cp(join(root, "app.html"), join(out, "app/index.html")),
   cp(join(root, "prediction-confidence.mjs"), join(out, "prediction-confidence.mjs")),
+  cp(join(root, 'prediction-client.mjs'), join(out, 'prediction-client.mjs')),
   cp(join(root, "raster-projection.mjs"), join(out, "raster-projection.mjs")),
   cp(join(root, "legal.html"), join(out, "legal/index.html")),
   cp(join(root, "bones-practiques.html"), join(out, "bones-practiques/index.html")),

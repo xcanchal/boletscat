@@ -465,10 +465,8 @@
     import { ErrorCode, Purchases, PurchasesError } from '/vendor/purchases.es.js';
     import { conditionRating, scoreRating } from '/prediction-confidence.mjs?v=20260903';
     import { createRasterProjection, projectedPixelAtLngLat } from '/raster-projection.mjs?v=20260903';
+    import { loadSpeciesFiles, loadDiscoveryFiles } from '/prediction-client.mjs?v=generations1';
     const DATA_BASE = document.querySelector('meta[name="bolets-data-base"]')?.content ?? '.';
-    const dataUrl = path => DATA_BASE === '.'
-      ? `/api/predictions/${encodeURIComponent(path)}`
-      : new URL(`api/predictions/${encodeURIComponent(path)}`, DATA_BASE).href;
     let mapReady=false, mapUnlocked=false, initialMapLoaded=false, lastPredictionLoadAt=0;
     const FOREGROUND_REFRESH_INTERVAL = 60_000;
     const formatGeneratedDate = value => {
@@ -1054,9 +1052,9 @@
       if(mapUnlocked&&!initialMapLoaded) { initialMapLoaded=true; load('rovello'); }
     });
 
-    async function imagePixels(url,grid) {
-      const blob=await fetch(url).then(r=>{if(!r.ok)throw new Error();return r.blob()});
+    async function imagePixels(blob,grid) {
       const bitmap=await createImageBitmap(blob), canvas=document.createElement('canvas');
+      if(bitmap.width!==grid.width||bitmap.height!==grid.height){bitmap.close();throw new Error('Invalid raster dimensions');}
       canvas.width=grid.width; canvas.height=grid.height;
       const context=canvas.getContext('2d',{willReadFrequently:true}); context.drawImage(bitmap,0,0); bitmap.close();
       return context.getImageData(0,0,grid.width,grid.height).data;
@@ -1129,7 +1127,7 @@
     function bindDiscoveryPopupAction(entry) {
       popup.getElement()?.querySelector('[data-discovery-species]')?.addEventListener('click',event=>{
         event.stopPropagation();
-        setExperience('species',{species:entry.species,center:entry.lngLat});
+        setExperience('species',{species:entry.species,center:entry.lngLat,snapshot:entry.snapshot});
       });
     }
     function showDiscoveryPopup(entry,{place=null,userLocation=false,center=false,update=false}={}) {
@@ -1162,14 +1160,14 @@
         discoveryMarkers.push(marker);
       }
     }
-    function renderDiscoveryRows(active) {
+    function renderDiscoveryRows(active,snapshot) {
       const rows=document.getElementById('discoveryRows'); rows.innerHTML='';
       if(!active.length)rows.innerHTML='<div class="discovery-empty">Cap espècie destaca prou avui.</div>';
       for(const entry of active) {
         const r=scoreRating(entry.visibleScore),button=document.createElement('button');
         button.type='button'; button.className='discovery-row';
         button.innerHTML=`<img src="${esc(speciesImageUrl(entry.species))}" alt="" /><span class="nom">${esc(speciesLabel(entry.species))}</span><span class="sc q-${r.key}">${Math.round(entry.visibleScore*100)}% · ${r.nivell}</span>`;
-        button.addEventListener('click',()=>setExperience('species',{species:entry.species}));
+        button.addEventListener('click',()=>setExperience('species',{species:entry.species,snapshot}));
         rows.appendChild(button);
       }
     }
@@ -1178,19 +1176,20 @@
       const message=document.getElementById('discoveryMessage');
       message.textContent='Comparant les espècies disponibles…';
       clearDiscoveryMarkers();
-      let discovery;
+      document.getElementById('discoveryRows').replaceChildren();
+      document.getElementById('metaDate').textContent='';
+      areaRequest++; popup.remove();
+      let discovery,snapshot;
       try {
-        const response=await fetch(dataUrl('bolets.discovery.json'),{cache:'no-store',credentials:'include'});
-        if(!response.ok)throw new Error();
-        discovery=await response.json();
+        ({discovery,snapshot}=await loadDiscoveryFiles(DATA_BASE));
       } catch {
         if(request===discoveryRequest)message.textContent='No s’han pogut carregar les dades de descoberta. Torna-ho a provar més tard.';
         return;
       }
       if(request!==discoveryRequest||experienceMode!=='discovery')return;
       const points=(discovery.points??[]).filter(point=>DISCOVERY_IMAGES[point.species])
-        .map(point=>({...point,lngLat:{lng:point.lng,lat:point.lat}}));
-      renderDiscoveryRows((discovery.species??[]).filter(row=>DISCOVERY_IMAGES[row.species]));
+        .map(point=>({...point,snapshot,lngLat:{lng:point.lng,lat:point.lat}}));
+      renderDiscoveryRows((discovery.species??[]).filter(row=>DISCOVERY_IMAGES[row.species]),snapshot);
       addDiscoveryMarkers(points);
       document.getElementById('metaDate').textContent=formatGeneratedDate(discovery.generated);
       if(discovery.generated)document.getElementById('metaDate').dateTime=discovery.generated;
@@ -1198,7 +1197,7 @@
       map.easeTo({...DEFAULT_VIEW,bearing:0,pitch:0,duration:600});
     }
 
-    async function setExperience(mode,{species=null,center=null}={}) {
+    async function setExperience(mode,{species=null,center=null,snapshot=null}={}) {
       if(!mapReady)return;
       const discovery=mode==='discovery';
       if((discovery?'discovery':'species')===experienceMode&&!species&&!center)return;
@@ -1225,7 +1224,7 @@
       discoveryRequest++; clearDiscoveryMarkers();
       const selected=species??document.getElementById('species').value;
       document.getElementById('species').value=selected;
-      const rasterLoaded=await load(selected,{preserveView:Boolean(center)});
+      const rasterLoaded=await load(selected,{preserveView:Boolean(center),snapshot});
       if(!rasterLoaded||experienceMode!=='species')return;
       const stations=currentMode==='punts';
       // hidePredictionLayers() les va amagar en entrar a la descoberta i load()
@@ -1266,16 +1265,18 @@
       }
     }
 
-    async function load(species,{preserveView=false}={}) {
+    async function load(species,{preserveView=false,snapshot=null}={}) {
       const request=++predictionLoadRequest;
       lastPredictionLoadAt = Date.now();
       renderSpeciesInfo(species);
       const msg = document.getElementById('msg'), content = document.getElementById('content');
-      let geo;
+      let geo,grid,pixels,terrain,weather,forest,generation;
       try {
-        const res = await fetch(dataUrl(`bolets.${species}.geojson`), { cache:'no-store', credentials:'include' });
-        if (!res.ok) throw new Error();
-        geo = await res.json();
+        const bundle=await loadSpeciesFiles(DATA_BASE,species,{snapshot});
+        ({geo,grid}=bundle); generation=bundle.snapshot.generationId;
+        [pixels,terrain,weather,forest]=await Promise.all(
+          ['pixels','terrain','weather','forest'].map(name=>imagePixels(bundle.images[name],grid))
+        );
       } catch(error) {
         if(request!==predictionLoadRequest||experienceMode!=='species')return;
         console.error('No s’han pogut carregar les dades de predicció', { species, error });
@@ -1289,15 +1290,11 @@
         return;
       }
       if(request!==predictionLoadRequest||experienceMode!=='species')return;
+      areaRequest++; popup.remove();
       msg.style.display='none';
       map.getSource('estacions').setData(geo);
       try {
-        const grid = await fetch(dataUrl('bolets.grid.json')).then(r => { if (!r.ok) throw new Error(); return r.json(); });
-        const version=encodeURIComponent(`${geo.generated ?? 'latest'}-${Date.now()}`);
-        const imageUrl=`${dataUrl(`bolets.${species}.png`)}?v=${version}`;
-        const pixels=await imagePixels(imageUrl,grid);
-        if(request!==predictionLoadRequest||experienceMode!=='species')return;
-        const raster={ grid, pixels, model:geo.model, projection:projectionForGrid(grid) };
+        const raster={ grid, pixels, terrain, weather, forest, generation, model:geo.model, projection:projectionForGrid(grid) };
         currentRaster=raster;
         const image=displayRaster(pixels,grid,'prediction');
         if (map.getSource('prediccio')) {
@@ -1309,29 +1306,15 @@
             paint:{ ...PREDICTION_STYLE[currentBase], 'raster-fade-duration':180, 'raster-resampling':'linear' },
             layout:{ visibility:currentMode==='detallat'?'visible':'none' } },labelsBeforeLayer??undefined);
         }
-        try {
-          const [terrain,weather]=await Promise.all([
-            imagePixels(`${dataUrl('bolets.terrain.png')}?v=${version}`,grid),
-            imagePixels(`${dataUrl('bolets.weather.png')}?v=${version}`,grid),
-          ]);
-          let forest=null;
-          if(grid.forestStructureVersion) {
-            try { forest=await imagePixels(`${dataUrl('bolets.forest.png')}?v=${version}`,grid); }
-            catch { /* Una graella anterior simplement mostrarà la cobertura com a desconeguda. */ }
-          }
-          if(currentRaster===raster) {
-            Object.assign(raster,{ terrain,weather,forest });
-            const coverage=displayRaster(terrain,grid,'coverage');
-            if(map.getSource('cobertura')) map.getSource('cobertura').updateImage(coverage);
-            else {
-              map.addSource('cobertura',{ type:'image', ...coverage });
-              map.addLayer({ id:'cobertura', type:'raster', source:'cobertura',
-                paint:{ 'raster-opacity':COVERAGE_OPACITY[currentBase]*predictionIntensity,
-                  'raster-resampling':'linear' },
-                layout:{ visibility:currentMode==='detallat'?'visible':'none' } },'prediccio');
-            }
-          }
-        } catch { /* Compatibilitat amb una generació antiga: el mapa i el score continuen funcionant. */ }
+        const coverage=displayRaster(terrain,grid,'coverage');
+        if(map.getSource('cobertura')) map.getSource('cobertura').updateImage(coverage);
+        else {
+          map.addSource('cobertura',{ type:'image', ...coverage });
+          map.addLayer({ id:'cobertura', type:'raster', source:'cobertura',
+            paint:{ 'raster-opacity':COVERAGE_OPACITY[currentBase]*predictionIntensity,
+              'raster-resampling':'linear' },
+            layout:{ visibility:currentMode==='detallat'?'visible':'none' } },'prediccio');
+        }
       } catch {
         hidePredictionLayers();
       }

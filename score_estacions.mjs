@@ -37,6 +37,7 @@
 
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { createHash, randomUUID } from 'node:crypto';
 import { encodeRgbaPng } from "./raster.mjs";
 import { SUBSTRATE_BY_CODE } from "./substrate.mjs";
 import { capConditionScore } from "./prediction-confidence.mjs";
@@ -45,6 +46,7 @@ import { SPECIES, trapezoid } from "./src/species-model.mjs";
 import { temperatureTrendFactor } from "./src/temperature-trend.mjs";
 import { seasonPrior } from "./src/season-prior.mjs";
 import { resolvePredictionDir } from "./src/prediction-path.mjs";
+import { publishGeneration } from './src/prediction-generations.mjs';
 
 const BASE = "https://analisi.transparenciacatalunya.cat/resource";
 const DS_MESURES = `${BASE}/nzvn-apee.json`, DS_ESTACIONS = `${BASE}/yqwd-vj5e.json`;
@@ -214,8 +216,20 @@ async function main() {
     return;
   }
   const outArg = args.find((a) => a.startsWith("--out="))?.slice(6);
-  const OUT = outArg ? resolve(outArg) : resolvePredictionDir();
-  mkdirSync(OUT, { recursive:true });
+  const root = outArg ? resolve(outArg) : resolvePredictionDir();
+  if (args.includes('--all')) {
+    const manifest = await publishGeneration(root, (OUT, generationId) => generate(args, OUT, generationId));
+    console.log(`Published ${manifest.generationId} (${manifest.referenceDate}) → ${join(root, 'current.json')}`);
+  } else {
+    // Single-species experiments must never replace part of the active dataset.
+    const OUT = join(root, 'experiments', `g-${randomUUID()}`);
+    mkdirSync(OUT, { recursive: true });
+    await generate(args, OUT, null);
+    console.log(`Experiment only; active generation unchanged. Output: ${OUT}`);
+  }
+}
+
+async function generate(args, OUT, generationId) {
   const all = args.includes("--all");
   const spKeys = all ? Object.keys(SPECIES) : [(args.find((a) => a.startsWith("--species="))?.slice(10)) || "rovello"];
   for (const k of spKeys) if (!SPECIES[k]) { console.error(`Espècie desconeguda: ${k}. Prova --list`); process.exit(1); }
@@ -266,6 +280,7 @@ async function main() {
 
   const gridPath = args.find((a) => a.startsWith("--grid="))?.slice(7) || "graella.bin";
   const grid = readGrid(gridPath);
+  if (all && !grid) throw new Error('A complete publication requires graella.bin');
   let gridWeather = null;
   if (grid) {
     const signals=[];
@@ -275,6 +290,13 @@ async function main() {
       signals.push({x,y,alt:m.alt||0,t:Tsum.get(codi)/Tn.get(codi),tTrend:temperatureTrend(codi),h:H.get(codi)??0,reserve:R.get(codi)??0});
     }
     gridWeather=interpolateGrid(grid,signals);
+    for (let i=0;i<grid.width*grid.height;i++) {
+      const {host,alt}=terrainCell(grid,i);
+      if (!host || alt===-32768) continue;
+      if (![gridWeather.outH[i],gridWeather.outR[i],gridWeather.outT[i],gridWeather.outTrend[i]].every(Number.isFinite)) {
+        throw new Error('Non-finite weather grid; refusing to publish');
+      }
+    }
     writeFileSync(join(OUT,"bolets.grid.json"),JSON.stringify({
       width:grid.width,height:grid.height,cell:grid.cell,x0:grid.x0,y0:grid.y0,y1:grid.y1,
       substrateVersion:grid.substrateVersion,forestStructureVersion:grid.forestStructureVersion,weatherVersion:2,
@@ -337,7 +359,7 @@ async function main() {
         `H${f.h.toFixed(1).padStart(5)} ${f.tMean==null?" --":f.tMean.toFixed(0).padStart(3)}°  ${f.score.toFixed(3)}`);
 
     const geojson = {
-      type: "FeatureCollection", species: spKey, speciesNom: sp.nom, generated: refISO.slice(0, 10),
+      type: "FeatureCollection", species: spKey, speciesNom: sp.nom, generated: refISO.slice(0, 10), generationId,
       model: { scoreVersion:5, host:sp.host, substrate:sp.substrate ?? [], alt:sp.alt, temp:sp.temp, trend:sp.trend, typicalMonths:sp.mesos, season:+fSeason.toFixed(3) },
       features: files.map((f) => ({
         type: "Feature", geometry: { type: "Point", coordinates: [f.lon, f.lat] },
@@ -371,6 +393,7 @@ async function main() {
     const points = selectDiscoveryPoints(zoneMaxima(best, grid));
     writeFileSync(join(OUT, "bolets.discovery.json"), JSON.stringify({
       generated: refISO.slice(0, 10),
+      generationId,
       minScore: DISCOVERY_MIN_SCORE,
       points: points.map((point) => {
         const [lng, lat] = utm31ToLngLat(point.x, point.y);
@@ -382,6 +405,13 @@ async function main() {
   } else if (best) {
     console.log("ℹ️  Descoberta omesa: cal --all per saber l'espècie dominant de cada zona.\n");
   }
+  return {
+    referenceDate: refISO.slice(0,10),
+    modelVersion: 5,
+    terrainVersion: grid ? createHash('sha256').update(grid.b).digest('hex') : null,
+    // Source observation coverage/freshness is implemented separately in OPS-02.
+    sourceObservedThrough: null,
+  };
 }
 
 main().catch((e) => { console.error("✖", e.message); process.exit(1); });

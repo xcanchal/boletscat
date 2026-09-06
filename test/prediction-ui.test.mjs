@@ -19,7 +19,7 @@ test("el popup identifica dades desconegudes i carrega l'estructura forestal", (
   assert.match(app, /<span class="unknown-value">Desconegut<\/span>/);
   assert.doesNotMatch(app, /Desconegut \?/);
   assert.match(app, /entorn dens/);
-  assert.match(app, /bolets\.forest\.png/);
+  assert.match(app, /\['pixels','terrain','weather','forest'\]/);
 });
 
 test("el popup concentra les xifres útils i no publica els factors interns", () => {
@@ -77,7 +77,7 @@ test("el popup consulta la mateixa reprojecció Web Mercator que la capa visual"
 // a mostrar, en sortir de "Què hi ha ara" el mapa quedava buit per a totes les
 // espècies.
 test("en tornar de la descoberta el mapa de l'espècie es torna a veure", () => {
-  assert.match(app, /const rasterLoaded=await load\(selected,\{preserveView:Boolean\(center\)\}\);\s*if\(!rasterLoaded\|\|experienceMode!=='species'\)return;/);
+  assert.match(app, /const rasterLoaded=await load\(selected,\{preserveView:Boolean\(center\),snapshot\}\);\s*if\(!rasterLoaded\|\|experienceMode!=='species'\)return;/);
   assert.match(app, /for\(const layer of \['prediccio','cobertura'\]\)\s*\n\s*if\(map\.getLayer\(layer\)\)map\.setLayoutProperty\(layer,'visibility',stations\?'none':'visible'\);/);
 });
 

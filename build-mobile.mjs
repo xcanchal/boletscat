@@ -38,6 +38,10 @@ html = html
     "from './vendor/purchases.es.js'",
   )
   .replace(
+    "from '/prediction-client.mjs?v=generations1'",
+    "from './prediction-client.mjs'",
+  )
+  .replace(
     "from '/prediction-confidence.mjs?v=20260903'",
     "from './prediction-confidence.mjs'",
   )
@@ -51,6 +55,7 @@ await Promise.all([
   cp(join(ROOT, "preview-map.webp"), join(OUT, "preview-map.webp")),
   cp(join(ROOT, "favicon.svg"), join(OUT, "favicon.svg")),
   cp(join(ROOT, "prediction-confidence.mjs"), join(OUT, "prediction-confidence.mjs")),
+  cp(join(ROOT, 'prediction-client.mjs'), join(OUT, 'prediction-client.mjs')),
   cp(join(ROOT, "raster-projection.mjs"), join(OUT, "raster-projection.mjs")),
   cp(join(ROOT, "media/bolets"), join(OUT, "media/bolets"), { recursive: true }),
   cp(join(ROOT, "node_modules/maplibre-gl/dist/maplibre-gl.css"), join(OUT, "vendor/maplibre-gl.css")),

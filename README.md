@@ -224,6 +224,12 @@ npm run dev            # http://localhost:8080
 el servidor comparteixen `PREDICTION_DIR` (per defecte, `private/predictions`), mai
 `public`.
 
+Les execucions `--all` publiquen una generació completa i immutable a
+`generations/<id>/`, seleccionada atòmicament amb `current.json`. El client fixa
+tots els fitxers a aquesta mateixa generació. Una execució d'una sola espècie
+es desa a `experiments/<id>/` i no modifica el mapa actiu.
+Vegeu el [contracte, migració i recuperació](docs/PREDICTION_GENERATIONS.md).
+
 La landing pública es publica a `/`; el registre, el paywall i el predictor viuen
 a `/app/`. `npm run build:mobile` continua empaquetant directament el predictor.
 
@@ -250,13 +256,24 @@ docker run --env-file .env -p 8080:8080 boletada
    Per activar Google, crear un client OAuth web i autoritzar
    `https://boletada.cat/api/auth/callback/google` com a URI de redirecció.
 4. **Scheduled Task**: `node score_estacions.mjs --all`, freqüència `0 6 * * *`.
-   El log ha de mostrar la data de referència i el directori absolut on s'han
-   escrit les prediccions.
+   Confirmeu el log final `Published <generationId> (...) → .../current.json`.
+   Iniciar el procés o escriure fitxers a staging no significa haver publicat.
+
+La migració segueix fases **expandir → migrar → observar → retirar**: primer
+cal suportar les URLs antigues i les noves, i completar una execució `--all`.
+Les pestanyes i PWA ja obertes han de continuar funcionant. No hi ha apps natives
+distribuïdes. El codi actual encara retorna HTTP 409 a les URLs antigues: **no està
+preparat per desplegar** fins a implementar la compatibilitat i validar-la.
+El [runbook](docs/PREDICTION_GENERATIONS.md) defineix les fases, els avisos
+d'actualització, els criteris de retirada i el rollback.
 
 **Notes honestes:**
 - El cron de Coolify va en **UTC** (`0 6 * * *` ≈ 7-8 h a casa). Diari a qualsevol hora ja va bé.
-- PostgreSQL necessita persistència i backups. Les prediccions es poden regenerar i
-  no necessiten persistència si l'scheduled task corre dins del mateix contenidor.
+- PostgreSQL necessita persistència i backups. Es recomana un volum persistent
+  per a prediccions: conserva l'última generació vàlida durant desplegaments o
+  fallades de la font meteo. Si hi ha diverses instàncies, han de compartir les
+  generacions que serveixen. Sense volum, cada contenidor ha de generar totes
+  les dades abans de superar `/readyz`.
 - `buildHost.mjs` **no** va al cron. Per refrescar el bosc (un cop l'any, o mai), el corres en local i committeges el `estacions_host.json` nou.
 
 ---
@@ -345,6 +362,13 @@ llegiria igual que la millor setmana de la temporada.
 
 ## Següents passos
 
+El [backlog d'implementació](IMPLEMENTATION_BACKLOG.md) defineix les prioritats
+operatives i de producte. El nucli d'OPS-01 està verificat localment, però la
+compatibilitat expand/contract i els avisos d'actualització estan pendents
+d'implementar abans del desplegament. OPS-02 (qualitat de dades meteo) i OPS-03 (frescor i
+monitoratge) continuen pendents: publicar coherentment no garanteix dades fresques.
+Les idees de model següents requereixen avaluació separada.
+
 1. **Calibrar** paràmetres i la duresa de l'hoste contra floracions recordades.
 2. Contrastar el proxy geològic amb cartografia edafològica local o observacions
    de camp abans d'endurir-ne el pes.
@@ -368,6 +392,9 @@ llegiria igual que la millor setmana de la temporada.
 | `bones-practiques.html` | Guia pública d’accés, cura del bosc, seguretat i identificació. |
 | `manifest.webmanifest` · `sw.js` | PWA instal·lable de `/app/`. El service worker és buit a propòsit: no fa cache. |
 | `src/server.mjs` | Servidor Hono: auth, billing i fitxers privats. |
+| `src/prediction-generations.mjs` | Validació, bloqueig d'escriptor i publicació atòmica de generacions. |
+| `src/prediction-routes.mjs` | Manifest i fitxers privats per generació, amb verificació d'integritat. |
+| `prediction-client.mjs` | Descàrregues fixades a una generació i recuperació del paquet complet. |
 | `src/auth.mjs` · `src/db.mjs` | Better Auth i PostgreSQL. |
 | `src/revenuecat.mjs` | Sincronització de l’entitlement amb RevenueCat. |
 | `migrations/001_app.sql` | Projecció local mínima de l’accés `boletada_pro`. |

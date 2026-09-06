@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { PREDICTION_NAME } from '../src/prediction-generations.mjs';
 import {
   DISCOVERY_MIN_SCORE,
   DISCOVERY_MIN_SUPPORT,
@@ -75,12 +76,9 @@ test("l'scorer publica la descoberta només quan puntua totes les espècies", as
   assert.match(scorer, /selectDiscoveryPoints\(zoneMaxima\(best, grid\)\)/);
 });
 
-test("la descoberta arriba al client com una sola descàrrega servida", async () => {
+test("la descoberta usa el carregador de generacions sense descarregar ràsters", async () => {
   const app = await readProjectFile("app.html");
-  const server = await readProjectFile("src/server.mjs");
-
-  assert.match(app, /fetch\(dataUrl\('bolets\.discovery\.json'\)/);
-  assert.match(server, /predictionName = .*discovery\\\.json/);
+  assert.match(app, /loadDiscoveryFiles\(DATA_BASE\)/);
   // El client ja no descarrega ni descodifica cap ràster per a la descoberta.
   assert.doesNotMatch(app, /discovery-map\.mjs/);
   assert.doesNotMatch(app, /dominantPredictionAt|discoveryEntries/);
@@ -141,10 +139,7 @@ test("la punta del marcador s'ancora sobre la coordenada", async () => {
 // L'ou de reig és l'única espècie amb guió baix: el filtre de noms del servidor
 // no l'acceptava i la seva predicció responia 404 des del primer desplegament.
 test("el filtre de prediccions accepta els noms amb guió baix", async () => {
-  const server = await readProjectFile("src/server.mjs");
-  const line = server.match(/const predictionName = (\/.*\/);/);
-  assert.ok(line, "cal el filtre de noms");
-  const pattern = new RegExp(line[1].slice(1, -1));
+  const pattern = PREDICTION_NAME;
 
   for (const name of ["bolets.ou_de_reig.geojson", "bolets.ou_de_reig.png", "bolets.rovello.geojson", "bolets.discovery.json"])
     assert.ok(pattern.test(name), name);

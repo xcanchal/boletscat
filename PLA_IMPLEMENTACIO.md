@@ -1,6 +1,24 @@
 # Pla d'implementació · Boletada
 
-> Estat actualitzat: **2 de setembre de 2026, amb geolocalització i descoberta multiespècie validades en local**
+> Document històric del desenvolupament inicial, amb anotacions fins al 2 de setembre de 2026. Els checkpoints de sandbox, branques i commits de sota no descriuen necessàriament l'estat actual ni producció.
+
+## Estat vigent i continuïtat — 6 de setembre de 2026
+
+Per a les millores actuals, consulteu [el backlog](IMPLEMENTATION_BACKLOG.md).
+El contracte i el desplegament d'OPS-01 estan documentats a
+[Prediction generations](docs/PREDICTION_GENERATIONS.md).
+
+| Àmbit | Estat verificat |
+|---|---|
+| OPS-01: generacions completes i publicació atòmica | Implementat localment a `codex/prediction-generations`, base `c1f4ec6`; sense commit ni push |
+| Validació | 98 tests, builds web/Capacitor i generació completa amb dades meteo reals |
+| Producció | No modificada; bloquejada fins a implementar la compatibilitat expand/contract i validar smoke test autenticat i configuració |
+| Clients existents | Només web/PWA; cap app nativa distribuïda. Mantenir URLs antigues mentre migren els clients; no tallar-les amb 409 |
+| Algorisme | Fórmules de scoring preservades; OPS-02/03 i experiments de model pendents |
+
+La resta del document es conserva com a historial; no executeu els seus passos
+de desplegament ni assumiu que els seus preus o commits continuen vigents sense
+contrastar-los amb el codi i la configuració actuals.
 
 ## Objectiu
 
