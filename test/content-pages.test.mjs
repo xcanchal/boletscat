@@ -16,8 +16,8 @@ test("una predicció absent no conserva les dades ni la capa de l’espècie ant
 
 test("la PWA actualitza les prediccions quan torna a primer pla", () => {
   assert.match(app, /fetch\(dataUrl\(`bolets\.\$\{species\}\.geojson`\), \{ cache:'no-store', credentials:'include' \}\)/);
-  assert.match(app, /document\.addEventListener\('visibilitychange', refreshPredictionOnReturn\)/);
-  assert.match(app, /window\.addEventListener\('focus', refreshPredictionOnReturn\)/);
+  assert.match(app, /document\.addEventListener\('visibilitychange',/);
+  assert.match(app, /window\.addEventListener\('focus',\(\)=>refreshPredictionOnReturn\(\{force:true\}\)/);
   assert.match(app, /window\.addEventListener\('pageshow'/);
   assert.match(app, /geo\.generated \?\? 'latest'\}-\$\{Date\.now\(\)\}/);
 });

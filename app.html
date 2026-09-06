@@ -1173,8 +1173,9 @@
         rows.appendChild(button);
       }
     }
-    async function loadDiscovery() {
+    async function loadDiscovery({preserveView=false}={}) {
       const request=++discoveryRequest;
+      lastPredictionLoadAt=Date.now();
       const message=document.getElementById('discoveryMessage');
       message.textContent='Comparant les espècies disponibles…';
       clearDiscoveryMarkers();
@@ -1195,7 +1196,7 @@
       document.getElementById('metaDate').textContent=formatGeneratedDate(discovery.generated);
       if(discovery.generated)document.getElementById('metaDate').dateTime=discovery.generated;
       message.textContent=points.length?'':'Avui cap espècie arriba a condicions mitjanes.';
-      map.easeTo({...DEFAULT_VIEW,bearing:0,pitch:0,duration:600});
+      if(!preserveView)map.easeTo({...DEFAULT_VIEW,bearing:0,pitch:0,duration:600});
     }
 
     async function setExperience(mode,{species=null,center=null}={}) {
@@ -1368,22 +1369,28 @@
       return Boolean(currentRaster);
     }
 
-    let foregroundRefreshPending=false;
-    function refreshPredictionOnReturn() {
-      if (document.visibilityState === 'hidden' || experienceMode!=='species' || !mapUnlocked || !mapReady || !initialMapLoaded || foregroundRefreshPending) return;
-      if (Date.now() - lastPredictionLoadAt < FOREGROUND_REFRESH_INTERVAL) return;
+    let foregroundRefreshPending=false, lastForegroundAttemptAt=0;
+    function refreshPredictionOnReturn({force=false}={}) {
+      if (document.visibilityState === 'hidden' || !mapUnlocked || !mapReady || !initialMapLoaded || foregroundRefreshPending) return;
+      const now=Date.now();
+      // iOS can emit focus, pageshow and visibilitychange for the same resume.
+      if(now-lastForegroundAttemptAt<1000)return;
+      if (!force && now-lastPredictionLoadAt<FOREGROUND_REFRESH_INTERVAL)return;
+      lastForegroundAttemptAt=now;
       foregroundRefreshPending=true;
-      Promise.resolve(load(document.getElementById('species').value))
+      return Promise.resolve().then(()=>experienceMode==='discovery'
+        ?loadDiscovery({preserveView:true})
+        :load(document.getElementById('species').value,{preserveView:true}))
+        .catch(error=>console.warn('No s’han pogut actualitzar les prediccions',error))
         .finally(() => { foregroundRefreshPending=false; });
     }
-    document.addEventListener('visibilitychange', refreshPredictionOnReturn);
-    window.addEventListener('focus', refreshPredictionOnReturn);
-    window.addEventListener('pageshow', event => {
-      if (event.persisted) {
-        lastPredictionLoadAt=0;
-        refreshPredictionOnReturn();
-      }
+    document.addEventListener('visibilitychange',()=>{
+      refreshPredictionOnReturn({force:true});
     });
+    window.addEventListener('focus',()=>refreshPredictionOnReturn({force:true}));
+    window.addEventListener('pageshow',()=>refreshPredictionOnReturn({force:true}));
+    window.addEventListener('online',()=>refreshPredictionOnReturn({force:true}));
+    setInterval(refreshPredictionOnReturn,FOREGROUND_REFRESH_INTERVAL);
 
     const loadingView=document.getElementById('loadingView'), authView=document.getElementById('authView'), resetView=document.getElementById('resetView');
     const paywallView=document.getElementById('paywallView'), authForm=document.getElementById('authForm');

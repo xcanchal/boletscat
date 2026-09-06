@@ -345,6 +345,10 @@ llegiria igual que la millor setmana de la temporada.
 
 ## Següents passos
 
+Hotfix: [actualització de prediccions en tornar a la PWA](docs/PWA_REFRESH.md).
+Inclou els dos modes del mapa i preserva la vista; cal verificar el desplegament
+i la suspensió real a iPhone després de publicar-lo.
+
 1. **Calibrar** paràmetres i la duresa de l'hoste contra floracions recordades.
 2. Contrastar el proxy geològic amb cartografia edafològica local o observacions
    de camp abans d'endurir-ne el pes.
