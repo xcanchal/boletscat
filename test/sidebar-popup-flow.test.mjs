@@ -61,3 +61,10 @@ test("si el lloc arriba després del vol, el popup complet es torna a dimensiona
 
   assert.equal(harness.calls.updates[0][1], true);
 });
+
+test("el final del plegat no pot interrompre el vol del mapa", () => {
+  assert.match(
+    html,
+    /panelBody\?\.addEventListener\('transitionend',[\s\S]*?popup\.isOpen\(\)\|\|map\.isMoving\(\)[\s\S]*?centerPopup\(\)/,
+  );
+});

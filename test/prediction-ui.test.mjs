@@ -122,5 +122,6 @@ test("el popup recupera tota l’alçada després de plegar la sidebar", () => {
   assert.match(app, /panelBody\?\.addEventListener\('transitionend',event=>\{/);
   assert.match(app, /event\.propertyName!=='max-height'/);
   assert.match(app, /panel\.classList\.contains\('collapsed'\).*popup\.isOpen\(\)/);
+  assert.match(app, /popup\.isOpen\(\)\|\|map\.isMoving\(\)/);
   assert.match(app, /popup\.isOpen\(\)[^}]+centerPopup\(\)/);
 });
