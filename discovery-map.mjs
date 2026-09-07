@@ -74,19 +74,53 @@ export function selectDiscoveryPoints(candidates, options = {}) {
     maxPoints = DISCOVERY_MAX_POINTS,
     maxPerSpecies = DISCOVERY_MAX_PER_SPECIES,
     minDistanceMeters = DISCOVERY_MIN_DISTANCE_M,
+    ensureEachSpecies = false,
   } = options;
   const sorted = [...candidates].sort((a, b) => b.score - a.score);
   const selected = [];
+  const selectedCandidates = new Set();
   const perSpecies = new Map();
+  const distanceToSelected = (candidate) => selected.length
+    ? Math.min(...selected.map((point) => Math.hypot(point.x - candidate.x, point.y - candidate.y)))
+    : Infinity;
+  const add = (candidate) => {
+    selected.push(candidate);
+    selectedCandidates.add(candidate);
+    perSpecies.set(candidate.species, (perSpecies.get(candidate.species) ?? 0) + 1);
+  };
+
+  // “Què hi ha ara?” no és un podi exclusiu: si diverses espècies tenen una
+  // clapa prou bona, totes han de ser descobribles encara que una les superi
+  // lleugerament a les mateixes valls. Primer reservem un punt per espècie.
+  // Quan les seves millors zones xoquen, triem la candidata més separada que
+  // tingui aquella espècie per reduir solapaments de marcadors.
+  if (ensureEachSpecies) {
+    const bySpecies = new Map();
+    for (const candidate of sorted) {
+      const group = bySpecies.get(candidate.species) ?? [];
+      group.push(candidate);
+      bySpecies.set(candidate.species, group);
+    }
+    const groups = [...bySpecies.values()].sort((a, b) => b[0].score - a[0].score);
+    for (const group of groups) {
+      if (selected.length >= maxPoints) break;
+      const separated = group.find((candidate) => distanceToSelected(candidate) >= minDistanceMeters);
+      const candidate = separated ?? group.reduce((best, current) =>
+        distanceToSelected(current) > distanceToSelected(best) ? current : best,
+      );
+      add(candidate);
+    }
+  }
+
   for (const candidate of sorted) {
     if (selected.length >= maxPoints) break;
+    if (selectedCandidates.has(candidate)) continue;
     const count = perSpecies.get(candidate.species) ?? 0;
     if (count >= maxPerSpecies) continue;
     if (selected.some((point) => Math.hypot(point.x - candidate.x, point.y - candidate.y) < minDistanceMeters)) continue;
-    selected.push(candidate);
-    perSpecies.set(candidate.species, count + 1);
+    add(candidate);
   }
-  return selected;
+  return selected.sort((a, b) => b.score - a.score);
 }
 
 // La barra lateral d'una espècie ha de resumir el mateix ràster que veu
@@ -115,7 +149,7 @@ export function selectSpeciesAreas(scores, grid, species, options = {}) {
 // La llista lateral només ha de mostrar espècies que tinguin icona al mapa,
 // ordenades per la millor zona visible.
 export function summarizeDiscoverySpecies(points, options = {}) {
-  const { limit = 7 } = options;
+  const { limit = Infinity } = options;
   const best = new Map();
   for (const point of points ?? []) {
     const previous = best.get(point.species) ?? 0;

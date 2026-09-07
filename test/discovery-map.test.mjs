@@ -55,6 +55,28 @@ test("les zones seleccionades es reparteixen i no les monopolitza una espècie",
   assert.equal(points.filter((point) => point.species === "cep").length, 2);
 });
 
+test("cada espècie amb una zona mitjana conserva com a mínim un pin", () => {
+  const candidates = [
+    { species:"rossinyol", score:.45, x:0, y:0 },
+    { species:"rossinyol", score:.42, x:40000, y:0 },
+    { species:"rossinyol", score:.4, x:80000, y:0 },
+    { species:"rovello", score:.36, x:1000, y:0 },
+    { species:"rovello", score:.31, x:60000, y:0 },
+    { species:"cep", score:.33, x:2000, y:0 },
+    { species:"cep", score:.28, x:120000, y:0 },
+  ];
+  const points = selectDiscoveryPoints(candidates, {
+    maxPoints:5,
+    maxPerSpecies:3,
+    minDistanceMeters:16000,
+    ensureEachSpecies:true,
+  });
+
+  assert.deepEqual(new Set(points.map((point) => point.species)), new Set(["rossinyol", "rovello", "cep"]));
+  assert.equal(points.find((point) => point.species === "rovello").x, 60000);
+  assert.equal(points.find((point) => point.species === "cep").x, 120000);
+});
+
 test("la llista resumeix la millor zona visible de cada espècie", () => {
   const rows = summarizeDiscoverySpecies([
     { species:"rossinyol", score:.52 },
@@ -66,6 +88,15 @@ test("la llista resumeix la millor zona visible de cada espècie", () => {
     { species:"rossinyol", visibleScore:.68 },
     { species:"cep", visibleScore:.31 },
   ]);
+});
+
+test("la llista no amaga espècies que tenen pin", () => {
+  const points = Array.from({ length:9 }, (_, index) => ({
+    species:`species-${index}`,
+    score:.5 - index * .01,
+  }));
+
+  assert.equal(summarizeDiscoverySpecies(points).length, 9);
 });
 
 test("les millors zones d'una espècie provenen del ràster, tenen suport i estan separades", () => {
@@ -84,10 +115,10 @@ test("les millors zones d'una espècie provenen del ràster, tenen suport i esta
 test("l'scorer publica la descoberta només quan puntua totes les espècies", async () => {
   const scorer = await readProjectFile("score_estacions.mjs");
 
-  assert.match(scorer, /if \(best && score>best\.score\[i\]\) \{ best\.score\[i\]=score; best\.species\[i\]=spKey; \}/);
-  assert.match(scorer, /if \(best && all\) \{[\s\S]*?bolets\.discovery\.json/);
-  assert.match(scorer, /selectDiscoveryPoints\(zoneMaxima\(best, grid\)\)/);
-  assert.match(scorer, /geojson\.topAreas = selectSpeciesAreas\(rasterScores, grid, spKey\)/);
+  assert.match(scorer, /if \(discoveryCandidates && all\) \{[\s\S]*?bolets\.discovery\.json/);
+  assert.match(scorer, /discoveryCandidates\.push\(\.\.\.topAreas\.filter\(\(point\) => point\.score >= DISCOVERY_MIN_SCORE\)\)/);
+  assert.match(scorer, /selectDiscoveryPoints\(discoveryCandidates, \{ ensureEachSpecies:true \}\)/);
+  assert.match(scorer, /const topAreas = selectSpeciesAreas\(rasterScores, grid, spKey\)/);
 });
 
 test("la descoberta arriba al client com una sola descàrrega servida", async () => {
