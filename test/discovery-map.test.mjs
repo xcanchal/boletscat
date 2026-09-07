@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { PREDICTION_NAME } from '../src/prediction-generations.mjs';
 import {
   DISCOVERY_MIN_SCORE,
   DISCOVERY_MIN_SUPPORT,
@@ -55,6 +56,28 @@ test("les zones seleccionades es reparteixen i no les monopolitza una espècie",
   assert.equal(points.filter((point) => point.species === "cep").length, 2);
 });
 
+test("cada espècie amb una zona mitjana conserva com a mínim un pin", () => {
+  const candidates = [
+    { species:"rossinyol", score:.45, x:0, y:0 },
+    { species:"rossinyol", score:.42, x:40000, y:0 },
+    { species:"rossinyol", score:.4, x:80000, y:0 },
+    { species:"rovello", score:.36, x:1000, y:0 },
+    { species:"rovello", score:.31, x:60000, y:0 },
+    { species:"cep", score:.33, x:2000, y:0 },
+    { species:"cep", score:.28, x:120000, y:0 },
+  ];
+  const points = selectDiscoveryPoints(candidates, {
+    maxPoints:5,
+    maxPerSpecies:3,
+    minDistanceMeters:16000,
+    ensureEachSpecies:true,
+  });
+
+  assert.deepEqual(new Set(points.map((point) => point.species)), new Set(["rossinyol", "rovello", "cep"]));
+  assert.equal(points.find((point) => point.species === "rovello").x, 60000);
+  assert.equal(points.find((point) => point.species === "cep").x, 120000);
+});
+
 test("la llista resumeix la millor zona visible de cada espècie", () => {
   const rows = summarizeDiscoverySpecies([
     { species:"rossinyol", score:.52 },
@@ -66,6 +89,15 @@ test("la llista resumeix la millor zona visible de cada espècie", () => {
     { species:"rossinyol", visibleScore:.68 },
     { species:"cep", visibleScore:.31 },
   ]);
+});
+
+test("la llista no amaga espècies que tenen pin", () => {
+  const points = Array.from({ length:9 }, (_, index) => ({
+    species:`species-${index}`,
+    score:.5 - index * .01,
+  }));
+
+  assert.equal(summarizeDiscoverySpecies(points).length, 9);
 });
 
 test("les millors zones d'una espècie provenen del ràster, tenen suport i estan separades", () => {
@@ -84,18 +116,15 @@ test("les millors zones d'una espècie provenen del ràster, tenen suport i esta
 test("l'scorer publica la descoberta només quan puntua totes les espècies", async () => {
   const scorer = await readProjectFile("score_estacions.mjs");
 
-  assert.match(scorer, /if \(best && score>best\.score\[i\]\) \{ best\.score\[i\]=score; best\.species\[i\]=spKey; \}/);
-  assert.match(scorer, /if \(best && all\) \{[\s\S]*?bolets\.discovery\.json/);
-  assert.match(scorer, /selectDiscoveryPoints\(zoneMaxima\(best, grid\)\)/);
-  assert.match(scorer, /geojson\.topAreas = selectSpeciesAreas\(rasterScores, grid, spKey\)/);
+  assert.match(scorer, /if \(discoveryCandidates && all\) \{[\s\S]*?bolets\.discovery\.json/);
+  assert.match(scorer, /discoveryCandidates\.push\(\.\.\.topAreas\.filter\(\(point\) => point\.score >= DISCOVERY_MIN_SCORE\)\)/);
+  assert.match(scorer, /selectDiscoveryPoints\(discoveryCandidates, \{ ensureEachSpecies:true \}\)/);
+  assert.match(scorer, /const topAreas = selectSpeciesAreas\(rasterScores, grid, spKey\)/);
 });
 
-test("la descoberta arriba al client com una sola descàrrega servida", async () => {
+test("la descoberta usa el carregador de generacions sense descarregar ràsters", async () => {
   const app = await readProjectFile("app.html");
-  const server = await readProjectFile("src/server.mjs");
-
-  assert.match(app, /fetch\(dataUrl\('bolets\.discovery\.json'\)/);
-  assert.match(server, /predictionName = .*discovery\\\.json/);
+  assert.match(app, /loadDiscoveryFiles\(DATA_BASE\)/);
   // El client ja no descarrega ni descodifica cap ràster per a la descoberta.
   assert.doesNotMatch(app, /discovery-map\.mjs/);
   assert.doesNotMatch(app, /dominantPredictionAt|discoveryEntries/);
@@ -156,10 +185,7 @@ test("la punta del marcador s'ancora sobre la coordenada", async () => {
 // L'ou de reig és l'única espècie amb guió baix: el filtre de noms del servidor
 // no l'acceptava i la seva predicció responia 404 des del primer desplegament.
 test("el filtre de prediccions accepta els noms amb guió baix", async () => {
-  const server = await readProjectFile("src/server.mjs");
-  const line = server.match(/const predictionName = (\/.*\/);/);
-  assert.ok(line, "cal el filtre de noms");
-  const pattern = new RegExp(line[1].slice(1, -1));
+  const pattern = PREDICTION_NAME;
 
   for (const name of ["bolets.ou_de_reig.geojson", "bolets.ou_de_reig.png", "bolets.rovello.geojson", "bolets.discovery.json"])
     assert.ok(pattern.test(name), name);

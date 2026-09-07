@@ -50,6 +50,7 @@ export function decodeRgbaPng(png) {
   }
   if (depth !== 8 || colorType !== 6 || interlace !== 0) throw new Error("Cal un PNG RGBA de 8 bits no entrellaçat");
   const raw = inflateSync(Buffer.concat(compressed)), stride = width * 4, rgba = Buffer.alloc(stride * height);
+  if (raw.length !== (stride + 1) * height) throw new Error('PNG pixel data length does not match dimensions');
   for (let y = 0; y < height; y++) {
     const src = y * (stride + 1), filter = raw[src], row = raw.subarray(src + 1, src + 1 + stride);
     const dst = y * stride;
@@ -70,4 +71,3 @@ export function decodeRgbaPng(png) {
   }
   return { width, height, rgba };
 }
-

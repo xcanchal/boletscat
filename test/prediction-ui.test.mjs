@@ -19,7 +19,7 @@ test("el popup identifica dades desconegudes i carrega l'estructura forestal", (
   assert.match(app, /<span class="unknown-value">Desconegut<\/span>/);
   assert.doesNotMatch(app, /Desconegut \?/);
   assert.match(app, /entorn dens/);
-  assert.match(app, /bolets\.forest\.png/);
+  assert.match(app, /\['pixels','terrain','weather','forest'\]/);
 });
 
 test("el popup concentra les xifres útils i no publica els factors interns", () => {
@@ -77,7 +77,7 @@ test("el popup consulta la mateixa reprojecció Web Mercator que la capa visual"
 // a mostrar, en sortir de "Què hi ha ara" el mapa quedava buit per a totes les
 // espècies.
 test("en tornar de la descoberta el mapa de l'espècie es torna a veure", () => {
-  assert.match(app, /const rasterLoaded=await load\(selected,\{preserveView:Boolean\(center\)\}\);\s*if\(!rasterLoaded\|\|experienceMode!=='species'\)return;/);
+  assert.match(app, /const rasterLoaded=await load\(selected,\{preserveView:Boolean\(center\),snapshot\}\);\s*if\(!rasterLoaded\|\|experienceMode!=='species'\)return;/);
   assert.match(app, /for\(const layer of \['prediccio','cobertura'\]\)\s*\n\s*if\(map\.getLayer\(layer\)\)map\.setLayoutProperty\(layer,'visibility','visible'\);/);
 });
 
@@ -104,4 +104,25 @@ test("obrir una millor zona reutilitza la cerca de la cel·la forestal més prop
   assert.match(app, /const sample=nearestDetailsAt\(rankedLngLat\),target=sample\?\.lngLat\?\?rankedLngLat/);
   assert.match(app, /areaHTML\(null,sample\?\.details\?\?null,target,sample\?\.distance\?\?0\)/);
   assert.match(app, /areaHTML\(place,sample\?\.details\?\?null,target,sample\?\.distance\?\?0\)/);
+});
+
+test("la millor zona acaba el vol abans de centrar i dimensionar el popup", () => {
+  assert.match(app, /map\.once\('moveend',\(\)=>\{[\s\S]*?centerPopup\(\);[\s\S]*?\}\);\s*map\.flyTo/);
+  assert.match(app, /showPopup\(target,areaHTML\([^\n]+\),null\)/);
+  assert.match(app, /updatePopup\(areaHTML\([^\n]+\),flightSettled\?true:null\)/);
+  assert.match(app, /map\.flyTo\(\{center:target,zoom:11,duration:400\}\)/);
+  assert.doesNotMatch(app, /map\.flyTo\(\{center:target,zoom:11,speed:\.8\}\)/);
+});
+
+test("el popup recupera tota l’alçada després de plegar la sidebar", () => {
+  assert.ok(
+    app.indexOf("const panel = document.getElementById('panel')")
+      < app.indexOf("const panelBody=panel.querySelector('.body')"),
+    "el panell s’ha d’inicialitzar abans de registrar-ne la transició",
+  );
+  assert.match(app, /panelBody\?\.addEventListener\('transitionend',event=>\{/);
+  assert.match(app, /event\.propertyName!=='max-height'/);
+  assert.match(app, /panel\.classList\.contains\('collapsed'\).*popup\.isOpen\(\)/);
+  assert.match(app, /popup\.isOpen\(\)\|\|map\.isMoving\(\)/);
+  assert.match(app, /popup\.isOpen\(\)[^}]+centerPopup\(\)/);
 });

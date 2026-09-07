@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { pathToFileURL } from "node:url";
 import { readFile } from "node:fs/promises";
-import { extname, join } from "node:path";
+import { join } from "node:path";
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
@@ -11,6 +11,8 @@ import { getAccessForUser, hasPredictionAccess } from "./access.mjs";
 import { config } from "./config.mjs";
 import { pool } from "./db.mjs";
 import { syncRevenueCatCustomer } from "./revenuecat.mjs";
+import { registerPredictionRoutes } from './prediction-routes.mjs';
+import { readCurrentGeneration } from './prediction-generations.mjs';
 
 export const app = new Hono();
 
@@ -27,6 +29,7 @@ app.get("/healthz", (c) => c.json({ ok: true }));
 app.get("/readyz", async (c) => {
   try {
     await pool.query("SELECT 1");
+    await readCurrentGeneration(config.predictionDir);
     return c.json({ ok: true });
   } catch {
     return c.json({ ok: false }, 503);
@@ -126,35 +129,13 @@ app.get("/media/boletada-promo.mp4", servePromoVideo);
 // cachejat sense suport correcte per a peticions Range d'iOS.
 app.get("/media/boletada-promo-v2.mp4", servePromoVideo);
 
-const predictionName = /^bolets\.(?:grid\.json|discovery\.json|terrain\.png|weather\.png|[a-z0-9_-]+\.(?:geojson|png))$/;
-const predictionTypes = {
-  ".json": "application/json; charset=utf-8",
-  ".geojson": "application/geo+json; charset=utf-8",
-  ".png": "image/png",
-};
-
-app.get("/api/predictions/:filename", async (c) => {
+registerPredictionRoutes(app, { root: config.predictionDir, authorize: async (c) => {
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!session) return c.json({ error: "unauthorized" }, 401);
 
   const access = await getAccessForUser(session.user.id);
   if (!hasPredictionAccess(access)) return c.json({ error: "subscription_required" }, 402);
-
-  const filename = c.req.param("filename");
-  if (!predictionName.test(filename)) return c.json({ error: "not_found" }, 404);
-
-  try {
-    const data = await readFile(join(config.predictionDir, filename));
-    return c.body(data, 200, {
-      "Content-Type": predictionTypes[extname(filename)] || "application/octet-stream",
-      "Cache-Control": "private, no-store",
-      Vary: "Cookie",
-    });
-  } catch (error) {
-    if (error?.code === "ENOENT") return c.json({ error: "not_found" }, 404);
-    throw error;
-  }
-});
+} });
 
 app.use("*", async (c, next) => {
   await next();

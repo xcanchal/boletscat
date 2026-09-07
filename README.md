@@ -225,6 +225,14 @@ npm run dev            # http://localhost:8080
 el servidor comparteixen `PREDICTION_DIR` (per defecte, `private/predictions`), mai
 `public`.
 
+Les execucions `--all` publiquen una generació completa i immutable a
+`generations/<id>/`, seleccionada atòmicament amb `current.json`. El client fixa
+tots els fitxers a aquesta mateixa generació. Una execució d'una sola espècie
+es desa a `experiments/<id>/` i no modifica el mapa actiu.
+Vegeu el [contracte, migració i recuperació](docs/PREDICTION_GENERATIONS.md).
+La branca `development` avalua el [model d'humitat v6](docs/SCORING_MODEL_V6.md):
+FAO-56 amb fallback Hargreaves, qualitat explícita i comparació automàtica amb v5.
+
 La landing pública es publica a `/`; el registre, el paywall i el predictor viuen
 a `/app/`. `npm run build:mobile` continua empaquetant directament el predictor.
 
@@ -251,13 +259,26 @@ docker run --env-file .env -p 8080:8080 boletada
    Per activar Google, crear un client OAuth web i autoritzar
    `https://boletada.cat/api/auth/callback/google` com a URI de redirecció.
 4. **Scheduled Task**: `node score_estacions.mjs --all`, freqüència `0 6 * * *`.
-   El log ha de mostrar la data de referència i el directori absolut on s'han
-   escrit les prediccions.
+   Confirmeu el log final `Published <generationId> (...) → .../current.json`.
+   Iniciar el procés o escriure fitxers a staging no significa haver publicat.
+
+La migració segueix fases **expandir → migrar → observar → retirar**: primer
+cal suportar les URLs antigues i les noves, i completar una execució `--all`.
+Les pestanyes i PWA ja obertes han de continuar funcionant. No hi ha apps natives
+distribuïdes. L'adaptador expand manté les URLs antigues sobre la generació activa,
+mentre el client nou fixa tots els fitxers a una generació immutable. Aquesta fase
+està preparada per validar-se a staging; producció continua bloquejada fins al
+smoke test autenticat, la comprovació del volum i el rollback.
+El [runbook](docs/PREDICTION_GENERATIONS.md) defineix les fases, els avisos
+d'actualització, els criteris de retirada i el rollback.
 
 **Notes honestes:**
 - El cron de Coolify va en **UTC** (`0 6 * * *` ≈ 7-8 h a casa). Diari a qualsevol hora ja va bé.
-- PostgreSQL necessita persistència i backups. Les prediccions es poden regenerar i
-  no necessiten persistència si l'scheduled task corre dins del mateix contenidor.
+- PostgreSQL necessita persistència i backups. Es recomana un volum persistent
+  per a prediccions: conserva l'última generació vàlida durant desplegaments o
+  fallades de la font meteo. Si hi ha diverses instàncies, han de compartir les
+  generacions que serveixen. Sense volum, cada contenidor ha de generar totes
+  les dades abans de superar `/readyz`.
 - `buildHost.mjs` **no** va al cron. Per refrescar el bosc (un cop l'any, o mai), el corres en local i committeges el `estacions_host.json` nou.
 
 ---
@@ -359,6 +380,14 @@ llegiria igual que la millor setmana de la temporada.
 
 ## Següents passos
 
+El [backlog d'implementació](IMPLEMENTATION_BACKLOG.md) defineix les prioritats
+operatives i de producte. El nucli d'OPS-01 i l'adaptador de compatibilitat expand
+estan verificats localment i preparats per staging. L'avís de versió, el monitoratge
+i el smoke test operatiu continuen pendents abans de producció. OPS-02 (qualitat de
+dades meteo) i OPS-03 (frescor i monitoratge) també continuen pendents: publicar
+coherentment no garanteix dades fresques.
+Les idees de model següents requereixen avaluació separada.
+
 Hotfix: [actualització de prediccions en tornar a la PWA](docs/PWA_REFRESH.md).
 Inclou els dos modes del mapa i preserva la vista; cal verificar el desplegament
 i la suspensió real a iPhone després de publicar-lo.
@@ -392,6 +421,9 @@ abans de ser indexable.
 | `bones-practiques.html` | Guia pública d’accés, cura del bosc, seguretat i identificació. |
 | `manifest.webmanifest` · `sw.js` | PWA instal·lable de `/app/`. El service worker és buit a propòsit: no fa cache. |
 | `src/server.mjs` | Servidor Hono: auth, billing i fitxers privats. |
+| `src/prediction-generations.mjs` | Validació, bloqueig d'escriptor i publicació atòmica de generacions. |
+| `src/prediction-routes.mjs` | Manifest i fitxers privats per generació, amb verificació d'integritat. |
+| `prediction-client.mjs` | Descàrregues fixades a una generació i recuperació del paquet complet. |
 | `src/auth.mjs` · `src/db.mjs` | Better Auth i PostgreSQL. |
 | `src/revenuecat.mjs` | Sincronització de l’entitlement amb RevenueCat. |
 | `migrations/001_app.sql` | Projecció local mínima de l’accés `boletada_pro`. |
@@ -400,7 +432,10 @@ abans de ser indexable.
 | `bolets.<espècie>.geojson` | Sortides diàries (generades; **no** es versionen). |
 | `bolets.<espècie>.png` · `bolets.grid.json` | Ràsters diaris i georeferenciació (generats). |
 | `bolets.discovery.json` | Zones de la descoberta multiespècie (generat amb `--all`). |
+| `bolets.model-comparison.json` | Evidència v5/v6, cobertura i fallbacks de cada generació. |
 | `src/season-prior.mjs` | Prior estacional suau per espècie. |
+| `src/moisture-model.mjs` | ET0 i dipòsit hídric diari del model v6. |
+| `src/weather-quality.mjs` | Contracte de cobertura i frescor de les dades XEMA. |
 | `spike_xema.mjs` · `spike_mcsc.mjs` | Diagnòstics d'un sol ús (jubilats). |
 
 ---
@@ -408,7 +443,8 @@ abans de ser indexable.
 ## Paràmetres afinables
 
 `score_estacions.mjs`: `CAP`, `LAG_RISE`/`LAG_FALL`, `RESERVE_FALL`,
-`TRIGGER_IDEAL`/`RESERVE_IDEAL` (humitat) · el bloc `SPECIES`
+`TRIGGER_IDEAL`/`RESERVE_IDEAL` (humitat) · `DEFAULT_MOISTURE_PARAMETERS`
+a `src/moisture-model.mjs` (reserva v6) · el bloc `SPECIES`
 (mesos i `spread` estacional, altitud, temperatura, tendència tèrmica, bosc i substrat per espècie) · els factors dins
 `hostFactor` i `substrateFactor` (duresa de cada penalització).
 `buildGrid.mjs`: `COVER_SAMPLES_PER_CELL` (resolució senar del mostreig d'àrea forestal).
