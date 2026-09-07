@@ -1,6 +1,6 @@
 # SEO content and publication contract
 
-> Companion specification for [`GROWTH_ROADMAP.md`](GROWTH_ROADMAP.md).  
+> Companion specification for [`GROWTH_ROADMAP.md`](GROWTH_ROADMAP.md).
 > Status: proposed · 7 September 2026.
 
 ## Purpose
