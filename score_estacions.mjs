@@ -219,14 +219,14 @@ function interpolateGrid(grid, signals) {
   console.log(`Interpolació: ${processed.toLocaleString("ca")} cel·les · gradient tèrmic ${(lapse*1000).toFixed(1)} °C/km`);
   return { outH, outR, outBaselineR, outT, outTrend };
 }
-async function diari(variable, desdeISO, finsISO, agg) {
+async function meteoDiari(desdeISO,finsISO) {
   try {
     return await soda(DS_MESURES, {
-      $select: `codi_estacio, date_trunc_ymd(data_lectura) AS dia, ${agg}(valor_lectura) AS value, avg(valor_lectura) AS mean, min(valor_lectura) AS min, max(valor_lectura) AS max, count(distinct id) AS n, max(data_lectura) AS latest`,
-      $where:  `codi_variable='${variable}' AND data_lectura >= '${desdeISO}' AND data_lectura <= '${finsISO}' AND valor_lectura IS NOT NULL AND (codi_estat='V' OR codi_estat IS NULL)`,
-      $group:  "codi_estacio, dia", $limit: 100000,
+      $select: `codi_variable, codi_estacio, date_trunc_ymd(data_lectura) AS dia, sum(valor_lectura) AS total, avg(valor_lectura) AS mean, min(valor_lectura) AS min, max(valor_lectura) AS max, count(distinct id) AS n, max(data_lectura) AS latest`,
+      $where:  `codi_variable IN('${[V_PLUJA,V_TEMP,V_HUMITAT,V_VENT,V_RADIACIO].join("','")}') AND data_lectura >= '${desdeISO}' AND data_lectura <= '${finsISO}' AND valor_lectura IS NOT NULL AND (codi_estat='V' OR codi_estat IS NULL)`,
+      $group:  "codi_variable, codi_estacio, dia", $limit: 100000,
     });
-  } catch(error) { throw new Error(`XEMA variable ${variable}: ${error.message}`); }
+  } catch(error) { throw new Error(`XEMA daily weather: ${error.message}`); }
 }
 
 const isoDate = value => new Date(value).toISOString().slice(0, 10);
@@ -295,15 +295,11 @@ async function generate(args, OUT, generationId) {
   const eLat = findKey(est[0],"latitud","lat"), eLon = findKey(est[0],"longitud","lon"), eAlt = findKey(est[0],"altitud","alt");
   const meta = new Map(est.map((e) => [e[eCodi], { nom:e[eNom], lat:+e[eLat], lon:+e[eLon], alt:+e[eAlt] }]));
 
-  const [pluja,temp] = await Promise.all([
-    diari(V_PLUJA,desdeMeteo,refISO,"sum"),
-    diari(V_TEMP,desdeMeteo,refISO,"avg"),
-  ]);
-  const [humitat,vent] = await Promise.all([
-    diari(V_HUMITAT,desdeMeteo,refISO,"avg"),
-    diari(V_VENT,desdeMeteo,refISO,"avg"),
-  ]);
-  const radiacio=await diari(V_RADIACIO,desdeMeteo,refISO,"avg");
+  const weatherRows=await meteoDiari(desdeMeteo,refISO);
+  const rowsFor=variable=>weatherRows.filter(row=>String(row.codi_variable)===variable).map(row=>({
+    ...row,value:variable===V_PLUJA?row.total:row.mean,
+  }));
+  const pluja=rowsFor(V_PLUJA),temp=rowsFor(V_TEMP),humitat=rowsFor(V_HUMITAT),vent=rowsFor(V_VENT),radiacio=rowsFor(V_RADIACIO);
   const sourceObservedThrough={
     rain:latestObservation(pluja),
     temperature:latestObservation(temp),
