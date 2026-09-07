@@ -522,9 +522,9 @@ items and link to reproducible evidence rather than only stating “tests pass.�
 | Item | Status | Commit / changed files | Verification | Operational setup remaining |
 |---|---|---|---|---|
 | OPS-01 | Core + expand adapter implemented; ready for staging, not production | `codex/prediction-generations`; phased contract in `docs/PREDICTION_GENERATIONS.md` | 107 tests; all 23 legacy assets return 200 in fixtures; generation race/integrity tests; web/mobile builds; deterministic scorer run | Validate authenticated old/new clients, persistent store, first generation, cron, readiness and rollback; implement build-update notice and aggregate monitoring before production |
-| OPS-02 | Open | — | — | — |
+| OPS-02 | Quality core implemented for scorer v6; broader propagation pending | `src/weather-quality.mjs`, `score_estacions.mjs`, `docs/SCORING_MODEL_V6.md` | Quality unit tests; deterministic scorer; live 2026-09-07 run; freshness gate; timeout/retry | Propagate confidence through interpolation/UI, add aggregate alerting and inspect multi-date coverage before production |
 | OPS-03 | Open | — | — | — |
 | BILL-01 | Open | — | — | — |
 | QA-01 | Open | — | — | — |
-| MODEL-05 | Open | — | — | Candidate evaluation required before activation |
+| MODEL-05 | Candidate implemented; staging only | `src/moisture-model.mjs`, `score_estacions.mjs`, `docs/SCORING_MODEL_V6.md` | Controlled invariants; v5/v6 station and raster report; live run: 183 dynamic / 62 legacy fallback, 2/2,205 station category transitions | Review multiple dates/regions and field evidence; explicit approval before production |
 | ENG-01 | Open | — | — | Frontend parity and rollout verification required |

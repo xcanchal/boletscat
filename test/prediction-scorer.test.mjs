@@ -31,6 +31,12 @@ test('real scorer publishes all species and isolates single-species CLI runs', a
   assert.equal(manifest.referenceDate, '2026-09-05');
   const directory = join(root, 'generations', manifest.generationId);
   await validateGeneration(directory, manifest.generationId, manifest.referenceDate);
+  assert.equal(manifest.modelVersion,6);
+  assert.ok(manifest.sourceObservedThrough.temperature);
+  const comparison=JSON.parse(await readFile(join(directory,'bolets.model-comparison.json'),'utf8'));
+  assert.equal(comparison.activeModel,'candidate');
+  assert.equal(comparison.moistureUsage.dynamic,1);
+  assert.equal(comparison.species.length,Object.keys((await import('../src/species-model.mjs')).SPECIES).length);
   const before = await readFile(join(directory, 'bolets.rovello.png'));
   await run('--species=rovello');
   assert.equal((await readCurrentGeneration(root)).generationId, manifest.generationId);

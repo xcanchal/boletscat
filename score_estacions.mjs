@@ -47,17 +47,20 @@ import { temperatureTrendFactor } from "./src/temperature-trend.mjs";
 import { seasonPrior } from "./src/season-prior.mjs";
 import { resolvePredictionDir } from "./src/prediction-path.mjs";
 import { publishGeneration } from './src/prediction-generations.mjs';
+import { calculateMoistureReserve } from './src/moisture-model.mjs';
+import { indexDailyAggregates, latestObservation, missingDailyAggregate } from './src/weather-quality.mjs';
 
 const BASE = "https://analisi.transparenciacatalunya.cat/resource";
 const DS_MESURES = `${BASE}/nzvn-apee.json`, DS_ESTACIONS = `${BASE}/yqwd-vj5e.json`;
-const V_PLUJA = "35", V_TEMP = "32";
-const DIES = 30, DIES_TEMP = 14, DIES_TEMP_RECENT = 5, CAP = 30;
+const V_PLUJA = "35", V_TEMP = "32", V_HUMITAT = "33", V_VENT = "30", V_RADIACIO = "36";
+const DIES = 30, DIES_HUMITAT = 60, DIES_TEMP = 14, DIES_TEMP_RECENT = 5, CAP = 30;
 // L'impuls de fructificació puja lentament després de ploure i té el màxim
 // aproximadament al cap de 8 dies. La reserva sí que compta la pluja d'avui.
 const LAG_RISE = 6, LAG_FALL = 16, RESERVE_FALL = 14;
 // Llindars provisionals de condicions ideals. En arribar-hi el factor val 1
 // exactament; s'han d'afinar amb observacions/backtests, no amb el màxim del dia.
 const TRIGGER_IDEAL = 60, RESERVE_IDEAL = 100;
+const SODA_TIMEOUT_MS = 30_000;
 const HOST_CODE = { conifer:1, deciduous:2, sclerophyll:3, ribera:4 };
 const COLOR_STOPS = [[0,[89,102,94]],[.1,[116,125,69]],[.25,[161,164,71]],[.4,[201,147,47]],[.6,[226,121,42]],[.8,[200,69,27]],[1,[169,46,20]]];
 
@@ -87,9 +90,25 @@ function substrateFactor(code, sp) {
 // ── Utilitats ──────────────────────────────────────────────────────────────
 async function soda(url, params = {}) {
   const qs = new URLSearchParams(params).toString();
-  const res = await fetch(qs ? `${url}?${qs}` : url, { headers: { Accept: "application/json" } });
-  if (!res.ok) throw new Error(`HTTP ${res.status} — ${await res.text()}`);
-  return res.json();
+  const target=qs?`${url}?${qs}`:url;
+  let lastError;
+  for(let attempt=1;attempt<=2;attempt++) {
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),SODA_TIMEOUT_MS);
+    try {
+      const res=await fetch(target,{headers:{Accept:'application/json'},signal:controller.signal});
+      if(!res.ok) {
+        const error=new Error(`HTTP ${res.status} — ${await res.text()}`);
+        if(res.status<500&&res.status!==429)throw error;
+        lastError=error;
+      } else return res.json();
+    } catch(error) {
+      lastError=error;
+      if(/^HTTP 4(?!29)/.test(String(error.message)))throw error;
+    } finally { clearTimeout(timeout); }
+    if(attempt<2)await new Promise(resolve=>setTimeout(resolve,300));
+  }
+  throw new Error(`Meteocat unavailable after retry: ${lastError?.message??'unknown error'}`);
 }
 const findKey = (row, ...c) => {
   for (const k of c) if (k in row) return k;
@@ -170,7 +189,7 @@ function scoreColor(score) {
 }
 
 function interpolateGrid(grid, signals) {
-  const n=grid.width*grid.height, outH=new Float32Array(n), outR=new Float32Array(n), outT=new Float32Array(n), outTrend=new Float32Array(n);
+  const n=grid.width*grid.height, outH=new Float32Array(n), outR=new Float32Array(n), outBaselineR=new Float32Array(n), outT=new Float32Array(n), outTrend=new Float32Array(n);
   const tempSignals=signals.filter(s=>s.t!=null);
   const meanAlt=tempSignals.reduce((a,s)=>a+s.alt,0)/tempSignals.length, meanT=tempSignals.reduce((a,s)=>a+s.t,0)/tempSignals.length;
   let cov=0, variance=0;
@@ -190,23 +209,48 @@ function interpolateGrid(grid, signals) {
       let p=K-1; while(p>0&&d<bestD[p-1]) { bestD[p]=bestD[p-1]; bestI[p]=bestI[p-1]; p--; }
       bestD[p]=d; bestI[p]=j;
     }
-    let wh=0,h=0,r=0,res=0,wt=0,trend=0;
+    let wh=0,h=0,r=0,baselineR=0,res=0,wt=0,trend=0;
     for(let k=0;k<K&&bestI[k]>=0;k++) {
-      const s=tempSignals[bestI[k]], w=1/Math.max(bestD[k],4e6); wh+=w; h+=w*s.h; r+=w*s.reserve; res+=w*s.residual;
+      const s=tempSignals[bestI[k]], w=1/Math.max(bestD[k],4e6); wh+=w; h+=w*s.h; r+=w*s.reserve; baselineR+=w*s.reserveLegacy; res+=w*s.residual;
       if (s.tTrend != null) { wt+=w; trend+=w*s.tTrend; }
     }
-    outH[i]=h/wh; outR[i]=r/wh; outT[i]=intercept+lapse*alt+res/wh; outTrend[i]=wt ? trend/wt : 0; processed++;
+    outH[i]=h/wh; outR[i]=r/wh; outBaselineR[i]=baselineR/wh; outT[i]=intercept+lapse*alt+res/wh; outTrend[i]=wt ? trend/wt : 0; processed++;
   }
   console.log(`Interpolació: ${processed.toLocaleString("ca")} cel·les · gradient tèrmic ${(lapse*1000).toFixed(1)} °C/km`);
-  return { outH, outR, outT, outTrend };
+  return { outH, outR, outBaselineR, outT, outTrend };
 }
 async function diari(variable, desdeISO, finsISO, agg) {
-  return soda(DS_MESURES, {
-    $select: `codi_estacio, date_trunc_ymd(data_lectura) AS dia, ${agg}(valor_lectura) AS v`,
-    $where:  `codi_variable='${variable}' AND data_lectura >= '${desdeISO}' AND data_lectura <= '${finsISO}'`,
-    $group:  "codi_estacio, dia", $limit: 100000,
-  });
+  try {
+    return await soda(DS_MESURES, {
+      $select: `codi_estacio, date_trunc_ymd(data_lectura) AS dia, ${agg}(valor_lectura) AS value, avg(valor_lectura) AS mean, min(valor_lectura) AS min, max(valor_lectura) AS max, count(distinct id) AS n, max(data_lectura) AS latest`,
+      $where:  `codi_variable='${variable}' AND data_lectura >= '${desdeISO}' AND data_lectura <= '${finsISO}' AND valor_lectura IS NOT NULL AND (codi_estat='V' OR codi_estat IS NULL)`,
+      $group:  "codi_estacio, dia", $limit: 100000,
+    });
+  } catch(error) { throw new Error(`XEMA variable ${variable}: ${error.message}`); }
 }
+
+const isoDate = value => new Date(value).toISOString().slice(0, 10);
+const dayOfYear = date => Math.floor((Date.parse(`${date}T00:00:00Z`) - Date.UTC(+date.slice(0,4), 0, 0)) / 864e5);
+const scoreBand = score => score >= .8 ? 'very-high' : score >= .5 ? 'high' : score >= .25 ? 'medium' : score >= .1 ? 'low' : 'very-low';
+const summarizeNumbers = values => {
+  const finite = values.filter(Number.isFinite);
+  if (!finite.length) return { count:0, min:null, mean:null, max:null };
+  return {
+    count:finite.length,
+    min:+Math.min(...finite).toFixed(4),
+    mean:+(finite.reduce((sum,value)=>sum+value,0)/finite.length).toFixed(4),
+    max:+Math.max(...finite).toFixed(4),
+  };
+};
+const summarizeDifference = (candidate,baseline) => {
+  let count=0,min=Infinity,max=-Infinity,sum=0;
+  for(let index=0;index<candidate.length;index++) {
+    const value=candidate[index]-baseline[index];
+    if(!Number.isFinite(value))continue;
+    count++; min=Math.min(min,value); max=Math.max(max,value); sum+=value;
+  }
+  return count?{count,min:+min.toFixed(4),mean:+(sum/count).toFixed(4),max:+max.toFixed(4)}:{count:0,min:null,mean:null,max:null};
+};
 
 async function main() {
   const args = process.argv.slice(2);
@@ -240,8 +284,8 @@ async function generate(args, OUT, generationId) {
   const refDay = Date.parse(`${refISO.slice(0, 10)}T00:00:00Z`) / 864e5;
   const refMonth = ref.getUTCMonth() + 1;
   const daysAgo = (value) => refDay - Date.parse(`${String(value).slice(0, 10)}T00:00:00Z`) / 864e5;
-  const desdePluja = new Date(ref - DIES * 864e5).toISOString().slice(0, 19);
-  const desdeTemp  = new Date(ref - DIES_TEMP * 864e5).toISOString().slice(0, 19);
+  const desdeMeteo = new Date(ref - DIES_HUMITAT * 864e5).toISOString().slice(0, 19);
+  const useDynamicMoisture = !args.includes('--legacy-moisture');
   console.log(`Data de referència: ${refISO.slice(0, 10)}`);
   console.log(`Directori de prediccions: ${OUT}\n`);
 
@@ -251,13 +295,40 @@ async function generate(args, OUT, generationId) {
   const eLat = findKey(est[0],"latitud","lat"), eLon = findKey(est[0],"longitud","lon"), eAlt = findKey(est[0],"altitud","alt");
   const meta = new Map(est.map((e) => [e[eCodi], { nom:e[eNom], lat:+e[eLat], lon:+e[eLon], alt:+e[eAlt] }]));
 
-  const pluja = await diari(V_PLUJA, desdePluja, refISO, "sum");
-  const temp  = await diari(V_TEMP,  desdeTemp,  refISO, "avg");
+  const [pluja,temp] = await Promise.all([
+    diari(V_PLUJA,desdeMeteo,refISO,"sum"),
+    diari(V_TEMP,desdeMeteo,refISO,"avg"),
+  ]);
+  const [humitat,vent] = await Promise.all([
+    diari(V_HUMITAT,desdeMeteo,refISO,"avg"),
+    diari(V_VENT,desdeMeteo,refISO,"avg"),
+  ]);
+  const radiacio=await diari(V_RADIACIO,desdeMeteo,refISO,"avg");
+  const sourceObservedThrough={
+    rain:latestObservation(pluja),
+    temperature:latestObservation(temp),
+    humidity:latestObservation(humitat),
+    wind:latestObservation(vent),
+    radiation:latestObservation(radiacio),
+  };
+  for(const required of ['rain','temperature']) {
+    const observed=sourceObservedThrough[required];
+    if(!observed||daysAgo(observed)>1)throw new Error(`${required} observations are missing or stale; active generation unchanged`);
+  }
+  const rainDays=indexDailyAggregates(pluja,{unit:'mm'});
+  const temperatureDays=indexDailyAggregates(temp,{unit:'°C'});
+  const humidityDays=indexDailyAggregates(humitat,{unit:'%'});
+  const windDays=indexDailyAggregates(vent,{unit:'m/s at 10 m'});
+  const radiationDays=indexDailyAggregates(radiacio,{unit:'W/m²'});
   const H = new Map(), R = new Map(), recentRain = new Map();
   for (const r of pluja) {
     const d = daysAgo(r.dia);
     if (d < 0 || d >= DIES) continue;
-    const mm = parseFloat(r.v);
+    const quality=rainDays.get(r.codi_estacio)?.get(String(r.dia).slice(0,10));
+    // Today's value is an observed accumulation so far. Older incomplete days
+    // are not silently treated as complete rainfall totals.
+    if(d>0&&(quality?.coverage??0)<.8)continue;
+    const mm = parseFloat(r.value);
     if (Number.isNaN(mm)) continue;
     const useful = Math.min(mm, CAP);
     H.set(r.codi_estacio, (H.get(r.codi_estacio) ?? 0) + useful * lagWeight(d));
@@ -266,7 +337,9 @@ async function generate(args, OUT, generationId) {
   }
   const Tsum = new Map(), Tn = new Map(), TpreviousSum = new Map(), TpreviousN = new Map();
   for (const r of temp) {
-    const t = parseFloat(r.v); if (Number.isNaN(t)) continue;
+    const quality=temperatureDays.get(r.codi_estacio)?.get(String(r.dia).slice(0,10));
+    if((quality?.coverage??0)<.8)continue;
+    const t = parseFloat(r.mean); if (Number.isNaN(t)) continue;
     const age = daysAgo(r.dia);
     if (age < 0 || age >= DIES_TEMP) continue;
     const sums = age < DIES_TEMP_RECENT ? Tsum : TpreviousSum;
@@ -278,6 +351,38 @@ async function generate(args, OUT, generationId) {
     ? Tsum.get(codi) / Tn.get(codi) - TpreviousSum.get(codi) / TpreviousN.get(codi)
     : null;
 
+  const moisture = new Map();
+  for (const [codi,m] of meta) {
+    const days=[];
+    // Only complete past days enter the water balance. Today's partial readings
+    // still contribute to the rainfall trigger above, but are not extrapolated.
+    for(let age=DIES_HUMITAT;age>=1;age--) {
+      const date=isoDate(refDay*864e5-age*864e5);
+      days.push({
+        date,
+        dayOfYear:dayOfYear(date),
+        rain:rainDays.get(codi)?.get(date)??missingDailyAggregate('mm'),
+        temperature:temperatureDays.get(codi)?.get(date)??missingDailyAggregate('°C'),
+        humidity:humidityDays.get(codi)?.get(date)??missingDailyAggregate('%'),
+        wind:windDays.get(codi)?.get(date)??missingDailyAggregate('m/s at 10 m'),
+        radiation:radiationDays.get(codi)?.get(date)??missingDailyAggregate('W/m²'),
+      });
+    }
+    moisture.set(codi,calculateMoistureReserve(days,m));
+  }
+  const effectiveReserve = codi => {
+    const candidate=moisture.get(codi);
+    return useDynamicMoisture && candidate?.quality==='usable' ? candidate.reserveIndex : (R.get(codi)??0);
+  };
+  const moistureUsage={dynamic:0,legacyFallback:0,fao56Days:0,hargreavesDays:0,unavailableDays:0};
+  for(const [codi,result] of moisture) {
+    if(useDynamicMoisture&&result.quality==='usable') moistureUsage.dynamic++; else moistureUsage.legacyFallback++;
+    moistureUsage.fao56Days+=result.methods['fao56-pm'];
+    moistureUsage.hargreavesDays+=result.methods.hargreaves;
+    moistureUsage.unavailableDays+=result.methods.unavailable;
+  }
+  console.log(`Humitat v6: ${moistureUsage.dynamic} estacions dinàmiques · ${moistureUsage.legacyFallback} fallback legacy · ${moistureUsage.fao56Days} dies FAO-56 · ${moistureUsage.hargreavesDays} Hargreaves`);
+
   const gridPath = args.find((a) => a.startsWith("--grid="))?.slice(7) || "graella.bin";
   const grid = readGrid(gridPath);
   if (all && !grid) throw new Error('A complete publication requires graella.bin');
@@ -287,19 +392,20 @@ async function generate(args, OUT, generationId) {
     for (const [codi,m] of meta) {
       if (!m.lat||!m.lon||!Tn.has(codi)) continue;
       const [x,y]=wgs84ToUtm31(m.lon,m.lat);
-      signals.push({x,y,alt:m.alt||0,t:Tsum.get(codi)/Tn.get(codi),tTrend:temperatureTrend(codi),h:H.get(codi)??0,reserve:R.get(codi)??0});
+      signals.push({x,y,alt:m.alt||0,t:Tsum.get(codi)/Tn.get(codi),tTrend:temperatureTrend(codi),h:H.get(codi)??0,reserve:effectiveReserve(codi),reserveLegacy:R.get(codi)??0});
     }
     gridWeather=interpolateGrid(grid,signals);
     for (let i=0;i<grid.width*grid.height;i++) {
       const {host,alt}=terrainCell(grid,i);
       if (!host || alt===-32768) continue;
-      if (![gridWeather.outH[i],gridWeather.outR[i],gridWeather.outT[i],gridWeather.outTrend[i]].every(Number.isFinite)) {
+      if (![gridWeather.outH[i],gridWeather.outR[i],gridWeather.outBaselineR[i],gridWeather.outT[i],gridWeather.outTrend[i]].every(Number.isFinite)) {
         throw new Error('Non-finite weather grid; refusing to publish');
       }
     }
     writeFileSync(join(OUT,"bolets.grid.json"),JSON.stringify({
       width:grid.width,height:grid.height,cell:grid.cell,x0:grid.x0,y0:grid.y0,y1:grid.y1,
-      substrateVersion:grid.substrateVersion,forestStructureVersion:grid.forestStructureVersion,weatherVersion:2,
+      substrateVersion:grid.substrateVersion,forestStructureVersion:grid.forestStructureVersion,weatherVersion:3,
+      moistureModel:useDynamicMoisture?'dynamic-reserve-v1':'legacy-fixed-decay',
       coordinates:[utm31ToLngLat(grid.x0,grid.y1),utm31ToLngLat(grid.x1,grid.y1),utm31ToLngLat(grid.x1,grid.y0),utm31ToLngLat(grid.x0,grid.y0)],
     }));
 
@@ -328,6 +434,7 @@ async function generate(args, OUT, generationId) {
   // una espècie amb condicions mitjanes no desapareix només perquè una altra
   // la superi lleugerament a les mateixes cel·les.
   const discoveryCandidates = grid && gridWeather ? [] : null;
+  const modelComparisons=[];
 
   for (const spKey of spKeys) {
     const sp = SPECIES[spKey];
@@ -335,8 +442,10 @@ async function generate(args, OUT, generationId) {
     const files = [];
     for (const [codi, m] of meta) {
       if (!m.lat || !m.lon) continue;
-      const h = H.get(codi) ?? 0, reserve = R.get(codi) ?? 0;
+      const h = H.get(codi) ?? 0, reserveLegacy = R.get(codi) ?? 0, reserve = effectiveReserve(codi);
+      const moistureResult=moisture.get(codi);
       const hScore = humidityFactor(h, reserve);
+      const hScoreBaseline=humidityFactor(h,reserveLegacy);
       const tMean = Tn.has(codi) ? Tsum.get(codi) / Tn.get(codi) : null;
       const tTrend = temperatureTrend(codi), fTrend = temperatureTrendFactor(tTrend, sp.trend);
       const substrateCode=grid ? (terrainAt(grid,m.lon,m.lat)?.substrate ?? 0) : 0;
@@ -344,7 +453,11 @@ async function generate(args, OUT, generationId) {
       const fT = trapezoid(tMean, ...sp.temp), fAlt = trapezoid(m.alt, ...sp.alt), fHost = hostFactor(codi, sp);
       const host=HOST?.[codi]?.host ?? null, forestFrac=HOST?.[codi]?.forestFrac;
       const score = capConditionScore(hScore * fT * fTrend * fAlt * fHost * fSoil * fSeason, { host, substrate, forestFrac });
-      files.push({ codi, ...m, h, reserve, recentRain: recentRain.get(codi) ?? 0,
+      const baselineScore=capConditionScore(hScoreBaseline*fT*fTrend*fAlt*fHost*fSoil*fSeason,{host,substrate,forestFrac});
+      files.push({ codi, ...m, h, reserve, reserveLegacy, baselineScore,
+                   moistureMethod:useDynamicMoisture&&moistureResult?.quality==='usable'?'dynamic-reserve-v1':'legacy-fixed-decay',
+                   moistureQuality:moistureResult?.quality??'insufficient', moistureCoverage:moistureResult?.coverage??0,
+                   recentRain: recentRain.get(codi) ?? 0,
                    tMean, tTrend, host, substrate, forestFrac, score,
                    fH: hScore, fT, fTrend, fAlt, fHost, fSoil, fSeason });
     }
@@ -358,28 +471,49 @@ async function generate(args, OUT, generationId) {
 
     const geojson = {
       type: "FeatureCollection", species: spKey, speciesNom: sp.nom, generated: refISO.slice(0, 10), generationId,
-      model: { scoreVersion:5, host:sp.host, substrate:sp.substrate ?? [], alt:sp.alt, temp:sp.temp, trend:sp.trend, typicalMonths:sp.mesos, season:+fSeason.toFixed(3) },
+      model: { scoreVersion:useDynamicMoisture?6:5, moisture:useDynamicMoisture?'dynamic-reserve-v1':'legacy-fixed-decay', host:sp.host, substrate:sp.substrate ?? [], alt:sp.alt, temp:sp.temp, trend:sp.trend, typicalMonths:sp.mesos, season:+fSeason.toFixed(3) },
       features: files.map((f) => ({
         type: "Feature", geometry: { type: "Point", coordinates: [f.lon, f.lat] },
         properties: { codi:f.codi, nom:f.nom, alt:f.alt, host:f.host, substrate:f.substrate, forestFrac:f.forestFrac,
-                      H:+f.h.toFixed(1), reserve:+f.reserve.toFixed(1), recentRain:+f.recentRain.toFixed(1),
+                      H:+f.h.toFixed(1), reserve:+f.reserve.toFixed(1), reserveLegacy:+f.reserveLegacy.toFixed(1),
+                      moistureMethod:f.moistureMethod, moistureQuality:f.moistureQuality, moistureCoverage:+f.moistureCoverage.toFixed(2), recentRain:+f.recentRain.toFixed(1),
                       tMean:f.tMean, tTrend:f.tTrend, score:+f.score.toFixed(3),
                       fH:+f.fH.toFixed(2), fT:+f.fT.toFixed(2), fTrend:+f.fTrend.toFixed(2), fAlt:+f.fAlt.toFixed(2), fHost:+f.fHost.toFixed(2), fSoil:+f.fSoil.toFixed(2), fSeason:+f.fSeason.toFixed(2) },
       })),
     };
+    const deltas=files.map(file=>file.score-file.baselineScore);
+    const comparison={
+      species:spKey,
+      scoreDelta:summarizeNumbers(deltas),
+      categoryTransitions:files.reduce((counts,file)=>{
+        const transition=`${scoreBand(file.baselineScore)} -> ${scoreBand(file.score)}`;
+        counts[transition]=(counts[transition]??0)+1;
+        return counts;
+      },{}),
+      changedCategoryCount:files.filter(file=>scoreBand(file.baselineScore)!==scoreBand(file.score)).length,
+      baselineTopScore:+Math.max(...files.map(file=>file.baselineScore),0).toFixed(4),
+      candidateTopScore:+Math.max(...files.map(file=>file.score),0).toFixed(4),
+    };
     if (grid && gridWeather) {
-      const rgba=new Uint8Array(grid.width*grid.height*4), rasterScores=new Float32Array(grid.width*grid.height);
+      const rgba=new Uint8Array(grid.width*grid.height*4), rasterScores=new Float32Array(grid.width*grid.height), baselineRasterScores=new Float32Array(grid.width*grid.height);
       const wanted=new Set(sp.host.map(h=>HOST_CODE[h]));
       for(let i=0;i<grid.width*grid.height;i++) {
         const {host,alt,substrate,forestStructure}=terrainCell(grid,i); if(!host||alt===-32768) continue;
         const fH=humidityFactor(gridWeather.outH[i],gridWeather.outR[i]), fT=trapezoid(gridWeather.outT[i],...sp.temp), fTrend=temperatureTrendFactor(gridWeather.outTrend[i],sp.trend), fAlt=trapezoid(alt,...sp.alt);
         const fHost=wanted.has(host)?1:.25, fSoil=substrateFactor(substrate,sp);
         const score=capConditionScore(fH*fT*fTrend*fAlt*fHost*fSoil*fSeason,{ host,substrate,forestStructure });
+        const baselineH=humidityFactor(gridWeather.outH[i],gridWeather.outBaselineR[i]);
+        const baselineScore=capConditionScore(baselineH*fT*fTrend*fAlt*fHost*fSoil*fSeason,{host,substrate,forestStructure});
         rasterScores[i]=score;
+        baselineRasterScores[i]=baselineScore;
         const [red,green,blue]=scoreColor(score), p=i*4;
         rgba[p]=red; rgba[p+1]=green; rgba[p+2]=blue; rgba[p+3]=score<.01?35:Math.round(105+Math.min(1,score)*125);
       }
       const topAreas = selectSpeciesAreas(rasterScores, grid, spKey);
+      const baselineTopAreas=selectSpeciesAreas(baselineRasterScores,grid,spKey);
+      comparison.rasterScoreDelta=summarizeDifference(rasterScores,baselineRasterScores);
+      comparison.baselineTopAreas=baselineTopAreas.map(point=>({x:Math.round(point.x),y:Math.round(point.y),score:+point.score.toFixed(4)}));
+      comparison.candidateTopAreas=topAreas.map(point=>({x:Math.round(point.x),y:Math.round(point.y),score:+point.score.toFixed(4)}));
       if (discoveryCandidates && all)
         discoveryCandidates.push(...topAreas.filter((point) => point.score >= DISCOVERY_MIN_SCORE));
       geojson.topAreas = topAreas.map((point) => {
@@ -401,6 +535,7 @@ async function generate(args, OUT, generationId) {
       });
       writeFileSync(join(OUT,`bolets.${spKey}.png`),encodeRgbaPng(grid.width,grid.height,rgba));
     }
+    modelComparisons.push(comparison);
     writeFileSync(join(OUT, `bolets.${spKey}.geojson`), JSON.stringify(geojson));
     console.log(`   ✓ → ${join(OUT, `bolets.${spKey}.geojson`)}${grid ? ` + bolets.${spKey}.png` : ""}\n`);
   }
@@ -424,12 +559,31 @@ async function generate(args, OUT, generationId) {
   } else if (discoveryCandidates) {
     console.log("ℹ️  Descoberta omesa: cal --all per comparar totes les espècies.\n");
   }
+  writeFileSync(join(OUT,'bolets.model-comparison.json'),JSON.stringify({
+    schemaVersion:1,
+    referenceDate:refISO.slice(0,10),
+    generationId,
+    baselineModel:'score-v5-legacy-fixed-decay',
+    candidateModel:useDynamicMoisture?'score-v6-dynamic-reserve-v1':'score-v5-legacy-fixed-decay',
+    activeModel:useDynamicMoisture?'candidate':'baseline',
+    sourceObservedThrough,
+    moistureUsage,
+    reserveDelta:summarizeNumbers([...meta.keys()].map(codi=>{
+      const result=moisture.get(codi);
+      return result?.quality==='usable'?result.reserveIndex-(R.get(codi)??0):null;
+    })),
+    species:modelComparisons,
+    limitations:[
+      'Physical consistency is engineering evidence, not validation of mushroom occurrence.',
+      'The 100 mm capacity, 50 mm initialization and forest ET coefficient are hypotheses.',
+      'Station wind is measured in an open exposure and is not forest-floor wind.',
+    ],
+  }));
   return {
     referenceDate: refISO.slice(0,10),
-    modelVersion: 5,
+    modelVersion: useDynamicMoisture?6:5,
     terrainVersion: grid ? createHash('sha256').update(grid.b).digest('hex') : null,
-    // Source observation coverage/freshness is implemented separately in OPS-02.
-    sourceObservedThrough: null,
+    sourceObservedThrough,
   };
 }
 

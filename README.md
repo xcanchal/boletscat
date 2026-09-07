@@ -229,6 +229,8 @@ Les execucions `--all` publiquen una generació completa i immutable a
 tots els fitxers a aquesta mateixa generació. Una execució d'una sola espècie
 es desa a `experiments/<id>/` i no modifica el mapa actiu.
 Vegeu el [contracte, migració i recuperació](docs/PREDICTION_GENERATIONS.md).
+La branca `development` avalua el [model d'humitat v6](docs/SCORING_MODEL_V6.md):
+FAO-56 amb fallback Hargreaves, qualitat explícita i comparació automàtica amb v5.
 
 La landing pública es publica a `/`; el registre, el paywall i el predictor viuen
 a `/app/`. `npm run build:mobile` continua empaquetant directament el predictor.
@@ -423,7 +425,10 @@ i la suspensió real a iPhone després de publicar-lo.
 | `bolets.<espècie>.geojson` | Sortides diàries (generades; **no** es versionen). |
 | `bolets.<espècie>.png` · `bolets.grid.json` | Ràsters diaris i georeferenciació (generats). |
 | `bolets.discovery.json` | Zones de la descoberta multiespècie (generat amb `--all`). |
+| `bolets.model-comparison.json` | Evidència v5/v6, cobertura i fallbacks de cada generació. |
 | `src/season-prior.mjs` | Prior estacional suau per espècie. |
+| `src/moisture-model.mjs` | ET0 i dipòsit hídric diari del model v6. |
+| `src/weather-quality.mjs` | Contracte de cobertura i frescor de les dades XEMA. |
 | `spike_xema.mjs` · `spike_mcsc.mjs` | Diagnòstics d'un sol ús (jubilats). |
 
 ---
@@ -431,7 +436,8 @@ i la suspensió real a iPhone després de publicar-lo.
 ## Paràmetres afinables
 
 `score_estacions.mjs`: `CAP`, `LAG_RISE`/`LAG_FALL`, `RESERVE_FALL`,
-`TRIGGER_IDEAL`/`RESERVE_IDEAL` (humitat) · el bloc `SPECIES`
+`TRIGGER_IDEAL`/`RESERVE_IDEAL` (humitat) · `DEFAULT_MOISTURE_PARAMETERS`
+a `src/moisture-model.mjs` (reserva v6) · el bloc `SPECIES`
 (mesos i `spread` estacional, altitud, temperatura, tendència tèrmica, bosc i substrat per espècie) · els factors dins
 `hostFactor` i `substrateFactor` (duresa de cada penalització).
 `buildGrid.mjs`: `COVER_SAMPLES_PER_CELL` (resolució senar del mostreig d'àrea forestal).

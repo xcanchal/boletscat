@@ -6,12 +6,13 @@ import { decodeRgbaPng } from '../raster.mjs';
 import { SPECIES } from './species-model.mjs';
 
 export const GENERATION_ID = /^g-[a-f0-9-]{36}$/;
-export const PREDICTION_NAME = /^bolets\.(?:grid\.json|discovery\.json|[a-z0-9_-]+\.(?:geojson|png))$/;
+export const PREDICTION_NAME = /^bolets\.(?:grid\.json|discovery\.json|model-comparison\.json|[a-z0-9_-]+\.(?:geojson|png))$/;
 export const REQUIRED_FILES = [
   'bolets.grid.json', 'bolets.terrain.png', 'bolets.forest.png', 'bolets.weather.png',
   ...Object.keys(SPECIES).flatMap(key => [`bolets.${key}.geojson`, `bolets.${key}.png`]),
   'bolets.discovery.json',
 ];
+export const OPTIONAL_FILES = ['bolets.model-comparison.json'];
 const digest = data => createHash('sha256').update(data).digest('hex');
 const ensure = (condition, message) => { if (!condition) throw new Error(message); };
 const finite = value => typeof value === 'number' && Number.isFinite(value);
@@ -25,7 +26,12 @@ export async function validateGeneration(directory, generationId, referenceDate)
   const files = {};
   const json = {};
   // Read all required files before publication; optional/extra files are never served.
-  for (const name of REQUIRED_FILES) {
+  const presentOptional=[];
+  for(const name of OPTIONAL_FILES) {
+    try { if((await lstat(join(directory,name))).isFile())presentOptional.push(name); }
+    catch(error) { if(error.code!=='ENOENT')throw error; }
+  }
+  for (const name of [...REQUIRED_FILES,...presentOptional]) {
     ensure((await lstat(join(directory, name))).isFile(), `Not a regular file: ${name}`);
     const data = await readFile(join(directory, name));
     ensure(data.length > 0, `Empty file: ${name}`);
@@ -49,7 +55,7 @@ export async function validateGeneration(directory, generationId, referenceDate)
     const geo = json[`bolets.${key}.geojson`];
     ensure(geo.type === 'FeatureCollection' && geo.species === key && geo.generated === referenceDate
       && geo.generationId === generationId, `Inconsistent species metadata: ${key}`);
-    ensure(geo.model?.scoreVersion === 5 && finite(geo.model.season), `Invalid model metadata: ${key}`);
+    ensure([5,6].includes(geo.model?.scoreVersion) && finite(geo.model.season), `Invalid model metadata: ${key}`);
     ensure(Array.isArray(geo.features) && geo.features.length > 0, `Empty species: ${key}`);
     for (const feature of geo.features) {
       ensure(feature.type === 'Feature' && feature.geometry?.type === 'Point'
@@ -65,6 +71,9 @@ export async function validateGeneration(directory, generationId, referenceDate)
   for (const row of discovery.species) {
     ensure(score(row.visibleScore) && discovery.points.some(point => point.species === row.species), 'Invalid discovery row');
   }
+  const comparison=json['bolets.model-comparison.json'];
+  if(comparison)ensure(comparison.schemaVersion===1&&comparison.referenceDate===referenceDate&&comparison.generationId===generationId
+    &&['baseline','candidate'].includes(comparison.activeModel)&&Array.isArray(comparison.species),'Invalid model comparison');
   return files;
 }
 

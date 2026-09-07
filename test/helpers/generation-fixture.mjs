@@ -24,5 +24,7 @@ export async function writeFixture(directory, generationId, { date = '2026-09-05
   }
   await json('bolets.discovery.json', { generated: date, generationId, points: [{ species: 'rovello', lng: 1.5, lat: 41.5, score: value }],
     species: [{ species: 'rovello', visibleScore: value }] });
+  await json('bolets.model-comparison.json', { schemaVersion:1, referenceDate:date, generationId,
+    activeModel:'baseline', species:[] });
   return { referenceDate: date, modelVersion: 5, terrainVersion: 'fixture', sourceObservedThrough: null };
 }

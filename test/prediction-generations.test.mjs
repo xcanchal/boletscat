@@ -2,19 +2,30 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile, writeFile, rm, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { publishGeneration, readCurrentGeneration, REQUIRED_FILES } from '../src/prediction-generations.mjs';
+import { publishGeneration, readCurrentGeneration, REQUIRED_FILES, OPTIONAL_FILES } from '../src/prediction-generations.mjs';
 import { tempRoot, writeFixture } from './helpers/generation-fixture.mjs';
 
 test('publication creates a complete manifest and retains the previous immutable generation', async t => {
   const root = await tempRoot(t);
   const first = await publishGeneration(root, writeFixture);
-  assert.deepEqual(Object.keys(first.files), REQUIRED_FILES);
+  assert.deepEqual(Object.keys(first.files), [...REQUIRED_FILES,...OPTIONAL_FILES]);
   const before = await readFile(join(root, 'generations', first.generationId, 'bolets.rovello.geojson'));
   const second = await publishGeneration(root, (dir, id) => writeFixture(dir, id, { value: .2 }));
   assert.equal((await readCurrentGeneration(root)).generationId, second.generationId);
   assert.notEqual(first.generationId, second.generationId);
   assert.deepEqual(await readFile(join(root, 'generations', first.generationId, 'bolets.rovello.geojson')), before);
   assert.equal((await readdir(join(root, '.staging'))).length, 0);
+});
+
+test('a pre-v6 generation without the comparison report remains readable',async t=>{
+  const root=await tempRoot(t);
+  const manifest=await publishGeneration(root,async(directory,id)=>{
+    const metadata=await writeFixture(directory,id);
+    await rm(join(directory,'bolets.model-comparison.json'));
+    return metadata;
+  });
+  assert.equal((await readCurrentGeneration(root)).generationId,manifest.generationId);
+  assert.ok(!Object.hasOwn(manifest.files,'bolets.model-comparison.json'));
 });
 
 test('interruption and invalid output never replace the active pointer', async t => {
