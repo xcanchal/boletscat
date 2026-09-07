@@ -110,7 +110,8 @@ test("la millor zona acaba el vol abans de centrar i dimensionar el popup", () =
   assert.match(app, /map\.once\('moveend',\(\)=>\{[\s\S]*?centerPopup\(\);[\s\S]*?\}\);\s*map\.flyTo/);
   assert.match(app, /showPopup\(target,areaHTML\([^\n]+\),null\)/);
   assert.match(app, /updatePopup\(areaHTML\([^\n]+\),flightSettled\?true:null\)/);
-  assert.doesNotMatch(app, /map\.flyTo\(\{center:target,zoom:11,speed:\.8\}\);\s*showPopup\([^\n]+,true\)/);
+  assert.match(app, /map\.flyTo\(\{center:target,zoom:11,duration:400\}\)/);
+  assert.doesNotMatch(app, /map\.flyTo\(\{center:target,zoom:11,speed:\.8\}\)/);
 });
 
 test("el popup recupera tota l’alçada després de plegar la sidebar", () => {

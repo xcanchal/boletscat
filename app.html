@@ -831,6 +831,9 @@
       const sample=nearestDetailsAt(rankedLngLat),target=sample?.lngLat??rankedLngLat;
       const request=++areaRequest;
       let flightSettled=false;
+      // Un salt des de la vista general amb `speed` té una durada variable i
+      // pot resultar lent. La sidebar ha de donar feedback immediat, així que
+      // limitem el vol sense alterar el clic directe sobre el mapa.
       map.once('moveend',()=>{
         flightSettled=true;
         if(request!==areaRequest||experienceMode!=='species'||!popup.isOpen())return;
@@ -839,7 +842,7 @@
         // l'alçada transitòria del popup, especialment a Safari.
         centerPopup();
       });
-      map.flyTo({center:target,zoom:11,speed:.8});
+      map.flyTo({center:target,zoom:11,duration:400});
       showPopup(target,areaHTML(null,sample?.details??null,target,sample?.distance??0),null);
       const place=await nearestPlace(target);
       if(request!==areaRequest||experienceMode!=='species')return;
@@ -1242,7 +1245,7 @@
                       <span class="sc q-${r.key}" title="${r.recomanacio} · Índex ${(+p.score).toFixed(3)} / 1">${r.nivell}</span>`;
         el.onclick=()=>{
           if(p.area) { void openTopArea(f); return; }
-          panel.classList.add('collapsed'); map.flyTo({ center:f.geometry.coordinates, zoom:11, speed:0.8 });
+          panel.classList.add('collapsed'); map.flyTo({ center:f.geometry.coordinates, zoom:11, duration:400 });
           showPopup(f.geometry.coordinates,popHTML(p,f.geometry.coordinates));
         };
         rows.appendChild(el);
