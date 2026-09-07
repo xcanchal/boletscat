@@ -5,10 +5,20 @@ export async function syncRevenueCatCustomer(userId) {
   if (!config.revenueCat.secretApiKey) {
     throw new Error("Falta REVENUECAT_SECRET_API_KEY");
   }
-  const response = await fetch(
-    `${config.revenueCat.apiUrl}/subscribers/${encodeURIComponent(userId)}`,
-    { headers: { Authorization: `Bearer ${config.revenueCat.secretApiKey}`, Accept: "application/json" } },
-  );
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+  let response;
+  try {
+    response = await fetch(
+      `${config.revenueCat.apiUrl}/subscribers/${encodeURIComponent(userId)}`,
+      {
+        headers: { Authorization: `Bearer ${config.revenueCat.secretApiKey}`, Accept: "application/json" },
+        signal: controller.signal,
+      },
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!response.ok) throw new Error(`RevenueCat ha respost ${response.status}`);
 
   const customer = await response.json();
