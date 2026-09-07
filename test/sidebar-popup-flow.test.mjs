@@ -39,6 +39,8 @@ test("el clic de la sidebar no cancel·la el vol per centrar el popup", async ()
 
   assert.equal(harness.calls.event, "moveend");
   assert.equal(harness.calls.flight.zoom, 11);
+  assert.equal(harness.calls.flight.duration, 400);
+  assert.equal(harness.calls.flight.speed, undefined);
   assert.equal(harness.calls.popup[0][2], null);
   assert.equal(harness.calls.centers, 0);
 
