@@ -41,7 +41,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { encodeRgbaPng } from "./raster.mjs";
 import { SUBSTRATE_BY_CODE } from "./substrate.mjs";
 import { capConditionScore } from "./prediction-confidence.mjs";
-import { DISCOVERY_MIN_SCORE, selectDiscoveryPoints, selectSpeciesAreas, summarizeDiscoverySpecies, zoneMaxima } from "./discovery-map.mjs";
+import { DISCOVERY_MIN_SCORE, selectDiscoveryPoints, selectSpeciesAreas, summarizeDiscoverySpecies } from "./discovery-map.mjs";
 import { SPECIES, trapezoid } from "./src/species-model.mjs";
 import { temperatureTrendFactor } from "./src/temperature-trend.mjs";
 import { seasonPrior } from "./src/season-prior.mjs";
@@ -324,12 +324,10 @@ async function generate(args, OUT, generationId) {
   } else console.log("ℹ️  Sense graella.bin: es generen només els punts per estació. Corre node buildGrid.mjs\n");
 
   // ── Puntuem cada espècie ─────────────────────────────────────────────────
-  // La descoberta necessita l'espècie dominant de cada cel·la. La calculem
-  // mentre puntuem, sense cap passada extra sobre la graella.
-  const cells = grid ? grid.width * grid.height : 0;
-  const best = grid && gridWeather
-    ? { score:new Float32Array(cells), species:new Array(cells).fill(null) }
-    : null;
+  // La descoberta reutilitza les clapes representatives de cada espècie. Així
+  // una espècie amb condicions mitjanes no desapareix només perquè una altra
+  // la superi lleugerament a les mateixes cel·les.
+  const discoveryCandidates = grid && gridWeather ? [] : null;
 
   for (const spKey of spKeys) {
     const sp = SPECIES[spKey];
@@ -380,9 +378,11 @@ async function generate(args, OUT, generationId) {
         rasterScores[i]=score;
         const [red,green,blue]=scoreColor(score), p=i*4;
         rgba[p]=red; rgba[p+1]=green; rgba[p+2]=blue; rgba[p+3]=score<.01?35:Math.round(105+Math.min(1,score)*125);
-        if (best && score>best.score[i]) { best.score[i]=score; best.species[i]=spKey; }
       }
-      geojson.topAreas = selectSpeciesAreas(rasterScores, grid, spKey).map((point) => {
+      const topAreas = selectSpeciesAreas(rasterScores, grid, spKey);
+      if (discoveryCandidates && all)
+        discoveryCandidates.push(...topAreas.filter((point) => point.score >= DISCOVERY_MIN_SCORE));
+      geojson.topAreas = topAreas.map((point) => {
         const [lng,lat]=utm31ToLngLat(point.x,point.y);
         let nearest=null,nearestDistance=Infinity;
         for(const station of files) {
@@ -407,9 +407,9 @@ async function generate(args, OUT, generationId) {
 
   // ── Descoberta multiespècie ──────────────────────────────────────────────
   // Només té sentit amb totes les espècies puntuades: amb un subconjunt,
-  // l'espècie dominant de cada zona seria falsa.
-  if (best && all) {
-    const points = selectDiscoveryPoints(zoneMaxima(best, grid));
+  // la comparació i el repartiment de zones entre espècies serien incomplets.
+  if (discoveryCandidates && all) {
+    const points = selectDiscoveryPoints(discoveryCandidates, { ensureEachSpecies:true });
     writeFileSync(join(OUT, "bolets.discovery.json"), JSON.stringify({
       generated: refISO.slice(0, 10),
       generationId,
@@ -421,8 +421,8 @@ async function generate(args, OUT, generationId) {
       species: summarizeDiscoverySpecies(points).map((row) => ({ ...row, visibleScore:+row.visibleScore.toFixed(3) })),
     }));
     console.log(`── Descoberta: ${points.length} zones → ${join(OUT, "bolets.discovery.json")}\n`);
-  } else if (best) {
-    console.log("ℹ️  Descoberta omesa: cal --all per saber l'espècie dominant de cada zona.\n");
+  } else if (discoveryCandidates) {
+    console.log("ℹ️  Descoberta omesa: cal --all per comparar totes les espècies.\n");
   }
   return {
     referenceDate: refISO.slice(0,10),
