@@ -16,23 +16,23 @@ indexability gates and the public/private boundary.
 | Species identity and editorial claims | `content/catalog.json` plus cited sources | Predictor display labels alone |
 | Current conditions | One complete active prediction generation | Partially written assets or browser state |
 | Public regional summaries | Derived public snapshot defined below | Exact premium GeoJSON or nearest-cell endpoint |
-| Publication/review date | Source-controlled editorial metadata | Build or deploy time |
+| Content update date | Source-controlled `updatedAt` metadata | Build or deploy time |
 | Generation freshness | Active generation manifest | Client clock or cached page date |
 
 ## Route contract
 
 | Route family | Intent | Rendering | Index when | CTA |
 |---|---|---|---|---|
-| `/bolets/` | Browse species | Generated HTML | At least one reviewed profile exists | Species profiles and map |
-| `/bolets/:slug/` | Understand one species | Generated HTML | Profile, source and review gates pass | Species or group map |
-| `/comparar/:a-vs-b/` | Distinguish two species | Generated HTML | Both profiles and comparison review pass | Both profiles and map |
+| `/bolets/` | Browse species | Generated HTML | At least one validated profile exists | Species profiles and map |
+| `/bolets/:slug/` | Understand one species | Generated HTML | Profile, source and factual QA gates pass | Species or group map |
+| `/comparar/:a-vs-b/` | Distinguish two species | Generated HTML | Both profiles and comparison QA pass | Both profiles and map |
 | `/temporada-de-bolets/` | Annual calendar | Generated HTML | Reviewed season data exists | Month and species pages |
-| `/temporada/:mes/` | Mushrooms in one month | Generated HTML | Enough reviewed species create a useful answer | Current summary and profiles |
+| `/temporada/:mes/` | Mushrooms in one month | Generated HTML | Enough validated species create a useful answer | Current summary and profiles |
 | `/boscos/:habitat/` | Species associated with a habitat | Generated HTML | Distinct habitat description and useful set exist | Profiles and map |
 | `/zones/` | Browse regional summaries | Generated HTML | At least three approved regions exist | Region pages and map |
 | `/zones/:region/` | Current and ecological regional overview | Generated HTML with public snapshot | Unique editorial and model-derived data pass gates | Detailed map |
 | `/bolets-avui/` | Current conditions in Catalunya | Generated after complete scoring | Fresh public snapshot passes validation | Detailed map |
-| `/com-es-calcula/` | Understand and trust the model | Generated HTML | Method, limits and sources are reviewed | Current summary and map |
+| `/com-es-calcula/` | Understand and trust the model | Generated HTML | Method, limits and sources pass factual QA | Current summary and map |
 | `/app/` | Use premium map | Client application | Never index | — |
 
 ## Public daily snapshot
@@ -72,7 +72,7 @@ geometry, cell identifiers, station-level ranks or exact condition scores.
 - `generationId` is the active complete generation used to derive the page.
 - `freshness` is `fresh`, `stale` or `unavailable`; only `fresh` may use “avui”.
 - A public region band is qualitative and cannot be reversed to an exact score.
-- `leadingSpecies` contains catalogue slugs and only reviewed, edible or
+- `leadingSpecies` contains catalogue slugs and only validated, edible or
   conditionally edible species.
 - Factors use a controlled vocabulary backed by scorer evidence; omit rather than
   guess.
@@ -90,7 +90,7 @@ A generated URL defaults to `noindex` until every required check passes.
 | Unique title, H1 and description | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Canonical source data validates | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Substantive non-boilerplate content | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Human editorial review | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Source and factual QA | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Sources and safety language | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Contextual internal links | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Valid snapshot state for every current claim | — | — | — | — | ✓ | ✓ |
@@ -100,10 +100,10 @@ Failure behavior:
 
 | Situation | Response |
 |---|---|
-| Draft or incomplete evergreen page | Render preview with `noindex, nofollow`; omit from sitemap |
+| Draft or incomplete evergreen page | Keep it on a feature branch; do not add it to the catalogue on `main` |
 | Failed current generation | Keep last-good HTML and label it stale, or show unavailable; remove “avui” claims |
 | Region lacks unique evidence | Do not create the URL |
-| Slug changes | Permanent redirect old URL to the reviewed canonical URL |
+| Slug changes | Permanent redirect old URL to the validated canonical URL |
 | Duplicate intent across routes | Merge into the stronger page and redirect |
 
 ## Editorial entity model
@@ -117,11 +117,16 @@ accurate profiles while preserving a shared predictor during model migration.
     "slug": "pinetell",
     "scientificName": "Lactarius deliciosus",
     "predictionProduct": "rovello-group",
-    "publication": {
-      "status": "published",
-      "reviewedBy": "reviewer-id",
-      "reviewedAt": "2026-09-07"
-    }
+    "updatedAt": "2026-09-07",
+    "identification": {
+      "traits": [
+        { "part": "Barret", "description": "…" },
+        { "part": "Sota el barret", "description": "…" },
+        { "part": "Peu", "description": "…" },
+        { "part": "Senyal clau", "description": "…" }
+      ]
+    },
+    "sourceIds": ["source-id"]
   },
   "predictionProduct": {
     "key": "rovello-group",
@@ -132,6 +137,9 @@ accurate profiles while preserving a shared predictor during model migration.
 
 Rules:
 
+- The catalogue is the public set. Publication workflow lives in Git branches,
+  commits and deployments, not in a second content-status system.
+- `updatedAt` changes only when the visible profile changes substantively.
 - Never describe a group prediction as a species-specific observation.
 - A species page may link to a group map with explicit wording.
 - Splitting a predictor requires a model/data decision, not merely a content edit.
@@ -145,7 +153,7 @@ Every indexable nested page includes:
 2. visible breadcrumb navigation;
 3. an answer to the primary intent before promotional content;
 4. original structured information, not only rewritten prose;
-5. sources, responsible-use language and review metadata;
+5. sources, responsible-use language and a truthful update date;
 6. two or more genuinely relevant contextual internal links;
 7. a restrained CTA explaining the additional value of the paid map;
 8. accessible images with attribution and truthful alternative text;
@@ -158,7 +166,7 @@ Every indexable nested page includes:
 |---|---|
 | Homepage | `WebSite`, `Organization`, `SoftwareApplication` |
 | Directory/hub | `CollectionPage`, `ItemList`, `BreadcrumbList` where nested |
-| Species/comparison/method | `Article`, `BreadcrumbList`; author/reviewer only when visible |
+| Species/comparison/method | `Article`, `BreadcrumbList`; author only when truthful and attributable |
 | Region/month/habitat | `CollectionPage` or `Article` according to visible content, plus `BreadcrumbList` |
 
 Structured data is descriptive, not a promise of a rich result. Validate rendered
@@ -197,7 +205,7 @@ clicks of the homepage.
 - [ ] Meaningful content is present without client-side JavaScript.
 - [ ] Canonical, robots directive, sitemap and redirect behavior tested.
 - [ ] Structured data matches visible content and validates.
-- [ ] Sources, reviewer, safety and uncertainty wording reviewed.
+- [ ] Sources, safety and uncertainty wording checked.
 - [ ] Analytics events include route family and CTA destination.
 - [ ] A small pilot is indexed and measured before bulk generation.
 - [ ] Rollback can remove the family from sitemap and set `noindex` without

@@ -22,12 +22,12 @@ const guideSectionNav = (current) => `<nav class="guide-section-nav" aria-label=
 
 const footer = () => `<footer class="site-footer"><div class="wrap footer-row"><span>© 2026 Boletada</span><div class="footer-links"><a href="/legal/#avis-legal">Avís legal</a><a href="/legal/#privacitat">Privacitat</a><a href="/legal/#termes">Termes</a><a href="mailto:hola@boletada.cat">Contacte</a></div></div></footer>`;
 
-const documentShell = ({ title, description, canonical, body, indexable = false, structuredData, ogImage = "https://boletada.cat/assets/brand/boletada-og-1200x630.png", navCurrent = "guide", scripts = [] }) => `<!doctype html>
+const documentShell = ({ title, description, canonical, body, indexable = false, structuredData, ogImage = "https://boletada.cat/assets/brand/boletada-og-1200x630.png", ogType = "website", navCurrent = "guide", scripts = [] }) => `<!doctype html>
 <html lang="ca"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(description)}"/><meta name="theme-color" content="#10150f"/>
 <meta name="robots" content="${indexable ? "index,follow" : "noindex,nofollow"}"/><link rel="canonical" href="${escapeHtml(canonical)}"/>
-<meta property="og:type" content="website"/><meta property="og:locale" content="ca_ES"/><meta property="og:site_name" content="Boletada"/><meta property="og:title" content="${escapeHtml(title)}"/><meta property="og:description" content="${escapeHtml(description)}"/><meta property="og:url" content="${escapeHtml(canonical)}"/><meta property="og:image" content="${escapeHtml(ogImage)}"/>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600;700&family=Spectral:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet"/><link rel="stylesheet" href="/content/content.css?v=20260831-3"/>
+<meta property="og:type" content="${escapeHtml(ogType)}"/><meta property="og:locale" content="ca_ES"/><meta property="og:site_name" content="Boletada"/><meta property="og:title" content="${escapeHtml(title)}"/><meta property="og:description" content="${escapeHtml(description)}"/><meta property="og:url" content="${escapeHtml(canonical)}"/><meta property="og:image" content="${escapeHtml(ogImage)}"/>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600;700&family=Spectral:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet"/><link rel="stylesheet" href="/content/content.css?v=20260907-1"/>
 ${structuredData ? `<script type="application/ld+json">${JSON.stringify(structuredData).replaceAll("<", "\\u003c")}</script>` : ""}${scripts.map((src) => `<script defer src="${escapeHtml(src)}"></script>`).join("")}</head><body><a class="skip" href="#contingut">Salta al contingut</a>${nav(navCurrent)}${body}${footer()}</body></html>`;
 
 const habitatNamesFor = (species, catalog) => species.ecology.habitatSlugs
@@ -60,15 +60,14 @@ Sitemap: ${SITE_URL}/sitemap.xml
 `;
 
 export const renderSitemap = (catalog) => {
-  const publishedSpecies = catalog.species.filter((species) => species.publication.status === "published");
   const urls = [
     { loc: `${SITE_URL}/`, lastmod: "2026-08-31" },
     { loc: `${SITE_URL}/bolets/`, lastmod: "2026-08-31" },
     { loc: `${SITE_URL}/temporada-de-bolets/`, lastmod: "2026-08-31" },
     { loc: `${SITE_URL}/bones-practiques/`, lastmod: "2026-09-02" },
-    ...publishedSpecies.map((species) => ({
+    ...catalog.species.map((species) => ({
       loc: `${SITE_URL}/bolets/${species.slug}/`,
-      lastmod: species.publication.reviewedAt,
+      lastmod: species.updatedAt,
     })),
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(({ loc, lastmod }) => `  <url><loc>${loc}</loc><lastmod>${lastmod}</lastmod></url>`).join("\n")}\n</urlset>\n`;
@@ -88,7 +87,7 @@ export function renderDirectoryPage(catalog) {
       : "";
     const searchText = [species.names.ca, species.names.scientific, ...(species.names.aliases || [])].join(" ").toLocaleLowerCase("ca");
     const media = cardImage
-      ? `<figure class="card-visual"><img src="${escapeHtml(cardImage.src)}" alt="" width="1536" height="1024" loading="lazy" decoding="async"/></figure>`
+      ? `<figure class="card-visual"><img src="${escapeHtml(cardImage.src)}" alt="" width="1536" height="1024" loading="lazy" decoding="async"/>${cardImage.generated ? '<figcaption>Il·lustració IA</figcaption>' : ""}</figure>`
       : "";
     const seasonBand = groupKey === "edible"
       ? `<div class="card-season" aria-label="Mesos habituals"><div class="mini-months">${monthBand(species)}</div><div class="mini-month-labels" aria-hidden="true"><span>Gen</span><span>Des</span></div></div>`
@@ -107,7 +106,7 @@ export function renderDirectoryPage(catalog) {
     description: "Temporada, hàbitats i sòls dels bolets més buscats a Catalunya.",
     canonical: "https://boletada.cat/bolets/",
     body,
-    indexable: catalog.species.some((species) => species.publication.status === "published"),
+    indexable: true,
     structuredData: { "@context": "https://schema.org", "@type": "CollectionPage", name: "Guia de bolets de Catalunya", url: "https://boletada.cat/bolets/", inLanguage: "ca", mainEntity: { "@type": "ItemList", numberOfItems: catalog.species.length, itemListElement: catalog.species.map((species, index) => ({ "@type": "ListItem", position: index + 1, name: species.names.ca, url: `${SITE_URL}/bolets/${species.slug}/` })) } },
     scripts: ["/content/directory.js?v=20260830-1"],
   });
@@ -132,7 +131,7 @@ export function renderSeasonPage(catalog) {
     canonical: "https://boletada.cat/temporada-de-bolets/",
     body,
     navCurrent: "guide",
-    indexable: catalog.species.some((species) => species.publication.status === "published"),
+    indexable: true,
     structuredData: { "@context": "https://schema.org", "@type": "CollectionPage", name: "Calendari de temporada de bolets a Catalunya", url: "https://boletada.cat/temporada-de-bolets/", inLanguage: "ca" },
   });
 }
@@ -164,16 +163,20 @@ export function renderSpeciesPage(species, catalog) {
   const kitchenSection = species.culinary?.preparation && ["edible", "conditional"].includes(species.edibility.category)
     ? `<section class="prose-section kitchen-section"><span class="kicker">A la cuina</span><h2>Com preparar-lo</h2><div class="culinary-rating"><span>Valoració culinària</span><strong>${escapeHtml(species.culinary.label)}</strong></div><p>${escapeHtml(species.culinary.preparation)}</p><p class="kitchen-caution">Consumeix només bolets identificats amb certesa, en bon estat i cuinats. La fitxa no substitueix el criteri d’una persona experta.</p></section>`
     : "";
-  const body = `<main id="contingut"><section class="species-hero${heroImage ? " has-photo" : ""}">${heroMedia}<div class="wrap species-hero-content"><div class="hero-labels"><span class="kicker">${species.kind === "species" ? "Espècie" : "Grup"}</span><span class="edibility-badge ${escapeHtml(species.edibility.category)}">${escapeHtml(species.edibility.label)}</span>${species.culinary ? `<span class="quality-badge ${escapeHtml(species.culinary.rating)}">${escapeHtml(species.culinary.label)}</span>` : ""}</div><h1>${escapeHtml(species.names.ca)}</h1><span class="latin">${escapeHtml(species.names.scientific)}</span><p class="lead">${escapeHtml(species.summary)}</p></div></section><section class="detail-body"><div class="wrap detail-stack"><div class="detail-row"><section class="prose-section"><span class="kicker">Hàbitat</span><h2>On acostuma a créixer</h2><p>${escapeHtml(sentenceCase(speciesReference(species)))} creix habitualment en ${escapeHtml(joinNatural(habitats).toLowerCase())}, entre ${species.ecology.altitudeM.min} i ${species.ecology.altitudeM.max} metres i sobre sòl ${escapeHtml(soilText)}. Dins d’un mateix bosc, el microclima i l’estat del terreny poden canviar molt.</p></section><aside class="field-card habitat-card" aria-label="Dades d’hàbitat"><dl class="field-facts"><div><dt>Bosc</dt><dd>${escapeHtml(joinNatural(habitats))}</dd></div><div><dt>Altitud</dt><dd>${species.ecology.altitudeM.min}–${species.ecology.altitudeM.max} m</dd></div><div><dt>Sòl</dt><dd>${escapeHtml(soilText)}</dd></div></dl></aside></div><div class="detail-row"><section class="prose-section"><span class="kicker">Temporada</span><h2>Quan sol sortir</h2><p>Els mesos habituals són ${escapeHtml(seasonText)}. Les pluges, la temperatura i les condicions acumulades en determinen la fructificació.</p></section><aside class="season-panel"><h2>Mesos habituals</h2><div class="month-names">${monthNames}</div></aside></div><div class="detail-main">${confusionSection}${kitchenSection}<section class="prose-section"><span class="kicker">Abans de collir</span><h2>Identifica’l amb certesa</h2><p>El mapa indica condicions favorables, no la presència de bolets.</p><p class="safety ${escapeHtml(species.edibility.category)}">${escapeHtml(riskNote)}</p></section><section class="prose-section" id="fonts"><h2>Fonts d’aquesta fitxa</h2><ul class="sources">${sources.map((source) => `<li><a href="${escapeHtml(source.url)}" rel="noopener" target="_blank">${escapeHtml(source.name)} ↗</a><small>${escapeHtml(source.role)}</small></li>`).join("")}</ul></section><section class="map-cta"><span class="kicker">${species.prediction.available ? "Predicció d’avui" : "Mapa de predicció"}</span><h2>Vols saber on val la pena mirar?</h2><p>${escapeHtml(mapCopy)}</p><a class="button" href="/app/">Consulta el mapa d’avui <span aria-hidden="true">→</span></a></section></div></div></section></main>`;
+  const identificationSection = species.identification?.traits?.length
+    ? `<section class="field-marks-section" aria-labelledby="field-marks-title"><div class="wrap"><div class="field-marks-heading"><span class="kicker">Trets de camp</span><h2 id="field-marks-title">Què cal observar</h2></div>${species.identification.context ? `<p class="field-marks-context">${escapeHtml(species.identification.context)}</p>` : ""}<dl class="field-marks">${species.identification.traits.map((trait, index) => `<div><dt><span aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>${escapeHtml(trait.part)}</dt><dd>${escapeHtml(trait.description)}</dd></div>`).join("")}</dl><p class="field-marks-warning">Fitxa orientativa. No identifiquis ni consumeixis un bolet basant-te només en aquesta pàgina o en una imatge.</p></div></section>`
+    : "";
+  const body = `<main id="contingut"><section class="species-hero${heroImage ? " has-photo" : ""}">${heroMedia}<div class="wrap species-hero-content"><nav class="breadcrumb" aria-label="Fil d’Ariadna"><a href="/bolets/">Guia de bolets</a><span aria-hidden="true">/</span><span aria-current="page">${escapeHtml(species.names.ca)}</span></nav><div class="hero-labels"><span class="kicker">${species.kind === "species" ? "Espècie" : "Grup"}</span><span class="edibility-badge ${escapeHtml(species.edibility.category)}">${escapeHtml(species.edibility.label)}</span>${species.culinary ? `<span class="quality-badge ${escapeHtml(species.culinary.rating)}">${escapeHtml(species.culinary.label)}</span>` : ""}</div><h1>${escapeHtml(species.names.ca)}</h1><span class="latin">${escapeHtml(species.names.scientific)}</span><p class="lead">${escapeHtml(species.summary)}</p></div></section>${identificationSection}<section class="detail-body"><div class="wrap detail-stack"><div class="detail-row"><section class="prose-section"><span class="kicker">Hàbitat</span><h2>On acostuma a créixer</h2><p>${escapeHtml(sentenceCase(speciesReference(species)))} creix habitualment en ${escapeHtml(joinNatural(habitats).toLowerCase())}, entre ${species.ecology.altitudeM.min} i ${species.ecology.altitudeM.max} metres i sobre sòl ${escapeHtml(soilText)}. Dins d’un mateix bosc, el microclima i l’estat del terreny poden canviar molt.</p></section><aside class="field-card habitat-card" aria-label="Dades d’hàbitat"><dl class="field-facts"><div><dt>Bosc</dt><dd>${escapeHtml(joinNatural(habitats))}</dd></div><div><dt>Altitud</dt><dd>${species.ecology.altitudeM.min}–${species.ecology.altitudeM.max} m</dd></div><div><dt>Sòl</dt><dd>${escapeHtml(soilText)}</dd></div></dl></aside></div><div class="detail-row"><section class="prose-section"><span class="kicker">Temporada</span><h2>Quan sol sortir</h2><p>Els mesos habituals són ${escapeHtml(seasonText)}. Les pluges, la temperatura i les condicions acumulades en determinen la fructificació.</p></section><aside class="season-panel"><h2>Mesos habituals</h2><div class="month-names">${monthNames}</div></aside></div><div class="detail-main">${confusionSection}${kitchenSection}<section class="prose-section"><span class="kicker">Abans de collir</span><h2>Identifica’l amb certesa</h2><p>El mapa indica condicions favorables, no la presència de bolets.</p><p class="safety ${escapeHtml(species.edibility.category)}">${escapeHtml(riskNote)}</p></section><section class="prose-section" id="fonts"><div class="source-heading"><h2>Fonts d’aquesta fitxa</h2><span>Actualitzada el ${escapeHtml(new Intl.DateTimeFormat("ca-ES", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${species.updatedAt}T00:00:00Z`)))}</span></div><ul class="sources">${sources.map((source) => `<li><a href="${escapeHtml(source.url)}" rel="noopener" target="_blank">${escapeHtml(source.name)} ↗</a><small>${escapeHtml(source.role)}</small></li>`).join("")}</ul></section><section class="map-cta"><span class="kicker">${species.prediction.available ? "Predicció d’avui" : "Mapa de predicció"}</span><h2>Vols saber on val la pena mirar?</h2><p>${escapeHtml(mapCopy)}</p><a class="button" href="/app/">Consulta el mapa d’avui <span aria-hidden="true">→</span></a></section></div></div></section></main>`;
 
   return documentShell({
     title: `${species.names.ca}: temporada i hàbitat · Boletada`,
     description: `${species.names.ca} (${species.names.scientific}): temporada habitual, boscos, altitud i sòls preferents a Catalunya.`,
     canonical: `https://boletada.cat/bolets/${species.slug}/`,
     body,
-    indexable: species.publication.status === "published",
+    indexable: true,
+    ogType: "article",
     ogImage: heroImage ? `https://boletada.cat${heroImage.src}` : undefined,
-    structuredData: { "@context": "https://schema.org", "@type": "Article", headline: `${species.names.ca}: temporada i hàbitat`, mainEntityOfPage: `https://boletada.cat/bolets/${species.slug}/`, about: { "@type": "Thing", name: species.names.ca, alternateName: species.names.scientific }, inLanguage: "ca", datePublished: species.publication.reviewedAt, dateModified: species.publication.reviewedAt, author: { "@type": "Organization", name: species.publication.reviewedBy }, publisher: { "@type": "Organization", name: "Boletada", url: SITE_URL }, image: heroImage ? `https://boletada.cat${heroImage.src}` : undefined, isPartOf: { "@type": "WebSite", name: "Boletada", url: `${SITE_URL}/` } },
+    structuredData: { "@context": "https://schema.org", "@graph": [{ "@type": "Article", headline: `${species.names.ca}: temporada i hàbitat`, mainEntityOfPage: `https://boletada.cat/bolets/${species.slug}/`, about: { "@type": "Thing", name: species.names.ca, alternateName: species.names.scientific }, inLanguage: "ca", dateModified: species.updatedAt, author: { "@type": "Organization", name: "Boletada", url: SITE_URL }, publisher: { "@type": "Organization", name: "Boletada", url: SITE_URL }, image: heroImage ? `https://boletada.cat${heroImage.src}` : undefined, isPartOf: { "@type": "WebSite", name: "Boletada", url: `${SITE_URL}/` } }, { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Guia de bolets", item: `${SITE_URL}/bolets/` }, { "@type": "ListItem", position: 2, name: species.names.ca, item: `${SITE_URL}/bolets/${species.slug}/` }] }] },
   });
 }
 

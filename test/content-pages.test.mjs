@@ -77,8 +77,10 @@ test("el directori agrupa les espècies i enllaça totes les fitxes", () => {
   assert.match(html, /carlet-ai\.webp/);
   assert.match(html, /girgola-olivera-ai\.webp/);
   assert.match(html, /xampinyo-groguenc-ai\.webp/);
+  assert.match(html, /Il·lustració IA/);
   assert.match(html, /directory\.js/);
   assert.match(html, /name="robots" content="index,follow"/);
+  assert.match(html, /property="og:type" content="website"/);
 });
 
 test("el calendari mostra dotze mesos només per a espècies comestibles o condicionals", () => {
@@ -103,7 +105,9 @@ test("la fitxa inclou temporada, fonts, avís i CTA premium", () => {
   const rossinyol = catalog.species.find((species) => species.slug === "rossinyol");
   const html = renderSpeciesPage(rossinyol, catalog);
   assert.match(html, /Cantharellus cibarius/);
-  assert.doesNotMatch(html, /class="breadcrumb"/);
+  assert.match(html, /class="breadcrumb"/);
+  assert.match(html, /Trets de camp/);
+  assert.match(html, /Plecs gruixuts/);
   assert.match(html, /Mesos habituals/);
   assert.match(html, /No consumeixis cap bolet/);
   assert.match(html, /Consulta el mapa d’avui/);
@@ -115,20 +119,23 @@ test("la fitxa inclou temporada, fonts, avís i CTA premium", () => {
   assert.match(html, /Com preparar-lo/);
   assert.match(html, /Valoració culinària/);
   assert.match(html, /name="robots" content="index,follow"/);
-  assert.match(html, /datePublished/);
-  assert.doesNotMatch(html, /Fitxa pilot|generada amb IA/);
+  assert.match(html, /property="og:type" content="article"/);
+  assert.match(html, /dateModified/);
+  assert.doesNotMatch(html, /datePublished/);
+  assert.doesNotMatch(html, /Imatge il·lustrativa generada amb IA/);
+  assert.doesNotMatch(html, /Observa el conjunt de caràcters/);
+  assert.doesNotMatch(html, /Fitxa pilot/);
 });
 
-test("les fitxes publicades apareixen al sitemap i robots el declara", () => {
+test("totes les fitxes del catàleg apareixen al sitemap i robots el declara", () => {
   const sitemap = renderSitemap(catalog);
-  const publishedSpecies = catalog.species.filter((species) => species.publication.status === "published");
   assert.match(renderRobots(), /Sitemap: https:\/\/boletada\.cat\/sitemap\.xml/);
   assert.match(renderRobots(), /Disallow: \/app\//);
-  assert.equal((sitemap.match(/<loc>/g) || []).length, publishedSpecies.length + 4);
+  assert.equal((sitemap.match(/<loc>/g) || []).length, catalog.species.length + 4);
   assert.match(sitemap, /<loc>https:\/\/boletada\.cat\/bones-practiques\/<\/loc><lastmod>2026-09-02<\/lastmod>/);
-  for (const species of publishedSpecies) {
+  for (const species of catalog.species) {
     assert.match(sitemap, new RegExp(`<loc>https://boletada\\.cat/bolets/${species.slug}/</loc>`));
-    assert.match(sitemap, new RegExp(`<lastmod>${species.publication.reviewedAt}</lastmod>`));
+    assert.match(sitemap, new RegExp(`<lastmod>${species.updatedAt}</lastmod>`));
   }
 });
 
