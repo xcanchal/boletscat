@@ -78,10 +78,14 @@ test("els termes apareixen una sola vegada al final del formulari d'accés", () 
   assert.ok(appSource.indexOf('id="authLegal"') > appSource.indexOf('id="authMessage"'));
 });
 
-test("un subscriptor vigent no queda bloquejat esperant RevenueCat", () => {
-  assert.match(appSource, /if\(active\)\{[\s\S]*?unlockMap\(\);[\s\S]*?void syncAccess\(\)/);
+test("la comprovació de RevenueCat és prèvia a l'accés però queda limitada", () => {
   assert.match(appSource, /request\('\/api\/billing\/sync'.*8000\)/);
   assert.match(appSource, /async function request\(path,options=\{\},timeoutMs=12000\)/);
+  assert.ok(
+    appSource.indexOf('active=await syncAccess()') < appSource.indexOf('if(active){unlockMap();return true}'),
+    "RevenueCat s’ha de reconciliar abans d’obrir el mapa",
+  );
+  assert.doesNotMatch(appSource, /void syncAccess\(\)/);
 });
 
 test("la previsualització del mapa queda centrada durant la càrrega", () => {
