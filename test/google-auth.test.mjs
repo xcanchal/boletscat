@@ -77,3 +77,14 @@ test("els termes apareixen una sola vegada al final del formulari d'accés", () 
   assert.doesNotMatch(appSource, /id="authLegal" hidden/);
   assert.ok(appSource.indexOf('id="authLegal"') > appSource.indexOf('id="authMessage"'));
 });
+
+test("un subscriptor vigent no queda bloquejat esperant RevenueCat", () => {
+  assert.match(appSource, /if\(active\)\{[\s\S]*?unlockMap\(\);[\s\S]*?void syncAccess\(\)/);
+  assert.match(appSource, /request\('\/api\/billing\/sync'.*8000\)/);
+  assert.match(appSource, /async function request\(path,options=\{\},timeoutMs=12000\)/);
+});
+
+test("la previsualització del mapa queda centrada durant la càrrega", () => {
+  assert.match(appSource, /preview-map\.webp\?v=20260826d'\) center\/cover no-repeat/);
+  assert.doesNotMatch(appSource, /preview-map\.webp[^\n]+32% center/);
+});

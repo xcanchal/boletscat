@@ -49,7 +49,7 @@
     }
     *{box-sizing:border-box}
     html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg);font-family:var(--ui);-webkit-text-size-adjust:100%}
-    #map{position:fixed;inset:0;width:100vw;height:100dvh;background:#0b100b url('./preview-map.webp?v=20260826d') 32% center/cover no-repeat}
+    #map{position:fixed;inset:0;width:100vw;height:100dvh;background:#0b100b url('./preview-map.webp?v=20260826d') center/cover no-repeat}
     button,select,input,a{touch-action:manipulation}
     .panel{position:absolute;top:max(16px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));z-index:2;width:320px;max-width:calc(100vw - 32px);
       background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--edge);border-radius:14px;
@@ -245,7 +245,7 @@
       box-shadow:inset 0 0 150px 24px rgba(3,6,3,.18)}
     body:not(.map-authorized) #map{filter:saturate(.92) brightness(.9);transition:filter .35s ease}
     body:not(.map-authorized) #map::after{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;
-      background:url('./preview-map.webp?v=20260826d') 32% center/cover no-repeat}
+      background:url('./preview-map.webp?v=20260826d') center/cover no-repeat}
     body:not(.map-authorized) .panel,body:not(.map-authorized) .map-tools,body:not(.map-authorized) .bases{
       opacity:0;visibility:hidden;pointer-events:none}
     .gate-shell{width:min(1280px,100%);min-height:100%;margin:auto;padding:max(24px,env(safe-area-inset-top)) 34px max(24px,env(safe-area-inset-bottom));
@@ -1395,10 +1395,12 @@
       return fallback;
     };
     const userSafeText=(error,fallback)=>error?.isUserSafe?error.message:fallback;
-    async function request(path,options={}) {
+    async function request(path,options={},timeoutMs=12000) {
+      const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),timeoutMs);
       let response;
-      try { response=await fetch(path,{credentials:'include',...options,headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})}}); }
-      catch(error) { console.error('No s’ha pogut completar la petició', { path, error }); const safeError=new Error('No hi ha connexió amb el servei. Revisa la xarxa i torna-ho a provar.');safeError.isUserSafe=true;throw safeError; }
+      try { response=await fetch(path,{credentials:'include',...options,signal:controller.signal,headers:{...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})}}); }
+      catch(error) { console.error('No s’ha pogut completar la petició', { path, error }); const safeError=new Error(controller.signal.aborted?'El servei està trigant massa. Torna-ho a provar.':'No hi ha connexió amb el servei. Revisa la xarxa i torna-ho a provar.');safeError.isUserSafe=true;throw safeError; }
+      finally { clearTimeout(timeout); }
       const payload=await response.json().catch(()=>({}));
       if(!response.ok) { const error=new Error(errorText(payload,'No s’ha pogut completar l’operació.')); error.status=response.status; error.payload=payload; error.isUserSafe=true; throw error; }
       return payload;
@@ -1467,12 +1469,26 @@
       }
       currentUser=me.user;
       let active=Boolean(me.access?.active);
+      const syncAccess=async()=>{
+        const result=await request('/api/billing/sync',{method:'POST',body:'{}'},8000);
+        return Boolean(result.access?.active);
+      };
+      if(active){
+        // L'accés local ja incorpora l'expiració. No bloquegem un subscriptor
+        // vigent mentre RevenueCat respon; la reconciliació continua al fons.
+        unlockMap();
+        if(sync) void syncAccess().then(async syncedActive=>{
+          if(syncedActive||!currentUser)return;
+          mapUnlocked=false;document.body.classList.remove('map-authorized');
+          document.getElementById('accountEmail').textContent=currentUser.email;
+          await prepareBilling();showView('paywall');
+        }).catch(error=>console.warn('No s’ha pogut actualitzar l’estat de la subscripció',error));
+        return true;
+      }
       if(sync){
         try {
-          const result=await request('/api/billing/sync',{method:'POST',body:'{}'});
-          active=Boolean(result.access?.active);
+          active=await syncAccess();
         } catch(error) {
-          // Si RevenueCat no respon, només conservem un accés local que ja era vigent.
           console.warn('No s’ha pogut actualitzar l’estat de la subscripció',error);
         }
       }
