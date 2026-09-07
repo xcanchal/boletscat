@@ -107,6 +107,11 @@ test("obrir una millor zona reutilitza la cerca de la cel·la forestal més prop
 });
 
 test("el popup recupera tota l’alçada després de plegar la sidebar", () => {
+  assert.ok(
+    app.indexOf("const panel = document.getElementById('panel')")
+      < app.indexOf("const panelBody=panel.querySelector('.body')"),
+    "el panell s’ha d’inicialitzar abans de registrar-ne la transició",
+  );
   assert.match(app, /panelBody\?\.addEventListener\('transitionend',event=>\{/);
   assert.match(app, /event\.propertyName!=='max-height'/);
   assert.match(app, /panel\.classList\.contains\('collapsed'\).*popup\.isOpen\(\)/);
