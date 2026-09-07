@@ -598,6 +598,7 @@
     }
     const userLocationControl=new UserLocationControl();
     map.addControl(userLocationControl,'bottom-right');
+    const panel = document.getElementById('panel');
     const popupViewport = () => {
       const viewport=window.visualViewport;
       let left=(viewport?.offsetLeft??0)+12, top=(viewport?.offsetTop??0)+12;
@@ -947,7 +948,6 @@
     });
 
     // Col·lapse del panell (arrenca plegat en pantalla estreta)
-    const panel = document.getElementById('panel');
     const collapseButton = document.getElementById('collapse');
     if (window.matchMedia('(max-width: 640px), (max-height: 500px)').matches) panel.classList.add('collapsed');
     const syncPanelState = () => {
