@@ -106,6 +106,13 @@ test("obrir una millor zona reutilitza la cerca de la cel·la forestal més prop
   assert.match(app, /areaHTML\(place,sample\?\.details\?\?null,target,sample\?\.distance\?\?0\)/);
 });
 
+test("la millor zona acaba el vol abans de centrar i dimensionar el popup", () => {
+  assert.match(app, /map\.once\('moveend',\(\)=>\{[\s\S]*?centerPopup\(\);[\s\S]*?\}\);\s*map\.flyTo/);
+  assert.match(app, /showPopup\(target,areaHTML\([^\n]+\),null\)/);
+  assert.match(app, /updatePopup\(areaHTML\([^\n]+\),flightSettled\?true:null\)/);
+  assert.doesNotMatch(app, /map\.flyTo\(\{center:target,zoom:11,speed:\.8\}\);\s*showPopup\([^\n]+,true\)/);
+});
+
 test("el popup recupera tota l’alçada després de plegar la sidebar", () => {
   assert.ok(
     app.indexOf("const panel = document.getElementById('panel')")
@@ -115,5 +122,6 @@ test("el popup recupera tota l’alçada després de plegar la sidebar", () => {
   assert.match(app, /panelBody\?\.addEventListener\('transitionend',event=>\{/);
   assert.match(app, /event\.propertyName!=='max-height'/);
   assert.match(app, /panel\.classList\.contains\('collapsed'\).*popup\.isOpen\(\)/);
+  assert.match(app, /popup\.isOpen\(\)\|\|map\.isMoving\(\)/);
   assert.match(app, /popup\.isOpen\(\)[^}]+centerPopup\(\)/);
 });

@@ -640,7 +640,7 @@
     const panelBody=panel.querySelector('.body');
     panelBody?.addEventListener('transitionend',event=>{
       if (event.target!==panelBody||event.propertyName!=='max-height') return;
-      if (!panel.classList.contains('collapsed')||!popup.isOpen()) return;
+      if (!panel.classList.contains('collapsed')||!popup.isOpen()||map.isMoving()) return;
       // A sidebar result can open the popup while the panel is still folding.
       // Recalculate once its final height is known so the transient viewport
       // does not leave a permanently truncated, scroll-only popup.
@@ -830,11 +830,20 @@
       const coordinates=feature.geometry.coordinates,rankedLngLat={lng:coordinates[0],lat:coordinates[1]};
       const sample=nearestDetailsAt(rankedLngLat),target=sample?.lngLat??rankedLngLat;
       const request=++areaRequest;
+      let flightSettled=false;
+      map.once('moveend',()=>{
+        flightSettled=true;
+        if(request!==areaRequest||experienceMode!=='species'||!popup.isOpen())return;
+        // Esperem que acabin tant el flyTo com el plegat del panell. Centrar el
+        // popup abans faria un panBy que cancel·laria el vol i conservaria
+        // l'alçada transitòria del popup, especialment a Safari.
+        centerPopup();
+      });
       map.flyTo({center:target,zoom:11,speed:.8});
-      showPopup(target,areaHTML(null,sample?.details??null,target,sample?.distance??0),true);
+      showPopup(target,areaHTML(null,sample?.details??null,target,sample?.distance??0),null);
       const place=await nearestPlace(target);
       if(request!==areaRequest||experienceMode!=='species')return;
-      updatePopup(areaHTML(place,sample?.details??null,target,sample?.distance??0),true);
+      updatePopup(areaHTML(place,sample?.details??null,target,sample?.distance??0),flightSettled?true:null);
     }
     function showUserLocation(lngLat) {
       const data={type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:[lngLat.lng,lngLat.lat]},properties:{}}]};
