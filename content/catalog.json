@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "species": [
     {
       "slug": "rovello",
@@ -22,7 +22,16 @@
         "soilPreferences": []
       },
       "prediction": { "available": true, "key": "rovello" },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-09-07",
+      "identification": {
+        "context": "És un grup de lactaris semblants, no una sola espècie. El color del làtex varia entre taronja i vinós segons el taxó.",
+        "traits": [
+          { "part": "Barret", "description": "Ataronjat o rogenc, amb zones concèntriques; es va deprimint fins a prendre forma d’embut." },
+          { "part": "Sota el barret", "description": "Làmines fines, atapeïdes i decurrents, sovint amb taques verdoses en punts tocats o envellits." },
+          { "part": "Peu", "description": "Curt, cilíndric i fràgil, de tons semblants al barret i sense anell ni volva." },
+          { "part": "Senyal clau", "description": "En ferir-lo desprèn làtex taronja o vinós; la carn i el làtex poden virar cap al verd." }
+        ]
+      },
       "media": {
         "card": {
           "src": "/media/bolets/rovello-ai.webp",
@@ -33,7 +42,7 @@
         },
         "hero": null
       },
-      "sourceIds": ["gencat-productes-bosc", "gencat-alt-pallars", "scm"]
+      "sourceIds": ["gencat-productes-bosc", "gencat-alt-pallars", "termcat-rovello", "uevora-lactarius", "scm"]
     },
     {
       "slug": "cep",
@@ -57,7 +66,16 @@
         "soilPreferences": ["siliceous"]
       },
       "prediction": { "available": true, "key": "cep" },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-09-07",
+      "identification": {
+        "context": "La fitxa descriu el grup dels ceps; per separar-ne les espècies cal observar més caràcters que els resumits aquí.",
+        "traits": [
+          { "part": "Barret", "description": "Carnós i convex, de color marró variable; la superfície pot ser una mica viscosa quan és humida." },
+          { "part": "Sota el barret", "description": "Té tubs i porus, no làmines: clars de jove i groc verdosos quan madura." },
+          { "part": "Peu", "description": "Molt robust, sovint ventrut, amb un reticle fi i pàl·lid especialment visible a la part superior." },
+          { "part": "Carn", "description": "Blanca i compacta en exemplars joves; no presenta els porus vermells propis d’alguns bolets tòxics semblants." }
+        ]
+      },
       "media": {
         "card": {
           "src": "/media/bolets/cep-ai.webp",
@@ -68,7 +86,7 @@
         },
         "hero": null
       },
-      "sourceIds": ["gencat-alt-pallars", "scm"]
+      "sourceIds": ["gencat-alt-pallars", "miteco-boletus-edulis", "unam-boletus-edulis", "scm"]
     },
     {
       "slug": "llenega-negra",
@@ -90,7 +108,7 @@
         "soilPreferences": ["calcareous"]
       },
       "prediction": { "available": true, "key": "llenega" },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": {
         "card": {
           "src": "/media/bolets/llenega-ai.webp",
@@ -123,7 +141,7 @@
         "soilPreferences": []
       },
       "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": {
         "card": {
           "src": "/media/bolets/llenega-blanca-ai.webp",
@@ -156,7 +174,7 @@
         "soilPreferences": []
       },
       "prediction": { "available": true, "key": "trompeta" },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": {
         "card": {
           "src": "/media/bolets/trompeta-de-la-mort-ai.webp",
@@ -190,7 +208,15 @@
         "soilPreferences": ["siliceous"]
       },
       "prediction": { "available": true, "key": "rossinyol" },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-09-07",
+      "identification": {
+        "traits": [
+          { "part": "Barret", "description": "Groc, amb el marge ondulat i el centre cada vegada més còncau, sovint en forma d’embut." },
+          { "part": "Sota el barret", "description": "Plecs gruixuts, irregulars i sovint ramificats que baixen pel peu; no són làmines fines veritables." },
+          { "part": "Peu", "description": "Massís, llis i generalment del mateix groc que el barret, sense anell ni volva." },
+          { "part": "Carn", "description": "Pàl·lida, ferma i aromàtica; el conjunt té un aspecte carnós malgrat la forma irregular." }
+        ]
+      },
       "media": {
         "card": {
           "src": "/media/bolets/rossinyol-ai.webp",
@@ -207,7 +233,7 @@
           "speciesVerified": false
         }
       },
-      "sourceIds": ["gencat-alt-pallars", "scm"]
+      "sourceIds": ["gencat-alt-pallars", "diec-rossinyol", "gencat-picot-negre", "scm"]
     },
     {
       "slug": "camagroc",
@@ -228,7 +254,7 @@
         "soilPreferences": ["calcareous"]
       },
       "prediction": { "available": true, "key": "camagroc" },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": {
         "card": {
           "src": "/media/bolets/camagroc-ai.webp",
@@ -263,7 +289,7 @@
         "soilPreferences": []
       },
       "prediction": { "available": true, "key": "murgola" },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": {
         "card": {
           "src": "/media/bolets/murgola-ai.webp",
@@ -297,7 +323,7 @@
         "soilPreferences": []
       },
       "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": {
         "card": {
           "src": "/media/bolets/moixerno-ai.webp",
@@ -331,7 +357,7 @@
         "soilPreferences": []
       },
       "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": {
         "card": {
           "src": "/media/bolets/xampinyo-silvestre-ai.webp",
@@ -366,7 +392,15 @@
         "soilPreferences": ["siliceous"]
       },
       "prediction": { "available": true, "key": "ou_de_reig" },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-09-07",
+      "identification": {
+        "traits": [
+          { "part": "Barret", "description": "Taronja viu, primer convex i després més estès, habitualment llis i sense berrugues blanques." },
+          { "part": "Sota el barret", "description": "Làmines grogues; el peu i l’anell també són grocs en els exemplars desenvolupats." },
+          { "part": "Base", "description": "Volva blanca, ampla i membranosa que embolcalla la base del peu i que cal observar sencera." },
+          { "part": "Quan és jove", "description": "Comença tancat dins un vel blanc amb aspecte d’ou; en aquest estadi es pot confondre amb amanites mortals." }
+        ]
+      },
       "media": {
         "card": {
           "src": "/media/bolets/ou-de-reig-ai.webp",
@@ -377,7 +411,7 @@
         },
         "hero": null
       },
-      "sourceIds": ["gencat-productes-bosc", "gencat-bolets-comercialitzables", "scm"]
+      "sourceIds": ["gencat-productes-bosc", "gencat-bolets-comercialitzables", "diec-reig", "parcs-poblet-bolets", "scm"]
     },
     {
       "slug": "fredolic",
@@ -400,7 +434,7 @@
         "soilPreferences": ["calcareous"]
       },
       "prediction": { "available": true, "key": "fredolic" },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": {
         "card": {
           "src": "/media/bolets/fredolic-ai.webp",
@@ -434,7 +468,7 @@
         "soilPreferences": ["mixed"]
       },
       "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": {
         "card": {
           "src": "/media/bolets/apagallums-ai.webp",
@@ -467,7 +501,7 @@
         "soilPreferences": ["calcareous"]
       },
       "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": {
         "card": {
           "src": "/media/bolets/mataparent-ai.webp",
@@ -500,7 +534,7 @@
         "soilPreferences": ["siliceous"]
       },
       "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": {
         "card": {
           "src": "/media/bolets/reig-bord-ai.webp",
@@ -534,7 +568,15 @@
         "soilPreferences": ["mixed"]
       },
       "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-09-07",
+      "identification": {
+        "traits": [
+          { "part": "Barret", "description": "Habitualment verd olivaci, però també pot ser groguenc o gairebé blanc; el color no és suficient per identificar-la." },
+          { "part": "Sota el barret", "description": "Làmines blanques i lliures; el peu és blanc i porta un anell a la part superior." },
+          { "part": "Base", "description": "Volva blanca i membranosa al voltant de la base, sovint amagada sota la fullaraca o dins del sòl." },
+          { "part": "Perill", "description": "És mortal i els símptomes greus poden trigar hores a aparèixer. No la manipulis com a bolet comestible." }
+        ]
+      },
       "media": {
         "card": {
           "src": "/media/bolets/farinera-borda-ai.webp",
@@ -545,7 +587,7 @@
         },
         "hero": null
       },
-      "sourceIds": ["gencat-productes-bosc", "canal-salut-intoxicacions", "scm"]
+      "sourceIds": ["gencat-productes-bosc", "gencat-bolets-toxics", "canal-salut-intoxicacions", "gencat-picot-negre", "scm"]
     },
     {
       "slug": "carlet",
@@ -558,7 +600,7 @@
       "season": { "typicalMonths": [9, 10, 11, 12], "peakMonths": [] },
       "ecology": { "habitatSlugs": ["alzinars", "boscos-caducifolis"], "altitudeM": { "min": 100, "max": 1400 }, "soilPreferences": ["calcareous"] },
       "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": { "card": { "src": "/media/bolets/carlet-ai.webp", "alt": "Carlets de tons blancs i vinacis entre fullaraca d’alzinar", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
       "sourceIds": ["parcs-poblet-bolets", "gencat-bolets-comercialitzables", "scm"]
     },
@@ -574,7 +616,7 @@
       "season": { "typicalMonths": [9, 10, 11, 12], "peakMonths": [] },
       "ecology": { "habitatSlugs": ["pinedes", "boscos-caducifolis"], "altitudeM": { "min": 100, "max": 1800 }, "soilPreferences": ["mixed"] },
       "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": { "card": { "src": "/media/bolets/llengua-de-bou-ai.webp", "alt": "Llengua de bou de color crema amb les agulletes visibles sota el barret", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
       "sourceIds": ["parcs-poblet-bolets", "parcs-ports-bolets", "gencat-bolets-comercialitzables", "scm"]
     },
@@ -589,7 +631,7 @@
       "season": { "typicalMonths": [3, 4, 5, 6, 9, 10, 11], "peakMonths": [] },
       "ecology": { "habitatSlugs": ["clarianes-i-prats"], "altitudeM": { "min": 0, "max": 1500 }, "soilPreferences": [] },
       "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": { "card": { "src": "/media/bolets/bolet-de-tinta-ai.webp", "alt": "Bolets de tinta joves, blancs i cilíndrics en un prat humit", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
       "sourceIds": ["parcs-aiguestortes-bolet-tinta", "parcs-poblet-bolets", "gencat-bolets-comercialitzables", "scm"]
     },
@@ -605,7 +647,7 @@
       "season": { "typicalMonths": [7, 8, 9, 10], "peakMonths": [] },
       "ecology": { "habitatSlugs": ["pinedes", "boscos-caducifolis"], "altitudeM": { "min": 200, "max": 1800 }, "soilPreferences": ["siliceous"] },
       "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": { "card": { "src": "/media/bolets/bolet-amarg-ai.webp", "alt": "Bolet amarg de barret marró i porus rosats sobre sòl forestal", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
       "sourceIds": ["ichn-conservacio-fongs", "scm"]
     },
@@ -621,7 +663,7 @@
       "season": { "typicalMonths": [8, 9, 10, 11], "peakMonths": [] },
       "ecology": { "habitatSlugs": ["avetoses-i-boscos-subalpins"], "altitudeM": { "min": 800, "max": 2100 }, "soilPreferences": ["calcareous"] },
       "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": { "card": { "src": "/media/bolets/fredolic-metzinos-ai.webp", "alt": "Fredolic metzinós gros de barret gris i escamós en un bosc d’avets", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
       "sourceIds": ["parcs-cadi-fredolic", "canal-salut-intoxicacions", "scm"]
     },
@@ -638,7 +680,7 @@
       "season": { "typicalMonths": [8, 9, 10, 11], "peakMonths": [] },
       "ecology": { "habitatSlugs": ["alzinars"], "altitudeM": { "min": 0, "max": 1000 }, "soilPreferences": [] },
       "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": { "card": { "src": "/media/bolets/girgola-olivera-ai.webp", "alt": "Grup de gírgoles d’olivera taronges creixent sobre fusta", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
       "sourceIds": ["parcs-ports-bolets", "gencat-bolets-comercialitzables", "canal-salut-intoxicacions", "scm"]
     },
@@ -654,9 +696,114 @@
       "season": { "typicalMonths": [5, 6, 7, 8, 9, 10, 11], "peakMonths": [] },
       "ecology": { "habitatSlugs": ["clarianes-i-prats", "boscos-caducifolis"], "altitudeM": { "min": 0, "max": 1400 }, "soilPreferences": [] },
       "prediction": { "available": false, "key": null },
-      "publication": { "status": "published", "reviewedBy": "Equip Boletada", "reviewedAt": "2026-08-31" },
+      "updatedAt": "2026-08-31",
       "media": { "card": { "src": "/media/bolets/xampinyo-groguenc-ai.webp", "alt": "Xampinyó groguenc blanc amb coloració groga visible a la base del peu", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
       "sourceIds": ["gencat-bolets-comercialitzables", "canal-salut-intoxicacions", "scm"]
+    },
+    {
+      "slug": "llora-aspra",
+      "kind": "species",
+      "names": { "ca": "Llora aspra", "scientific": "Russula cyanoxantha", "aliases": ["llora aspra", "llora", "blavet", "cualbra llora", "carbonera"] },
+      "grammar": { "gender": "feminine" },
+      "summary": "Rússula de colors grisos, violacis i verdosos, reconeixible dins del gènere per unes làmines blanques i especialment flexibles.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "Neteja-la amb cura perquè la carn és trencadissa i cuina-la completament. Consumeix-la només després d’una identificació segura: el color del barret és molt variable i no basta per reconèixer-la." },
+      "lookalikes": [
+        { "name": "Altres llores i rússules", "scientific": "Russula spp.", "slug": null, "risk": "Algunes no comestibles", "note": "Moltes rússules comparteixen silueta i colors. En la llora aspra, les làmines blanques són flexibles i tenen un tacte greixós, però cal valorar el conjunt de caràcters." }
+      ],
+      "season": { "typicalMonths": [6, 7, 8, 9, 10, 11], "peakMonths": [] },
+      "ecology": { "habitatSlugs": ["boscos-caducifolis", "pinedes"], "altitudeM": { "min": 0, "max": 1800 }, "soilPreferences": [] },
+      "prediction": { "available": false, "key": null },
+      "updatedAt": "2026-09-08",
+      "identification": {
+        "context": "El barret és molt variable i pot combinar verd, gris, violeta, lila o crema; el color, tot sol, no és diagnòstic.",
+        "traits": [
+          { "part": "Barret", "description": "De convex a aplanat i finalment una mica deprimit, amb una barreja variable de tons grisos, verdosos i violacis." },
+          { "part": "Sota el barret", "description": "Làmines blanques, estretes i atapeïdes; a diferència de moltes rússules, són flexibles i poc trencadisses." },
+          { "part": "Peu", "description": "Cilíndric, robust i blanc, de vegades amb alguna tonalitat lila, sense anell ni volva." },
+          { "part": "Carn", "description": "Blanca, compacta i de sabor suau; continua sent fràgil com és habitual en les rússules." }
+        ]
+      },
+      "media": { "card": { "src": "/media/bolets/llora-aspra-ai.webp", "alt": "Llores aspres de barret gris violaci i verdós sobre fullaraca, amb les làmines blanques visibles", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
+      "sourceIds": ["enciclopedia-russulals", "aranzadi-russula-cyanoxantha", "gencat-bolets-comercialitzables", "scm"]
+    },
+    {
+      "slug": "cama-sec",
+      "kind": "species",
+      "names": { "ca": "Cama-sec", "scientific": "Marasmius oreades", "aliases": ["cama-sec", "camasec", "carrereta", "carrerola", "carmanyola", "moixernó de prat", "fals moixernó"] },
+      "summary": "Bolet petit i tenaç dels prats que sovint forma erols, amb un mamelló central, làmines espaiades i un peu prim però resistent.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "good", "label": "Bo", "preparation": "Aprofita sobretot els barrets joves, perquè els peus són durs i fibrosos. Es pot assecar, però cal separar amb molta cura qualsevol bolet diferent que comparteixi el prat o l’erol." },
+      "lookalikes": [
+        { "name": "Clitocibe blanquinós", "scientific": "Clitocybe rivulosa", "slug": null, "risk": "Tòxic", "note": "Pot créixer als mateixos prats i fins i tot a prop dels erols. Té làmines més atapeïdes i decurrents i un peu menys tenaç; no recullis grups barrejats." }
+      ],
+      "season": { "typicalMonths": [4, 5, 6, 7, 8, 9, 10, 11], "peakMonths": [] },
+      "ecology": { "habitatSlugs": ["clarianes-i-prats"], "altitudeM": { "min": 0, "max": 2200 }, "soilPreferences": [] },
+      "prediction": { "available": false, "key": null },
+      "updatedAt": "2026-09-08",
+      "identification": {
+        "context": "Els erols són una pista d’hàbitat, però altres espècies també poden créixer en cercle i fins i tot barrejar-s’hi.",
+        "traits": [
+          { "part": "Barret", "description": "Petit, d’ocre a crema segons la humitat, primer campanulat i després estès, sovint amb un mamelló central." },
+          { "part": "Sota el barret", "description": "Làmines pàl·lides, gruixudes i clarament espaiades, lliures o gairebé lliures respecte del peu." },
+          { "part": "Peu", "description": "Llarg, prim, fibrós i molt tenaç; es pot torçar amb més resistència que els peus fràgils de molts bolets petits de prat." },
+          { "part": "Creixement", "description": "Sol aparèixer en grups nombrosos, línies, arcs o erols entre l’herba de prats i pastures." }
+        ]
+      },
+      "media": { "card": { "src": "/media/bolets/cama-sec-ai.webp", "alt": "Cama-secs petits de barret ocre i peu prim formant un grup en un prat humit", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
+      "sourceIds": ["enciclopedia-cama-sec", "aranzadi-marasmius-oreades", "miteco-marasmius-oreades", "gencat-bolets-comercialitzables", "canal-salut-intoxicacions", "scm"]
+    },
+    {
+      "slug": "molleric",
+      "kind": "species",
+      "names": { "ca": "Molleric", "scientific": "Suillus collinitus", "aliases": ["molleric", "pinetell", "molleric comú"] },
+      "summary": "Molleric abundant de les pinedes baixes, amb el barret bru i viscós, porus grocs i un miceli sovint rosat a la base del peu.",
+      "edibility": { "category": "edible", "label": "Comestible" },
+      "culinary": { "rating": "low", "label": "Interès baix", "preparation": "Tria exemplars joves i ferms, retira la cutícula viscosa i la capa de tubs quan sigui tova, i cuina’ls completament. La carn es deteriora i es corca amb rapidesa." },
+      "lookalikes": [
+        { "name": "Moixí", "scientific": "Suillus granulatus", "slug": null, "risk": "Comestible", "note": "El moixí no presenta les mateixes fibril·les radials al barret ni el miceli rosat a la base, i els porus joves poden exsudar gotes opalines." }
+      ],
+      "season": { "typicalMonths": [8, 9, 10, 11], "peakMonths": [] },
+      "ecology": { "habitatSlugs": ["pinedes"], "altitudeM": { "min": 0, "max": 1400 }, "soilPreferences": [] },
+      "prediction": { "available": false, "key": null },
+      "updatedAt": "2026-09-08",
+      "identification": {
+        "context": "El nom molleric s’aplica a diversos Suillus. Aquesta fitxa correspon a Suillus collinitus, freqüent a les pinedes baixes i seques.",
+        "traits": [
+          { "part": "Barret", "description": "Bru, convex i molt viscós amb humitat, amb fibril·les radials més fosques i restes vegetals sovint enganxades." },
+          { "part": "Sota el barret", "description": "Té tubs i porus grocs, no làmines; la capa esponjosa s’estova amb l’edat i es pot separar de la carn." },
+          { "part": "Peu", "description": "Grogós, sense anell i amb petites granulacions que es van enfosquint." },
+          { "part": "Base", "description": "El miceli de la base del peu presenta sovint una tonalitat rosada, un tret útil per separar-lo d’altres mollerics semblants." }
+        ]
+      },
+      "media": { "card": { "src": "/media/bolets/molleric-ai.webp", "alt": "Mollerics de barret bru i viscós amb porus grocs entre pinassa", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
+      "sourceIds": ["enciclopedia-boletals", "gencat-bolets-comercialitzables", "scm"]
+    },
+    {
+      "slug": "fals-rossinyol",
+      "kind": "species",
+      "names": { "ca": "Fals rossinyol", "scientific": "Hygrophoropsis aurantiaca", "aliases": ["fals rossinyol", "falsa cantarel·la"] },
+      "summary": "Bolet taronja en forma d’embut amb làmines fines, denses i bifurcades; malgrat el nom, no és parent proper del rossinyol.",
+      "edibility": { "category": "not-edible", "label": "No comestible" },
+      "lookalikes": [
+        { "name": "Rossinyol", "scientific": "Cantharellus cibarius", "slug": "rossinyol", "risk": "Comestible", "note": "El rossinyol és més carnós i té plecs gruixuts i ramificats, no làmines fines i atapeïdes com el fals rossinyol." },
+        { "name": "Gírgola d’olivera", "scientific": "Omphalotus olearius", "slug": "girgola-olivera", "risk": "Tòxic", "note": "La gírgola d’olivera també té làmines i color taronja, però creix en grups densos sobre fusta o arrels enterrades i és tòxica." }
+      ],
+      "season": { "typicalMonths": [8, 9, 10, 11], "peakMonths": [] },
+      "ecology": { "habitatSlugs": ["pinedes", "boscos-caducifolis", "avetoses-i-boscos-subalpins"], "altitudeM": { "min": 100, "max": 1900 }, "soilPreferences": [] },
+      "prediction": { "available": false, "key": null },
+      "updatedAt": "2026-09-08",
+      "identification": {
+        "context": "La diferència més útil respecte del rossinyol és mirar bé la superfície inferior del barret: aquí hi ha làmines veritables.",
+        "traits": [
+          { "part": "Barret", "description": "De taronja a bru ataronjat, amb el centre deprimit i el marge primer revolut; acaba prenent forma d’embut." },
+          { "part": "Sota el barret", "description": "Làmines fines, denses, decurrents i sovint bifurcades repetidament, més fosques que els plecs d’un rossinyol." },
+          { "part": "Peu", "description": "Prim, cilíndric i de tons taronja semblants al barret, sense l’aspecte massís del rossinyol." },
+          { "part": "Consistència", "description": "Més prim i flexible que el rossinyol, amb una carn menys compacta i una silueta d’embut més uniforme." }
+        ]
+      },
+      "media": { "card": { "src": "/media/bolets/fals-rossinyol-ai.webp", "alt": "Falsos rossinyols taronges en forma d’embut amb les làmines fines i bifurcades visibles", "credit": "Imatge generada amb IA", "generated": true, "speciesVerified": false }, "hero": null },
+      "sourceIds": ["ichn-bages-fals-rossinyol", "ichn-alt-pallars-fongs", "canal-salut-intoxicacions", "scm"]
     }
   ],
   "habitats": [
@@ -793,6 +940,102 @@
       "name": "Enciclopèdia Catalana · Les higroforàcies: higrocibes, llenegues, carlets i afins",
       "url": "https://www.enciclopedia.cat/historia-natural-dels-paisos-catalans/les-higroforacies-higrocibes-llenegues-carlets-i-afins",
       "role": "nomenclatura, hàbitat i interès culinari de les llenegues"
+    },
+    {
+      "id": "termcat-rovello",
+      "name": "TERMCAT · Rovelló",
+      "url": "https://aplicacions.llengua.gencat.cat/llc/AppJava/index.html?action=Principal&categories_avansada=&clickLink=detall&database=TERMCAT&databaseFilter=TERMCAT&databaseFilterName=Diccionaris+terminol%C3%B2gics&databases_avansada=&idFont=3766313&idHit=3766313&input_cercar=carn+de+gallina&method=detall&numPagina=13&numeroResultat=125&parameterField=TERMCAT&parameterFilter=Bot%C3%A0nica&tematica=Bot%C3%A0nica&tipusCerca=cerca.tot&tipusFont=Diccionaris+terminol%C3%B2gics+del+TERMCAT&titol=rovell%C3%B3",
+      "role": "descripció, làtex i hàbitat del grup dels rovellons"
+    },
+    {
+      "id": "uevora-lactarius",
+      "name": "Universidade de Évora · Lactarius deliciosus",
+      "url": "https://museubiodiversidade.uevora.pt/elenco-de-especies/biodiversidade-actual/fungos/basidiomicetes/lactarius-deliciosus/",
+      "role": "trets morfològics del pinetell"
+    },
+    {
+      "id": "miteco-boletus-edulis",
+      "name": "MITECO · Boletus edulis",
+      "url": "https://www.miteco.gob.es/content/dam/miteco/es/biodiversidad/temas/incendios-forestales/221275_937guiagestionmatorrales_web_tcm30-589399.pdf",
+      "role": "trets morfològics i hàbitat del cep"
+    },
+    {
+      "id": "unam-boletus-edulis",
+      "name": "UNAM · Hongos comestibles y tóxicos: Boletus edulis",
+      "url": "https://hongoscomestiblesytoxicos.ib.unam.mx/fichas/Boletus_edulis.html",
+      "role": "descripció morfològica del cep"
+    },
+    {
+      "id": "diec-rossinyol",
+      "name": "DIEC · Rossinyol",
+      "url": "https://aplicacions.llengua.gencat.cat/llc/AppJava/index.html?action=Principal&clickLink=detall&database=DIEC&databaseFilter=DIEC&databaseFilterName=Diccionari+de+la+llengua+catalana&idFont=6955&idHit=6955&input_cercar=%22barret%22&method=detall_completa&numPagina=14&numeroResultat=133&parameterField=DIEC&tematica=%28Totes%29&tipusCerca=cerca.queSignifica&tipusFont=Diccionari+de+la+llengua+catalana+de+l%27Institut+d%27Estudis+Catalans+%282a+edici%C3%B3%29&titol=rossinyol",
+      "role": "descripció del barret, els plecs i la carn del rossinyol"
+    },
+    {
+      "id": "diec-reig",
+      "name": "DIEC · Reig",
+      "url": "https://aplicacions.llengua.gencat.cat/llc/AppJava/index.html?action=Principal&categories_avansada=&clickLink=detall&database=DIEC&databases_avansada=&idFont=4953&idHit=4953&input_cercar=riure+groc&method=detall&numPagina=31&numeroResultat=301&tematica=%28Totes%29&tipusCerca=cerca.tot&tipusFont=Diccionari+de+la+llengua+catalana+de+l%27Institut+d%27Estudis+Catalans+%282a+edici%C3%B3%29&titol=reig",
+      "role": "descripció del vel, la volva i els colors de l’ou de reig"
+    },
+    {
+      "id": "gencat-bolets-toxics",
+      "name": "Generalitat de Catalunya · Bolets tòxics",
+      "url": "https://tramits.gencat.cat/ca/actualitat/reportatges/temporada-de-bolets/bolets/bolets-toxics/",
+      "role": "identificació i toxicitat de la farinera borda"
+    },
+    {
+      "id": "gencat-picot-negre",
+      "name": "Parc Natural del Cadí-Moixeró · El Picot Negre 11",
+      "url": "https://mediambient.repositori.gencat.cat/bitstream/handle/20.500.14343/2382/2008_El_Picot_Negre_11.pdf?isAllowed=y&sequence=1",
+      "role": "trets del rossinyol i de la farinera borda"
+    },
+    {
+      "id": "enciclopedia-russulals",
+      "name": "Enciclopèdia Catalana · Les russulals",
+      "url": "https://www.enciclopedia.cat/historia-natural-dels-paisos-catalans/les-russulals",
+      "role": "nomenclatura, làmines i coloració de la llora aspra"
+    },
+    {
+      "id": "aranzadi-russula-cyanoxantha",
+      "name": "Societat de Ciències Aranzadi · Russula cyanoxantha",
+      "url": "https://www.aranzadi.eus/buscador-micologico/ficha/1-1-004.01.01.05.03.00",
+      "role": "morfologia, hàbitat i comestibilitat de la llora aspra"
+    },
+    {
+      "id": "enciclopedia-cama-sec",
+      "name": "Enciclopèdia Catalana · Cama-sec",
+      "url": "https://www.enciclopedia.cat/gran-enciclopedia-catalana/cama-sec",
+      "role": "nomenclatura i trets del cama-sec"
+    },
+    {
+      "id": "aranzadi-marasmius-oreades",
+      "name": "Societat de Ciències Aranzadi · Marasmius oreades",
+      "url": "https://www.aranzadi.eus/buscador-micologico/ficha/1-1-003.02.69.03.09.00",
+      "role": "morfologia, hàbitat, consum i confusió del cama-sec"
+    },
+    {
+      "id": "miteco-marasmius-oreades",
+      "name": "MITECO · Marasmius oreades",
+      "url": "https://www.miteco.gob.es/content/dam/miteco/es/biodiversidad/temas/incendios-forestales/221275_937guiagestionmatorrales_web_tcm30-589399.pdf",
+      "role": "morfologia, ecologia i valor culinari del cama-sec"
+    },
+    {
+      "id": "enciclopedia-boletals",
+      "name": "Enciclopèdia Catalana · Les boletals",
+      "url": "https://www.enciclopedia.cat/historia-natural-dels-paisos-catalans/les-boletals",
+      "role": "morfologia, hàbitat i confusions dels mollerics"
+    },
+    {
+      "id": "ichn-bages-fals-rossinyol",
+      "name": "ICHN Bages · Fals rossinyol",
+      "url": "https://elmedinaturaldelbages.cat/species/fals-rossinyol-hygrophoropsis-aurantiaca/",
+      "role": "morfologia, hàbitat i confusions del fals rossinyol"
+    },
+    {
+      "id": "ichn-alt-pallars-fongs",
+      "name": "ICHN · Fongs de l’Alt Pallars",
+      "url": "https://ichn.iec.cat/wp-content/uploads/2013/10/SON_04_FONGS.pdf",
+      "role": "nomenclatura i presència del fals rossinyol en boscos de muntanya"
     }
   ]
 }

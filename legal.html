@@ -13,12 +13,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Spectral:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/content/public-footer.css?v=20260908-1" />
   <style>
     :root{--ink:#10150f;--forest:#172016;--paper:#e8e3d6;--muted:#a3aa9d;--line:rgba(232,227,214,.14);--orange:#ec6c2c;--display:'Spectral',Georgia,serif;--body:'Inter',system-ui,sans-serif;--data:'DM Mono',monospace}
     *{box-sizing:border-box}html{scroll-behavior:smooth;background:var(--ink)}body{margin:0;background:var(--ink);color:var(--paper);font:15px/1.7 var(--body);-webkit-font-smoothing:antialiased}a{color:inherit;text-underline-offset:4px}.wrap{width:min(1120px,calc(100% - 48px));margin-inline:auto}.skip{position:fixed;top:8px;left:8px;z-index:5;transform:translateY(-150%);padding:8px 12px;border-radius:6px;background:var(--paper);color:var(--ink)}.skip:focus{transform:none}
     header{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}header:after{content:"";position:absolute;width:520px;height:520px;right:-170px;top:-315px;border:1px solid rgba(232,227,214,.09);border-radius:50%;box-shadow:0 0 0 72px rgba(232,227,214,.025),0 0 0 145px rgba(232,227,214,.018);pointer-events:none}.topbar{display:flex;align-items:center;justify-content:space-between;gap:24px;height:82px}.logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font:600 22px/1 var(--display);letter-spacing:-.02em}.logo svg{width:29px;height:29px}.back{font-size:13px;font-weight:600;color:#b7bdb1;text-decoration:none}.back:hover{color:var(--paper)}.intro{padding:78px 0 82px}.kicker{color:var(--orange);font:500 11px var(--data);letter-spacing:.1em;text-transform:uppercase}.intro h1{max-width:780px;margin:15px 0 19px;font:500 clamp(46px,7vw,78px)/1 var(--display);letter-spacing:-.045em}.intro p{max-width:680px;margin:0;color:var(--muted);font-size:17px}
     .legal-layout{display:grid;grid-template-columns:240px minmax(0,720px);gap:90px;align-items:start;padding:80px 0 110px}.toc{position:sticky;top:28px;display:grid;gap:3px}.toc span{margin-bottom:12px;color:#697165;font:500 10px var(--data);letter-spacing:.1em;text-transform:uppercase}.toc a{padding:9px 11px;border-left:1px solid var(--line);color:#aeb5a8;text-decoration:none;font-weight:600}.toc a:hover,.toc a:focus-visible{border-color:var(--orange);color:var(--paper);outline:0}.documents{min-width:0}.document{scroll-margin-top:25px;padding:0 0 78px;margin:0 0 72px;border-bottom:1px solid var(--line)}.document:last-child{padding-bottom:0;margin-bottom:0;border:0}.eyebrow{color:var(--orange);font:500 10px var(--data);letter-spacing:.1em;text-transform:uppercase}.document h2{margin:10px 0 34px;font:500 clamp(36px,5vw,54px)/1.04 var(--display);letter-spacing:-.035em}.document h3{margin:38px 0 10px;font:600 22px/1.2 var(--display)}.document p,.document li{color:#b1b8ac}.document strong{color:var(--paper)}.document ul{padding-left:20px}.document li+li{margin-top:8px}.document .summary{padding:22px 24px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(145deg,rgba(38,50,37,.46),rgba(23,32,22,.18));color:#cbd0c5}.updated{margin-top:36px;color:#737c70!important;font:11px var(--data)}
-    footer{border-top:1px solid var(--line);padding:34px 0 max(34px,env(safe-area-inset-bottom));color:#80897c;font-size:12px}.footer-row{display:flex;align-items:center;justify-content:space-between;gap:25px}.footer-links{display:flex;flex-wrap:wrap;gap:20px}
     @media(max-width:760px){.wrap{width:min(100% - 32px,1120px)}.back{font-size:0}.back:after{content:"←";font-size:18px}.intro{padding:55px 0 62px}.intro h1{font-size:clamp(40px,12vw,52px);text-wrap:balance}.legal-layout{grid-template-columns:1fr;gap:50px;padding:55px 0 80px}.toc{position:static;grid-template-columns:1fr}.toc span{grid-column:1/-1}.toc a{padding:9px 0 9px 12px}.document{scroll-margin-top:18px}.footer-row{align-items:flex-start;flex-direction:column}}
     @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
   </style>
@@ -151,11 +151,6 @@
     </div>
   </main>
 
-  <footer>
-    <div class="wrap footer-row">
-      <span>© 2026 Boletada</span>
-      <div class="footer-links"><a href="/bones-practiques/">Bones pràctiques</a><a href="#avis-legal">Avís legal</a><a href="#privacitat">Privacitat</a><a href="#termes">Termes</a><a href="mailto:hola@boletada.cat">Contacte</a></div>
-    </div>
-  </footer>
+  <!-- boletada:public-footer -->
 </body>
 </html>

@@ -13,7 +13,11 @@ until npm run db:migrate; do
   sleep 2
 done
 
-echo "Generant mapa i punts inicials…"
-node score_estacions.mjs --all || \
-  echo "(avís: no s'ha pogut generar el mapa a l'arrencada; el cron ho reintentarà)"
+if node scripts/check-active-predictions.mjs; then
+  echo "La generació activa ja és vàlida; el cron publicarà les actualitzacions diàries."
+else
+  echo "Sense cap generació activa vàlida; generant mapa i punts inicials…"
+  node score_estacions.mjs --all || \
+    echo "(avís: no s'ha pogut generar el mapa a l'arrencada; el cron ho reintentarà)"
+fi
 exec npm start

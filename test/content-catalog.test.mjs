@@ -21,7 +21,7 @@ const MODEL_SPECIES = new Set([
 ]);
 
 test("el catàleg editorial té identificadors i referències consistents", () => {
-  assert.equal(catalog.schemaVersion, 2);
+  assert.equal(catalog.schemaVersion, 3);
 
   const speciesSlugs = catalog.species.map((species) => species.slug);
   const habitatSlugs = new Set(catalog.habitats.map((habitat) => habitat.slug));
@@ -51,10 +51,14 @@ test("el catàleg editorial té identificadors i referències consistents", () =
       assert.ok(lookalike.note);
       if (lookalike.slug) assert.ok(speciesSlugs.includes(lookalike.slug), `${species.slug}: confusió inexistent ${lookalike.slug}`);
     }
-    assert.ok(["draft", "published", "archived"].includes(species.publication.status));
-    if (species.publication.status === "published") {
-      assert.ok(species.publication.reviewedBy, `${species.slug}: falta qui ha revisat la fitxa`);
-      assert.match(species.publication.reviewedAt || "", /^\d{4}-\d{2}-\d{2}$/);
+    assert.match(species.updatedAt || "", /^\d{4}-\d{2}-\d{2}$/, `${species.slug}: falta la data d'actualització`);
+    assert.equal(species.publication, undefined, `${species.slug}: l'estat editorial no forma part del catàleg públic`);
+    if (species.identification) {
+      assert.ok(species.identification.traits.length >= 4, `${species.slug}: falten trets d'identificació`);
+      for (const trait of species.identification.traits) {
+        assert.ok(trait.part);
+        assert.ok(trait.description);
+      }
     }
 
     for (const month of species.season.typicalMonths) {
@@ -98,7 +102,7 @@ test("el motor i el selector cobreixen totes les espècies predictives del catà
 });
 
 test("el directori també cobreix espècies informatives fora del predictor", () => {
-  assert.ok(catalog.species.length >= 23);
+  assert.ok(catalog.species.length >= 27);
   assert.ok(catalog.species.some((species) => species.edibility.category === "toxic"));
   assert.ok(catalog.species.some((species) => species.edibility.category === "deadly"));
   assert.ok(catalog.species.some((species) => species.edibility.category === "not-edible"));
@@ -106,6 +110,19 @@ test("el directori també cobreix espècies informatives fora del predictor", ()
   assert.ok(catalog.species.some((species) => !species.prediction.available));
 });
 
-test("les fitxes de la guia publicable han passat la revisió editorial", () => {
-  assert.equal(catalog.species.every((species) => species.publication.status === "published"), true);
+test("el primer lot d’ampliació incorpora les quatre fitxes completes", () => {
+  for (const slug of ["llora-aspra", "cama-sec", "molleric", "fals-rossinyol"]) {
+    const species = catalog.species.find((entry) => entry.slug === slug);
+    assert.ok(species, `${slug}: falta al catàleg`);
+    assert.equal(species.identification.traits.length, 4, `${slug}: la fitxa no té quatre trets de camp`);
+    assert.ok(species.media.card, `${slug}: falta la imatge de la fitxa`);
+    assert.ok(species.sourceIds.length >= 3, `${slug}: falten fonts contrastades`);
+  }
+});
+
+test("les fitxes prioritàries incorporen trets de camp contrastats", () => {
+  for (const slug of ["rovello", "cep", "rossinyol", "ou-de-reig", "farinera-borda"]) {
+    const species = catalog.species.find((entry) => entry.slug === slug);
+    assert.equal(species.identification.traits.length, 4, `${slug}: la fitxa encara no és completa`);
+  }
 });

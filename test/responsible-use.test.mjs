@@ -1,16 +1,20 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { injectPublicFooter } from "../scripts/public-footer.mjs";
 
 const readProjectFile = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("la landing i els termes enllacen una pàgina dedicada de bones pràctiques", async () => {
-  const [landing, app, legal, page] = await Promise.all([
+  const [landingSource, app, legalSource, pageSource] = await Promise.all([
     readProjectFile("index.html"),
     readProjectFile("app.html"),
     readProjectFile("legal.html"),
     readProjectFile("bones-practiques.html"),
   ]);
+  const landing = injectPublicFooter(landingSource, "index.html");
+  const legal = injectPublicFooter(legalSource, "legal.html");
+  const page = injectPublicFooter(pageSource, "bones-practiques.html");
 
   assert.match(landing, /href="\/bones-practiques\/"/);
   assert.match(legal, /el mapa no autoritza l’entrada a cap terreny/);

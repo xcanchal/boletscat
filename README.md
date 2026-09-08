@@ -4,9 +4,10 @@ Producte web de pagament que, a partir de **dades obertes** (Meteocat + ICGC), p
 on hi ha millors condicions per trobar bolets, **per espècie**. El mapa requereix
 compte i entitlement `boletada_pro`; les prediccions no són fitxers públics.
 
-El pla del directori públic d'espècies, temporada i hàbitats viu a
-[`PLA_CONTINGUT.md`](PLA_CONTINGUT.md). El contingut editorial canònic es manté
-separat del model predictiu a [`content/catalog.json`](content/catalog.json).
+El pla d'evolució del directori públic, el SEO i el producte viu al
+[full de ruta de creixement](docs/GROWTH_ROADMAP.md). El contingut editorial
+canònic es manté separat del model predictiu a
+[`content/catalog.json`](content/catalog.json).
 
 ---
 
@@ -187,7 +188,7 @@ referències concretes de cada fitxa viuen a [`content/catalog.json`](content/ca
 | [GBIF](https://www.gbif.org/) | Contrastar presència documentada a Catalunya | Una observació no equival a abundància ni revela una zona recomanada |
 | Fotografies pròpies o [Wikimedia Commons](https://commons.wikimedia.org/) | Imatges de les fitxes | Cal guardar autoria, llicència i URL d'origen per a cada imatge |
 
-Les vint-i-tres entrades inicials del catàleg estan publicades amb la data i l’equip
+Les vint-i-set entrades actuals del catàleg estan publicades amb la data i l’equip
 de revisió registrats. Els mesos, hàbitats, altituds i categories de comestibilitat
 parteixen dels paràmetres actuals i de les fonts anteriors; una actualització de la
 fitxa ha de renovar també la seva revisió editorial. Boletaires.cat només serveix
@@ -390,6 +391,12 @@ Les idees de model següents requereixen avaluació separada.
 Hotfix: [actualització de prediccions en tornar a la PWA](docs/PWA_REFRESH.md).
 Inclou els dos modes del mapa i preserva la vista; cal verificar el desplegament
 i la suspensió real a iPhone després de publicar-lo.
+
+L'evolució d'adquisició i producte basada en l'anàlisi competitiva es documenta al
+[full de ruta de creixement](docs/GROWTH_ROADMAP.md). El
+[contracte de contingut SEO](docs/SEO_CONTENT_CONTRACT.md) fixa les rutes, el límit
+entre resum públic i mapa premium, i els criteris que una pàgina ha de superar
+abans de ser indexable.
 
 1. **Calibrar** paràmetres i la duresa de l'hoste contra floracions recordades.
 2. Contrastar el proxy geològic amb cartografia edafològica local o observacions
