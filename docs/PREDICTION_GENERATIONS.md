@@ -162,6 +162,10 @@ button. A notice added now does not notify already-open pre-migration clients.
    every new container must generate a complete dataset before readiness passes.
    During rolling deployments, all instances serving a client must share the
    same generation store (or deployment routing must provide equivalent affinity).
+   Production uses a Coolify-managed volume mounted at
+   `/app/private/predictions`. The entrypoint validates and reuses its active
+   generation; it bootstraps from Meteocat only when the volume has no valid
+   generation. The scheduled scorer remains responsible for daily publication.
 3. The existing entrypoint runs `--all`; confirm the publication log and readiness.
    Old flat prediction files are ignored; a complete new run is required on the
    first migration. Keep the prior deployment available if initial generation fails.
