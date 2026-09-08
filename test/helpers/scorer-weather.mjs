@@ -7,7 +7,11 @@ globalThis.fetch = async url => {
   }
   if (!parsed.pathname.endsWith('/nzvn-apee.json')) throw new Error('Unexpected weather dataset');
   const values={ '35':12,'32':16,'33':70,'30':2,'36':180 };
-  return Response.json(Object.keys(values).flatMap(variable=>Array.from({length:61},(_,index)=>{
+  const where=parsed.searchParams.get('$where')??'';
+  const from=where.match(/data_lectura >= '([^']+)'/)?.[1];
+  const end=where.match(/data_lectura (<=|<) '([^']+)'/);
+  if(!from||!end)throw new Error('Missing chunked date range');
+  const rows=Object.keys(values).flatMap(variable=>Array.from({length:61},(_,index)=>{
       const date=new Date(Date.UTC(2026,8,5-index));
       const value=values[variable];
       return {
@@ -16,5 +20,9 @@ globalThis.fetch = async url => {
         max:variable==='32'?22:variable==='33'?95:value,n:48,
         latest:new Date(date.getTime()+23.5*60*60*1000).toISOString(),
       };
-    })));
+    }));
+  return Response.json(rows.filter(row=>{
+    const timestamp=`${String(row.dia).slice(0,10)}T12:00:00`;
+    return timestamp>=from&&(end[1]==='<'?timestamp<end[2]:timestamp<=end[2]);
+  }));
 };

@@ -49,6 +49,7 @@ import { resolvePredictionDir } from "./src/prediction-path.mjs";
 import { publishGeneration } from './src/prediction-generations.mjs';
 import { calculateMoistureReserve } from './src/moisture-model.mjs';
 import { indexDailyAggregates, latestObservation, missingDailyAggregate } from './src/weather-quality.mjs';
+import { fetchJsonWithRetry, splitUtcDailyWindows } from './src/socrata.mjs';
 
 const BASE = "https://analisi.transparenciacatalunya.cat/resource";
 const DS_MESURES = `${BASE}/nzvn-apee.json`, DS_ESTACIONS = `${BASE}/yqwd-vj5e.json`;
@@ -60,7 +61,9 @@ const LAG_RISE = 6, LAG_FALL = 16, RESERVE_FALL = 14;
 // Llindars provisionals de condicions ideals. En arribar-hi el factor val 1
 // exactament; s'han d'afinar amb observacions/backtests, no amb el màxim del dia.
 const TRIGGER_IDEAL = 60, RESERVE_IDEAL = 100;
-const SODA_TIMEOUT_MS = 30_000;
+// La consulta agregada de 60 dies supera sovint el límit de Socrata. Finestres
+// curtes conserven exactament els mateixos dies sense partir-ne cap per la meitat.
+const METEO_CHUNK_DAYS = 8;
 const HOST_CODE = { conifer:1, deciduous:2, sclerophyll:3, ribera:4 };
 const COLOR_STOPS = [[0,[89,102,94]],[.1,[116,125,69]],[.25,[161,164,71]],[.4,[201,147,47]],[.6,[226,121,42]],[.8,[200,69,27]],[1,[169,46,20]]];
 
@@ -91,24 +94,7 @@ function substrateFactor(code, sp) {
 async function soda(url, params = {}) {
   const qs = new URLSearchParams(params).toString();
   const target=qs?`${url}?${qs}`:url;
-  let lastError;
-  for(let attempt=1;attempt<=2;attempt++) {
-    const controller=new AbortController();
-    const timeout=setTimeout(()=>controller.abort(),SODA_TIMEOUT_MS);
-    try {
-      const res=await fetch(target,{headers:{Accept:'application/json'},signal:controller.signal});
-      if(!res.ok) {
-        const error=new Error(`HTTP ${res.status} — ${await res.text()}`);
-        if(res.status<500&&res.status!==429)throw error;
-        lastError=error;
-      } else return res.json();
-    } catch(error) {
-      lastError=error;
-      if(/^HTTP 4(?!29)/.test(String(error.message)))throw error;
-    } finally { clearTimeout(timeout); }
-    if(attempt<2)await new Promise(resolve=>setTimeout(resolve,300));
-  }
-  throw new Error(`Meteocat unavailable after retry: ${lastError?.message??'unknown error'}`);
+  return fetchJsonWithRetry(target);
 }
 const findKey = (row, ...c) => {
   for (const k of c) if (k in row) return k;
@@ -221,11 +207,19 @@ function interpolateGrid(grid, signals) {
 }
 async function meteoDiari(desdeISO,finsISO) {
   try {
-    return await soda(DS_MESURES, {
-      $select: `codi_variable, codi_estacio, date_trunc_ymd(data_lectura) AS dia, sum(valor_lectura) AS total, avg(valor_lectura) AS mean, min(valor_lectura) AS min, max(valor_lectura) AS max, count(distinct id) AS n, max(data_lectura) AS latest`,
-      $where:  `codi_variable IN('${[V_PLUJA,V_TEMP,V_HUMITAT,V_VENT,V_RADIACIO].join("','")}') AND data_lectura >= '${desdeISO}' AND data_lectura <= '${finsISO}' AND valor_lectura IS NOT NULL AND (codi_estat='V' OR codi_estat IS NULL)`,
-      $group:  "codi_variable, codi_estacio, dia", $limit: 100000,
-    });
+    const rows=[];
+    const windows=splitUtcDailyWindows(desdeISO,finsISO,METEO_CHUNK_DAYS);
+    for(const [index,window] of windows.entries()) {
+      console.log(`Meteocat: bloc ${index+1}/${windows.length} · ${window.fromISO.slice(0,10)}–${window.toISO.slice(0,10)}`);
+      const chunk=await soda(DS_MESURES, {
+        $select: `codi_variable, codi_estacio, date_trunc_ymd(data_lectura) AS dia, sum(valor_lectura) AS total, avg(valor_lectura) AS mean, min(valor_lectura) AS min, max(valor_lectura) AS max, count(distinct id) AS n, max(data_lectura) AS latest`,
+        $where:  `codi_variable IN('${[V_PLUJA,V_TEMP,V_HUMITAT,V_VENT,V_RADIACIO].join("','")}') AND data_lectura >= '${window.fromISO}' AND data_lectura ${window.endOperator} '${window.toISO}' AND valor_lectura IS NOT NULL AND (codi_estat='V' OR codi_estat IS NULL)`,
+        $group:  "codi_variable, codi_estacio, dia", $limit: 100000,
+      });
+      rows.push(...chunk);
+    }
+    console.log(`Meteocat: ${rows.length.toLocaleString('ca')} agregats diaris en ${windows.length} consultes`);
+    return rows;
   } catch(error) { throw new Error(`XEMA daily weather: ${error.message}`); }
 }
 
