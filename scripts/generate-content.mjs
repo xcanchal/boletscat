@@ -20,7 +20,7 @@ const nav = (current = "guide") => `<header class="site-header"><nav class="wrap
 
 const guideSectionNav = (current) => `<nav class="guide-section-nav" aria-label="Seccions de la guia"><span>Explora</span><a href="/bolets/"${current === "species" ? ' aria-current="page"' : ""}>Espècies</a><a href="/temporada-de-bolets/"${current === "season" ? ' aria-current="page"' : ""}>Calendari</a></nav>`;
 
-const footer = () => `<footer class="site-footer"><div class="wrap footer-row"><span>© 2026 Boletada</span><div class="footer-links"><a href="/legal/#avis-legal">Avís legal</a><a href="/legal/#privacitat">Privacitat</a><a href="/legal/#termes">Termes</a><a href="mailto:hola@boletada.cat">Contacte</a></div></div></footer>`;
+const footer = () => `<footer class="site-footer"><div class="wrap footer-row"><span>© 2026 Boletada</span><div class="footer-links"><a href="/legal/#avis-legal">Avís legal</a><a href="/legal/#privacitat">Privacitat</a><a href="/legal/#termes">Termes</a><a href="mailto:hola@boletada.cat">Contacte</a></div></div><div class="footer-forest" aria-hidden="true"><img src="/media/footer-edible-mushrooms.webp?v=20260908" alt="" width="2172" height="724" loading="lazy" decoding="async" /></div></footer>`;
 
 const documentShell = ({ title, description, canonical, body, indexable = false, structuredData, ogImage = "https://boletada.cat/assets/brand/boletada-og-1200x630.png", ogType = "website", navCurrent = "guide", scripts = [] }) => `<!doctype html>
 <html lang="ca"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
