@@ -1,6 +1,6 @@
 # Competitive growth roadmap
 
-> Status: active implementation roadmap · 7 September 2026
+> Status: active implementation roadmap · 8 September 2026
 >
 > Baseline: `main` at `b1e60d8`
 >
@@ -26,7 +26,7 @@ editorial catalogue with current conditions and community features.
 | Surface | `bolets.app` | Boletada baseline | Implication |
 |---|---:|---:|---|
 | Sitemap URLs | 217 | 27 | Boletada has a coverage gap, not an indexability failure |
-| Species profiles | 62 | 23 | Expand selectively; accuracy matters more than matching volume |
+| Species profiles | 62 | 27 after batch A | Expand selectively; accuracy matters more than matching volume |
 | Territory URLs | 90 | 0 | Pilot a few data-rich regions before creating combinations at scale |
 | Comparison URLs | 20 | 0 | High-value safety and identification intent is uncovered |
 | Monthly season URLs | 12 + hub | One calendar hub | Month pages are a low-risk extension of structured data |
@@ -111,7 +111,7 @@ is public when it is present in `content/catalog.json` on `main`; there is no
 
 | Batch | Proposed focus | Why |
 |---|---|---|
-| A | Carbonera, cama-sec, molleric, fals rossinyol | Common names plus a useful confusion edge |
+| A | Llora aspra / blavet, cama-sec, molleric, fals rossinyol | Implemented on `codex/content-guide-batch-a`; the canonical Catalan name replaces the roadmap’s earlier use of the Spanish common name “carbonera” |
 | B | Pinetell entity split, rovelló entity cleanup, lleterola de bedoll | Resolve the broad predictor group without blocking content coverage |
 | C | More toxic/deadly confusion species | Strengthen safety coverage before scaling comparison pages |
 

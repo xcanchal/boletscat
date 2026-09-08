@@ -188,7 +188,7 @@ referències concretes de cada fitxa viuen a [`content/catalog.json`](content/ca
 | [GBIF](https://www.gbif.org/) | Contrastar presència documentada a Catalunya | Una observació no equival a abundància ni revela una zona recomanada |
 | Fotografies pròpies o [Wikimedia Commons](https://commons.wikimedia.org/) | Imatges de les fitxes | Cal guardar autoria, llicència i URL d'origen per a cada imatge |
 
-Les vint-i-tres entrades inicials del catàleg estan publicades amb la data i l’equip
+Les vint-i-set entrades actuals del catàleg estan publicades amb la data i l’equip
 de revisió registrats. Els mesos, hàbitats, altituds i categories de comestibilitat
 parteixen dels paràmetres actuals i de les fonts anteriors; una actualització de la
 fitxa ha de renovar també la seva revisió editorial. Boletaires.cat només serveix
