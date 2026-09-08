@@ -2,6 +2,7 @@
 import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { renderPublicFooter } from "./public-footer.mjs";
 
 const MONTHS = ["Gen", "Feb", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Des"];
 const SOILS = { siliceous: "silícic o àcid", calcareous: "calcari", mixed: "mixt" };
@@ -20,15 +21,13 @@ const nav = (current = "guide") => `<header class="site-header"><nav class="wrap
 
 const guideSectionNav = (current) => `<nav class="guide-section-nav" aria-label="Seccions de la guia"><span>Explora</span><a href="/bolets/"${current === "species" ? ' aria-current="page"' : ""}>Espècies</a><a href="/temporada-de-bolets/"${current === "season" ? ' aria-current="page"' : ""}>Calendari</a></nav>`;
 
-const footer = () => `<footer class="site-footer"><div class="wrap footer-row"><span>© 2026 Boletada</span><div class="footer-links"><a href="/legal/#avis-legal">Avís legal</a><a href="/legal/#privacitat">Privacitat</a><a href="/legal/#termes">Termes</a><a href="mailto:hola@boletada.cat">Contacte</a></div></div><div class="footer-forest" aria-hidden="true"><img src="/media/footer-edible-mushrooms.webp?v=20260908b" alt="" width="2172" height="724" loading="lazy" decoding="async" /></div></footer>`;
-
 const documentShell = ({ title, description, canonical, body, indexable = false, structuredData, ogImage = "https://boletada.cat/assets/brand/boletada-og-1200x630.png", ogType = "website", navCurrent = "guide", scripts = [] }) => `<!doctype html>
 <html lang="ca"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(description)}"/><meta name="theme-color" content="#10150f"/>
 <meta name="robots" content="${indexable ? "index,follow" : "noindex,nofollow"}"/><link rel="canonical" href="${escapeHtml(canonical)}"/>
 <meta property="og:type" content="${escapeHtml(ogType)}"/><meta property="og:locale" content="ca_ES"/><meta property="og:site_name" content="Boletada"/><meta property="og:title" content="${escapeHtml(title)}"/><meta property="og:description" content="${escapeHtml(description)}"/><meta property="og:url" content="${escapeHtml(canonical)}"/><meta property="og:image" content="${escapeHtml(ogImage)}"/>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600;700&family=Spectral:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet"/><link rel="stylesheet" href="/content/content.css?v=20260907-1"/>
-${structuredData ? `<script type="application/ld+json">${JSON.stringify(structuredData).replaceAll("<", "\\u003c")}</script>` : ""}${scripts.map((src) => `<script defer src="${escapeHtml(src)}"></script>`).join("")}</head><body><a class="skip" href="#contingut">Salta al contingut</a>${nav(navCurrent)}${body}${footer()}</body></html>`;
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"/><link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500;600;700&family=Spectral:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet"/><link rel="stylesheet" href="/content/content.css?v=20260907-1"/><link rel="stylesheet" href="/content/public-footer.css?v=20260908-1"/>
+${structuredData ? `<script type="application/ld+json">${JSON.stringify(structuredData).replaceAll("<", "\\u003c")}</script>` : ""}${scripts.map((src) => `<script defer src="${escapeHtml(src)}"></script>`).join("")}</head><body><a class="skip" href="#contingut">Salta al contingut</a>${nav(navCurrent)}${body}${renderPublicFooter()}</body></html>`;
 
 const habitatNamesFor = (species, catalog) => species.ecology.habitatSlugs
   .map((slug) => catalog.habitats.find((habitat) => habitat.slug === slug)?.name)
@@ -87,7 +86,7 @@ export function renderDirectoryPage(catalog) {
       : "";
     const searchText = [species.names.ca, species.names.scientific, ...(species.names.aliases || [])].join(" ").toLocaleLowerCase("ca");
     const media = cardImage
-      ? `<figure class="card-visual"><img src="${escapeHtml(cardImage.src)}" alt="" width="1536" height="1024" loading="lazy" decoding="async"/>${cardImage.generated ? '<figcaption>Il·lustració IA</figcaption>' : ""}</figure>`
+      ? `<figure class="card-visual"><img src="${escapeHtml(cardImage.src)}" alt="" width="1536" height="1024" loading="lazy" decoding="async"/></figure>`
       : "";
     const seasonBand = groupKey === "edible"
       ? `<div class="card-season" aria-label="Mesos habituals"><div class="mini-months">${monthBand(species)}</div><div class="mini-month-labels" aria-hidden="true"><span>Gen</span><span>Des</span></div></div>`
@@ -189,6 +188,7 @@ export async function buildContentPages({ root, out }) {
   await mkdir(join(out, "content"), { recursive: true });
   await Promise.all([
     cp(join(root, "content/content.css"), join(out, "content/content.css")),
+    cp(join(root, "content/public-footer.css"), join(out, "content/public-footer.css")),
     cp(join(root, "content/directory.js"), join(out, "content/directory.js")),
     writeFile(join(out, "robots.txt"), renderRobots()),
     writeFile(join(out, "sitemap.xml"), renderSitemap(catalog)),

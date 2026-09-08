@@ -102,12 +102,22 @@ test("el motor i el selector cobreixen totes les espècies predictives del catà
 });
 
 test("el directori també cobreix espècies informatives fora del predictor", () => {
-  assert.ok(catalog.species.length >= 23);
+  assert.ok(catalog.species.length >= 27);
   assert.ok(catalog.species.some((species) => species.edibility.category === "toxic"));
   assert.ok(catalog.species.some((species) => species.edibility.category === "deadly"));
   assert.ok(catalog.species.some((species) => species.edibility.category === "not-edible"));
   assert.ok(catalog.species.some((species) => species.culinary?.rating === "low"));
   assert.ok(catalog.species.some((species) => !species.prediction.available));
+});
+
+test("el primer lot d’ampliació incorpora les quatre fitxes completes", () => {
+  for (const slug of ["llora-aspra", "cama-sec", "molleric", "fals-rossinyol"]) {
+    const species = catalog.species.find((entry) => entry.slug === slug);
+    assert.ok(species, `${slug}: falta al catàleg`);
+    assert.equal(species.identification.traits.length, 4, `${slug}: la fitxa no té quatre trets de camp`);
+    assert.ok(species.media.card, `${slug}: falta la imatge de la fitxa`);
+    assert.ok(species.sourceIds.length >= 3, `${slug}: falten fonts contrastades`);
+  }
 });
 
 test("les fitxes prioritàries incorporen trets de camp contrastats", () => {

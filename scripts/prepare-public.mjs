@@ -1,11 +1,17 @@
 #!/usr/bin/env node
-import { cp, mkdir, rm } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildContentPages } from "./generate-content.mjs";
+import { injectPublicFooter } from "./public-footer.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const out = join(root, "public");
+
+async function writePublicPage(source, destination) {
+  const html = await readFile(source, "utf8");
+  await writeFile(destination, injectPublicFooter(html, source));
+}
 
 await rm(out, { recursive: true, force: true });
 await mkdir(join(out, "vendor"), { recursive: true });
@@ -14,13 +20,13 @@ await mkdir(join(out, "assets/brand"), { recursive: true });
 await mkdir(join(out, "legal"), { recursive: true });
 await mkdir(join(out, "bones-practiques"), { recursive: true });
 await Promise.all([
-  cp(join(root, "index.html"), join(out, "index.html")),
+  writePublicPage(join(root, "index.html"), join(out, "index.html")),
   cp(join(root, "app.html"), join(out, "app/index.html")),
   cp(join(root, "prediction-confidence.mjs"), join(out, "prediction-confidence.mjs")),
   cp(join(root, 'prediction-client.mjs'), join(out, 'prediction-client.mjs')),
   cp(join(root, "raster-projection.mjs"), join(out, "raster-projection.mjs")),
-  cp(join(root, "legal.html"), join(out, "legal/index.html")),
-  cp(join(root, "bones-practiques.html"), join(out, "bones-practiques/index.html")),
+  writePublicPage(join(root, "legal.html"), join(out, "legal/index.html")),
+  writePublicPage(join(root, "bones-practiques.html"), join(out, "bones-practiques/index.html")),
   cp(join(root, "preview-map.webp"), join(out, "preview-map.webp")),
   cp(join(root, "media"), join(out, "media"), { recursive: true }),
   cp(join(root, "preview-map.webp"), join(out, "app/preview-map.webp")),

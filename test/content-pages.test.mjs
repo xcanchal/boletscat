@@ -2,9 +2,15 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { renderDirectoryPage, renderRobots, renderSeasonPage, renderSitemap, renderSpeciesPage } from "../scripts/generate-content.mjs";
+import { injectPublicFooter, PUBLIC_FOOTER_TOKEN } from "../scripts/public-footer.mjs";
 
 const catalog = JSON.parse(await readFile(new URL("../content/catalog.json", import.meta.url), "utf8"));
-const landing = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const landingSource = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const legalSource = await readFile(new URL("../legal.html", import.meta.url), "utf8");
+const practicesSource = await readFile(new URL("../bones-practiques.html", import.meta.url), "utf8");
+const landing = injectPublicFooter(landingSource, "index.html");
+const legal = injectPublicFooter(legalSource, "legal.html");
+const practices = injectPublicFooter(practicesSource, "bones-practiques.html");
 const contentCss = await readFile(new URL("../content/content.css", import.meta.url), "utf8");
 const app = await readFile(new URL("../app.html", import.meta.url), "utf8");
 
@@ -34,9 +40,40 @@ test("el header mòbil manté el mapa com a acció principal", () => {
   assert.doesNotMatch(contentCss, /\.site-header \.button\{display:none/);
 });
 
+test("totes les pàgines públiques comparteixen el footer complet", () => {
+  const pages = [
+    landing,
+    legal,
+    practices,
+    renderDirectoryPage(catalog),
+    renderSeasonPage(catalog),
+    renderSpeciesPage(catalog.species[0], catalog),
+  ];
+  const requiredFooterContent = [
+    "Boletada és una eina orientativa.",
+    'href="/bones-practiques/"',
+    'href="/legal/#avis-legal"',
+    'href="/legal/#privacitat"',
+    'href="/legal/#termes"',
+    'href="mailto:hola@boletada.cat"',
+    'href="/app/"',
+    "© 2026 Boletada",
+    "footer-edible-mushrooms.webp",
+  ];
+
+  for (const page of pages) {
+    for (const expected of requiredFooterContent) assert.ok(page.includes(expected), expected);
+  }
+  for (const source of [landingSource, legalSource, practicesSource]) {
+    assert.equal(source.split(PUBLIC_FOOTER_TOKEN).length - 1, 1);
+    assert.doesNotMatch(source, /<footer/);
+  }
+  assert.doesNotMatch(app, /footer-edible-mushrooms\.webp/);
+});
+
 test("el directori agrupa les espècies i enllaça totes les fitxes", () => {
   const html = renderDirectoryPage(catalog);
-  assert.equal(catalog.species.length, 23);
+  assert.equal(catalog.species.length, 27);
   for (const species of catalog.species) {
     assert.ok(html.includes(species.names.ca));
     assert.ok(html.includes(`href="/bolets/${species.slug}/"`));
@@ -77,7 +114,7 @@ test("el directori agrupa les espècies i enllaça totes les fitxes", () => {
   assert.match(html, /carlet-ai\.webp/);
   assert.match(html, /girgola-olivera-ai\.webp/);
   assert.match(html, /xampinyo-groguenc-ai\.webp/);
-  assert.match(html, /Il·lustració IA/);
+  assert.doesNotMatch(html, /Il·lustració IA/);
   assert.match(html, /directory\.js/);
   assert.match(html, /name="robots" content="index,follow"/);
   assert.match(html, /property="og:type" content="website"/);
