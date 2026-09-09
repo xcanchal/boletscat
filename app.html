@@ -276,6 +276,8 @@
       padding:12px 13px;font:15px var(--ui);outline:none;transition:border-color .15s,box-shadow .15s}
     .password-control input{padding-right:50px}.password-control input::-ms-reveal,.password-control input::-ms-clear{display:none}
     .auth-field input:focus{border-color:#d16b2c;box-shadow:0 0 0 3px rgba(209,107,44,.13)}
+    .auth-field .verification-code{font-size:22px;font-weight:750;letter-spacing:.34em;text-align:center;font-variant-numeric:tabular-nums}
+    .verification-email{color:#d9ddcf;font-weight:700;overflow-wrap:anywhere}
     .password-toggle{position:absolute;right:3px;top:50%;display:grid;place-items:center;width:40px;height:40px;padding:0;transform:translateY(-50%);
       border:0;border-radius:8px;background:transparent;color:#7f887c;cursor:pointer;touch-action:manipulation;transition:color .15s,background .15s}
     .password-toggle:hover{background:rgba(232,226,214,.06);color:#d6d8cc}.password-toggle:focus-visible{outline:2px solid var(--rovello);outline-offset:1px}
@@ -359,6 +361,18 @@
         <p class="auth-switch"><span id="authSwitchPrompt">No tens compte?</span><button class="text-action" id="authSwitch" type="button">Crear compte</button></p>
         <p class="gate-message" id="authMessage" role="status" aria-live="polite"></p>
         <p class="auth-legal" id="authLegal">En continuar acceptes els <a href="https://boletada.cat/legal/#termes" target="_blank" rel="noopener">Termes</a> i la <a href="https://boletada.cat/legal/#privacitat" target="_blank" rel="noopener">Política de privacitat</a>.</p>
+      </section>
+      <section class="gate-card" id="verificationView" aria-labelledby="verificationTitle" hidden>
+        <button class="text-action reset-back" id="verificationBack" type="button">← Tornar</button>
+        <div class="card-kicker">Confirma el correu</div>
+        <h2 id="verificationTitle">Introdueix el codi</h2>
+        <p class="card-copy">Hem enviat un codi a <span class="verification-email" id="verificationEmail"></span>.</p>
+        <form class="auth-form" id="verificationForm">
+          <label class="auth-field"><span class="auth-label">Codi de confirmació</span><input class="verification-code" id="verificationCode" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required /></label>
+          <button class="primary-action" id="verificationSubmit" type="submit">Confirmar el correu</button>
+        </form>
+        <p class="gate-message" id="verificationMessage" role="status" aria-live="polite"></p>
+        <p class="auth-switch"><span>No l’has rebut?</span><button class="text-action" id="resendVerification" type="button">Reenviar el codi</button></p>
       </section>
       <section class="gate-card" id="resetView" aria-labelledby="resetTitle" hidden>
         <button class="text-action reset-back" id="resetBack" type="button">← Tornar</button>
@@ -1346,11 +1360,11 @@
     window.addEventListener('online',()=>refreshPredictionOnReturn({force:true}));
     setInterval(refreshPredictionOnReturn,FOREGROUND_REFRESH_INTERVAL);
 
-    const loadingView=document.getElementById('loadingView'), authView=document.getElementById('authView'), resetView=document.getElementById('resetView');
-    const paywallView=document.getElementById('paywallView'), authForm=document.getElementById('authForm');
-    const authMessage=document.getElementById('authMessage'), billingMessage=document.getElementById('billingMessage');
+    const loadingView=document.getElementById('loadingView'), authView=document.getElementById('authView'), verificationView=document.getElementById('verificationView'), resetView=document.getElementById('resetView');
+    const paywallView=document.getElementById('paywallView'), authForm=document.getElementById('authForm'), verificationForm=document.getElementById('verificationForm');
+    const authMessage=document.getElementById('authMessage'), verificationMessage=document.getElementById('verificationMessage'), billingMessage=document.getElementById('billingMessage');
     const APP_CALLBACK_URL=DATA_BASE==='.'?`${location.origin}/app/`:location.href.split(/[?#]/)[0];
-    let authMode=new URLSearchParams(location.search).get('mode')==='signup'?'signup':'signin', currentUser=null, purchases=null, purchasePackage=null, billingConfig=null;
+    let authMode=new URLSearchParams(location.search).get('mode')==='signup'?'signup':'signin', pendingVerificationEmail='', currentUser=null, purchases=null, purchasePackage=null, billingConfig=null;
     const PASSWORD_MIN_LENGTH=8,PASSWORD_MAX_LENGTH=20;
 
     const passwordRequirements=password=>({
@@ -1380,11 +1394,15 @@
       if(error.errorCode===ErrorCode.PaymentPendingError)return 'El pagament està pendent de confirmació. Actualitzarem l’accés quan es completi.';
       return 'No s’ha pogut processar el pagament. Torna-ho a provar en uns instants.';
     };
+    const errorCode=payload=>payload?.code||payload?.error?.code;
     const errorText=(payload,fallback)=>{
-      const code=payload?.code||payload?.error?.code;
+      const code=errorCode(payload);
       if(code==='INVALID_EMAIL_OR_PASSWORD')return 'El correu o la contrasenya no són correctes.';
       if(code==='USER_ALREADY_EXISTS')return 'Ja hi ha un compte amb aquest correu.';
       if(code==='EMAIL_NOT_VERIFIED')return 'Confirma el correu abans d’entrar.';
+      if(code==='INVALID_OTP')return 'El codi no és correcte. Revisa’l i torna-ho a provar.';
+      if(code==='OTP_EXPIRED')return 'El codi ha caducat. Demana’n un de nou.';
+      if(code==='TOO_MANY_ATTEMPTS')return 'Has superat el nombre d’intents. Demana un codi nou.';
       if(code==='PASSWORD_TOO_SHORT'||code==='PASSWORD_TOO_LONG')return 'La contrasenya ha de tenir entre 8 i 20 caràcters.';
       if(code==='PASSWORD_REQUIREMENTS_NOT_MET')return 'Afegeix almenys una lletra, un número i un símbol.';
       return fallback;
@@ -1401,7 +1419,15 @@
       return payload;
     }
     function showView(view) {
-      loadingView.hidden=view!=='loading';authView.hidden=view!=='auth';resetView.hidden=view!=='reset';paywallView.hidden=view!=='paywall';
+      loadingView.hidden=view!=='loading';authView.hidden=view!=='auth';verificationView.hidden=view!=='verification';resetView.hidden=view!=='reset';paywallView.hidden=view!=='paywall';
+    }
+    function openVerification(email,{message=''}={}) {
+      pendingVerificationEmail=email;
+      document.getElementById('verificationEmail').textContent=email;
+      document.getElementById('verificationCode').value='';
+      setMessage(verificationMessage,message,message?'success':'');
+      showView('verification');
+      document.getElementById('verificationCode').focus({preventScroll:true});
     }
     function unlockMap() {
       mapUnlocked=true;document.body.classList.add('map-authorized');
@@ -1560,13 +1586,61 @@
         : {email,password,callbackURL:APP_CALLBACK_URL};
       try {
         await request(`/api/auth/${authMode==='signup'?'sign-up':'sign-in'}/email`,{method:'POST',body:JSON.stringify(body),headers:{Origin:location.origin}});
-        const active=await refreshSession({sync:true});
-        if(!active&&authMode==='signup'&&!currentUser) setMessage(authMessage,'T’hem enviat un correu de confirmació.','success');
+        if(authMode==='signup'){
+          openVerification(email,{message:'Codi enviat. Revisa també la carpeta de correu brossa.'});
+          return;
+        }
+        await refreshSession({sync:true});
       } catch(error) {
         console.error('No s’ha pogut completar l’autenticació',error);
+        if(authMode==='signin'&&errorCode(error.payload)==='EMAIL_NOT_VERIFIED'){
+          openVerification(email,{message:'T’hem enviat un codi nou per confirmar el correu.'});
+          return;
+        }
         setMessage(authMessage,userSafeText(error,'No s’ha pogut completar l’operació. Torna-ho a provar.'),'error');
       }
       finally {button.disabled=false}
+    });
+
+    const verificationCodeInput=document.getElementById('verificationCode');
+    verificationCodeInput.addEventListener('input',()=>{
+      verificationCodeInput.value=verificationCodeInput.value.replace(/\D/g,'').slice(0,6);
+    });
+    verificationForm.addEventListener('submit',async event=>{
+      event.preventDefault();
+      const button=document.getElementById('verificationSubmit'),otp=verificationCodeInput.value;
+      if(!pendingVerificationEmail||!/^[0-9]{6}$/.test(otp)){
+        setMessage(verificationMessage,'Introdueix el codi de sis xifres.','error');
+        return;
+      }
+      button.disabled=true;setMessage(verificationMessage,'Comprovant el codi…');
+      try {
+        await request('/api/auth/email-otp/verify-email',{method:'POST',body:JSON.stringify({email:pendingVerificationEmail,otp}),headers:{Origin:location.origin}});
+        pendingVerificationEmail='';
+        await refreshSession({sync:true});
+      } catch(error) {
+        console.error('No s’ha pogut confirmar el correu',error);
+        setMessage(verificationMessage,userSafeText(error,'No s’ha pogut confirmar el correu. Torna-ho a provar.'),'error');
+      } finally {button.disabled=false}
+    });
+    document.getElementById('resendVerification').addEventListener('click',async()=>{
+      const button=document.getElementById('resendVerification');
+      if(!pendingVerificationEmail)return;
+      button.disabled=true;setMessage(verificationMessage,'Enviant un codi nou…');
+      try {
+        await request('/api/auth/email-otp/send-verification-otp',{method:'POST',body:JSON.stringify({email:pendingVerificationEmail,type:'email-verification'}),headers:{Origin:location.origin}});
+        verificationCodeInput.value='';
+        setMessage(verificationMessage,'Codi nou enviat.','success');
+        verificationCodeInput.focus({preventScroll:true});
+      } catch(error) {
+        console.error('No s’ha pogut reenviar el codi',error);
+        setMessage(verificationMessage,userSafeText(error,'No s’ha pogut reenviar el codi. Torna-ho a provar.'),'error');
+      } finally {button.disabled=false}
+    });
+    document.getElementById('verificationBack').addEventListener('click',()=>{
+      pendingVerificationEmail='';
+      setAuthMode('signin',{updateUrl:true});
+      showView('auth');
     });
 
     const resetParams=new URLSearchParams(location.search),resetToken=resetParams.get('token'),oauthError=resetParams.get('oauth')==='google';
