@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
+import { emailOTP } from "better-auth/plugins";
 import { config } from "./config.mjs";
 import { pool } from "./db.mjs";
 import { sendTransactionalEmail } from "./email.mjs";
@@ -21,6 +22,21 @@ export const auth = betterAuth({
       clientSecret: config.google.clientSecret,
     },
   } : {},
+  plugins: [emailOTP({
+    overrideDefaultEmailVerification: true,
+    storeOTP: "hashed",
+    sendVerificationOTP: async ({ email, otp, type }) => {
+      if (type !== "email-verification") {
+        throw new Error(`Tipus de codi no habilitat: ${type}`);
+      }
+      await sendTransactionalEmail({
+        to: email,
+        subject: "Codi de confirmació de Boletada",
+        text: `El teu codi de confirmació és: ${otp}`,
+        html: `<p>Introdueix aquest codi per confirmar el teu correu a Boletada:</p><p style="font-size:28px;font-weight:700;letter-spacing:6px">${otp}</p>`,
+      });
+    },
+  })],
   rateLimit: {
     enabled: true,
     storage: "database",
@@ -68,13 +84,5 @@ export const auth = betterAuth({
     sendOnSignUp: true,
     sendOnSignIn: true,
     autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url }) => {
-      await sendTransactionalEmail({
-        to: user.email,
-        subject: "Confirma el teu correu de Boletada",
-        text: `Confirma el teu correu obrint aquest enllaç: ${url}`,
-        html: `<p>Confirma el teu correu per entrar a Boletada:</p><p><a href="${url}">Confirmar el correu</a></p>`,
-      });
-    },
   },
 });
