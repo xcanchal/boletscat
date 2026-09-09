@@ -16,8 +16,13 @@ done
 if node scripts/check-active-predictions.mjs; then
   echo "La generació activa ja és vàlida; el cron publicarà les actualitzacions diàries."
 else
-  echo "Sense cap generació activa vàlida; generant mapa i punts inicials…"
-  node score_estacions.mjs --all || \
-    echo "(avís: no s'ha pogut generar el mapa a l'arrencada; el cron ho reintentarà)"
+  echo "Sense cap generació activa vàlida; generant mapa i punts inicials en segon pla…"
+  (
+    if node score_estacions.mjs --all; then
+      echo "Generació inicial publicada; el servei ja pot superar /readyz."
+    else
+      echo "(avís: no s'ha pogut generar el mapa a l'arrencada; el cron ho reintentarà)"
+    fi
+  ) &
 fi
 exec npm start
