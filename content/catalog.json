@@ -13,7 +13,7 @@
       "edibility": { "category": "edible", "label": "Comestible" },
       "culinary": { "rating": "good", "label": "Bo", "preparation": "Neteja’l sense amarar-lo i cuina’l completament. Tria exemplars ferms i descarta els que estiguin passats o parasitats." },
       "lookalikes": [
-        { "name": "Lleterola de bedoll", "scientific": "Lactarius torminosus", "slug": null, "risk": "Tòxic", "note": "Pot recordar un rovelló, però té el marge molt pelut i no presenta el mateix patró de coloració. No et refiïs només del color o del làtex." }
+        { "name": "Lleterola de bedoll", "scientific": "Lactarius torminosus", "slug": null, "risk": "Tòxic", "note": "Té el marge densament pilós, s’associa als bedolls i desprèn làtex blanc; els rovellons del grup deliciosus creixen amb pins i tenen làtex taronja o vinós que pot virar al verd.", "media": { "src": "/media/bolets/lactarius-torminosus-ai.webp", "alt": "Lleteroles de bedoll rosades amb el marge densament pilós", "generated": true } }
       ],
       "season": { "typicalMonths": [9, 10, 11], "peakMonths": [] },
       "ecology": {
@@ -22,7 +22,7 @@
         "soilPreferences": []
       },
       "prediction": { "available": true, "key": "rovello" },
-      "updatedAt": "2026-09-07",
+      "updatedAt": "2026-09-09",
       "identification": {
         "context": "És un grup de lactaris semblants, no una sola espècie. El color del làtex varia entre taronja i vinós segons el taxó.",
         "traits": [
@@ -42,7 +42,7 @@
         },
         "hero": null
       },
-      "sourceIds": ["gencat-productes-bosc", "gencat-alt-pallars", "termcat-rovello", "uevora-lactarius", "scm"]
+      "sourceIds": ["gencat-productes-bosc", "gencat-alt-pallars", "termcat-rovello", "uevora-lactarius", "sfmu-lactarius-torminosus", "scm"]
     },
     {
       "slug": "cep",
@@ -280,7 +280,7 @@
       "edibility": { "category": "conditional", "label": "Requereix cocció" },
       "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "No la consumeixis mai crua o poc cuita: requereix una cocció completa. Obre-la per retirar terra i petits invertebrats i consulta una persona experta si tens cap dubte." },
       "lookalikes": [
-        { "name": "Múrgola borda", "scientific": "Gyromitra esculenta", "slug": null, "risk": "Tòxic", "note": "El barret forma plecs cerebriformes, no els alvèols profunds i regulars d’una múrgola. La confusió pot ser greu." }
+        { "name": "Múrgola borda", "scientific": "Gyromitra esculenta", "slug": null, "risk": "Pot ser mortal", "note": "El barret forma plecs irregulars d’aspecte cerebral, no els alvèols profunds i regulars d’una múrgola. La confusió pot provocar una intoxicació molt greu.", "media": { "src": "/media/bolets/gyromitra-esculenta-ai.webp", "alt": "Múrgoles bordes de barret bru amb plecs d’aspecte cerebral", "generated": true } }
       ],
       "season": { "typicalMonths": [3, 4, 5], "peakMonths": [] },
       "ecology": {
@@ -289,7 +289,7 @@
         "soilPreferences": []
       },
       "prediction": { "available": true, "key": "murgola" },
-      "updatedAt": "2026-08-31",
+      "updatedAt": "2026-09-09",
       "media": {
         "card": {
           "src": "/media/bolets/murgola-ai.webp",
@@ -300,7 +300,7 @@
         },
         "hero": null
       },
-      "sourceIds": ["gencat-alt-pallars", "gencat-bolets-comercialitzables", "scm"]
+      "sourceIds": ["gencat-alt-pallars", "gencat-bolets-comercialitzables", "nnepc-false-morel", "scm"]
     },
     {
       "slug": "moixerno",
@@ -314,7 +314,7 @@
       "edibility": { "category": "edible", "label": "Comestible" },
       "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "Neteja’l, descarta exemplars envellits i cuina’l completament. L’olor farinosa és característica, però no permet identificar-lo tota sola." },
       "lookalikes": [
-        { "name": "Entoloma lividum", "scientific": "Entoloma sinuatum", "slug": null, "risk": "Tòxic", "note": "Pot coincidir en prats i clarianes i causar intoxicacions greus. Cal comprovar el conjunt de caràcters, no només el color blanc." }
+        { "name": "Inocibe rogenc", "scientific": "Inosperma erubescens", "slug": null, "risk": "Pot ser mortal", "note": "Coincideix amb el moixernó a la primavera i en sòls calcaris. El barret és fibrós, la carn s’enrogeix i les làmines madures s’enfosqueixen; no té l’olor farinosa típica del moixernó.", "media": { "src": "/media/bolets/inosperma-erubescens-ai.webp", "alt": "Inocibes rogencs de barret fibrós amb taques vermelloses", "generated": true } }
       ],
       "season": { "typicalMonths": [4, 5, 6], "peakMonths": [] },
       "ecology": {
@@ -323,7 +323,7 @@
         "soilPreferences": []
       },
       "prediction": { "available": false, "key": null },
-      "updatedAt": "2026-08-31",
+      "updatedAt": "2026-09-09",
       "media": {
         "card": {
           "src": "/media/bolets/moixerno-ai.webp",
@@ -334,7 +334,7 @@
         },
         "hero": null
       },
-      "sourceIds": ["upc-visor-bolets-catalunya", "gencat-bolets-comercialitzables", "scm"]
+      "sourceIds": ["upc-visor-bolets-catalunya", "gencat-bolets-comercialitzables", "smnf-calocybe-gambosa", "scm"]
     },
     {
       "slug": "xampinyo-silvestre",
@@ -459,7 +459,7 @@
       "edibility": { "category": "edible", "label": "Comestible" },
       "culinary": { "rating": "good", "label": "Bo", "preparation": "Consumeix només exemplars grans, madurs i inequívocament identificats; cuina bé el barret. No recullis petites lepiotes semblants, algunes de les quals són molt tòxiques." },
       "lookalikes": [
-        { "name": "Lepiotes petites", "scientific": "Lepiota spp.", "slug": null, "risk": "Algunes són mortals", "note": "La mida és un senyal important: no tractis cap lepiota petita com un apagallums i evita identificacions basades només en les escames del barret." }
+        { "name": "Lepiotes petites", "scientific": "Lepiota spp.", "slug": null, "risk": "Algunes són mortals", "note": "La mida és un senyal important: no tractis cap lepiota petita com un apagallums i evita identificacions basades només en les escames del barret.", "media": { "src": "/media/bolets/lepiota-brunneoincarnata-ai.webp", "alt": "Petites lepiotes de barret clar cobert d’escames brunes", "generated": true } }
       ],
       "season": { "typicalMonths": [8, 9, 10, 11], "peakMonths": [] },
       "ecology": {
@@ -468,7 +468,7 @@
         "soilPreferences": ["mixed"]
       },
       "prediction": { "available": false, "key": null },
-      "updatedAt": "2026-08-31",
+      "updatedAt": "2026-09-09",
       "media": {
         "card": {
           "src": "/media/bolets/apagallums-ai.webp",
@@ -709,12 +709,12 @@
       "edibility": { "category": "edible", "label": "Comestible" },
       "culinary": { "rating": "excellent", "label": "Excel·lent", "preparation": "Neteja-la amb cura perquè la carn és trencadissa i cuina-la completament. Consumeix-la només després d’una identificació segura: el color del barret és molt variable i no basta per reconèixer-la." },
       "lookalikes": [
-        { "name": "Altres llores i rússules", "scientific": "Russula spp.", "slug": null, "risk": "Algunes no comestibles", "note": "Moltes rússules comparteixen silueta i colors. En la llora aspra, les làmines blanques són flexibles i tenen un tacte greixós, però cal valorar el conjunt de caràcters." }
+        { "name": "Llora vera", "scientific": "Russula heterophylla", "slug": null, "risk": "Comestible", "note": "És una espècie propera, habitualment més uniformement verda. Té les làmines bifurcades i unides prop del peu; les de la llora aspra destaquen perquè són especialment flexibles i de tacte greixós.", "media": { "src": "/media/bolets/russula-heterophylla-ai.webp", "alt": "Llores veres de barret verd entre fullaraca de planifolis", "generated": true } }
       ],
       "season": { "typicalMonths": [6, 7, 8, 9, 10, 11], "peakMonths": [] },
       "ecology": { "habitatSlugs": ["boscos-caducifolis", "pinedes"], "altitudeM": { "min": 0, "max": 1800 }, "soilPreferences": [] },
       "prediction": { "available": false, "key": null },
-      "updatedAt": "2026-09-08",
+      "updatedAt": "2026-09-09",
       "identification": {
         "context": "El barret és molt variable i pot combinar verd, gris, violeta, lila o crema; el color, tot sol, no és diagnòstic.",
         "traits": [
@@ -735,12 +735,12 @@
       "edibility": { "category": "edible", "label": "Comestible" },
       "culinary": { "rating": "good", "label": "Bo", "preparation": "Aprofita sobretot els barrets joves, perquè els peus són durs i fibrosos. Es pot assecar, però cal separar amb molta cura qualsevol bolet diferent que comparteixi el prat o l’erol." },
       "lookalikes": [
-        { "name": "Clitocibe blanquinós", "scientific": "Clitocybe rivulosa", "slug": null, "risk": "Tòxic", "note": "Pot créixer als mateixos prats i fins i tot a prop dels erols. Té làmines més atapeïdes i decurrents i un peu menys tenaç; no recullis grups barrejats." }
+        { "name": "Clitocibe blanquinós", "scientific": "Clitocybe rivulosa", "slug": null, "risk": "Tòxic", "note": "Pot créixer als mateixos prats i fins i tot a prop dels erols. Té làmines més atapeïdes i decurrents i un peu menys tenaç; no recullis grups barrejats.", "media": { "src": "/media/bolets/clitocybe-rivulosa-ai.webp", "alt": "Clitocibes blanquinosos de barret clar i làmines decurrents en un prat", "generated": true } }
       ],
       "season": { "typicalMonths": [4, 5, 6, 7, 8, 9, 10, 11], "peakMonths": [] },
       "ecology": { "habitatSlugs": ["clarianes-i-prats"], "altitudeM": { "min": 0, "max": 2200 }, "soilPreferences": [] },
       "prediction": { "available": false, "key": null },
-      "updatedAt": "2026-09-08",
+      "updatedAt": "2026-09-09",
       "identification": {
         "context": "Els erols són una pista d’hàbitat, però altres espècies també poden créixer en cercle i fins i tot barrejar-s’hi.",
         "traits": [
@@ -761,12 +761,13 @@
       "edibility": { "category": "edible", "label": "Comestible" },
       "culinary": { "rating": "low", "label": "Interès baix", "preparation": "Tria exemplars joves i ferms, retira la cutícula viscosa i la capa de tubs quan sigui tova, i cuina’ls completament. La carn es deteriora i es corca amb rapidesa." },
       "lookalikes": [
-        { "name": "Moixí", "scientific": "Suillus granulatus", "slug": null, "risk": "Comestible", "note": "El moixí no presenta les mateixes fibril·les radials al barret ni el miceli rosat a la base, i els porus joves poden exsudar gotes opalines." }
+        { "name": "Moixí", "scientific": "Suillus granulatus", "slug": null, "risk": "Comestible", "note": "El moixí no presenta les mateixes fibril·les radials al barret ni el miceli rosat a la base, i els porus joves poden exsudar gotes opalines. Tots dos són comestibles de poc interès i convé retirar-ne la cutícula i els tubs.", "media": { "src": "/media/bolets/suillus-granulatus-ai.webp", "alt": "Moixins de barret bru clar amb gotes opalines als porus", "generated": true } },
+        { "name": "Cep", "scientific": "Boletus edulis group", "slug": "cep", "risk": "Comestible", "note": "Tots dos tenen porus sota el barret, però el cep és més robust, de carn compacta i amb una retícula clara a la part alta del peu. El molleric sol ser més tou i viscós, amb porus grocs i miceli rosat a la base." }
       ],
       "season": { "typicalMonths": [8, 9, 10, 11], "peakMonths": [] },
       "ecology": { "habitatSlugs": ["pinedes"], "altitudeM": { "min": 0, "max": 1400 }, "soilPreferences": [] },
       "prediction": { "available": false, "key": null },
-      "updatedAt": "2026-09-08",
+      "updatedAt": "2026-09-09",
       "identification": {
         "context": "El nom molleric s’aplica a diversos Suillus. Aquesta fitxa correspon a Suillus collinitus, freqüent a les pinedes baixes i seques.",
         "traits": [
@@ -988,6 +989,24 @@
       "name": "Parc Natural del Cadí-Moixeró · El Picot Negre 11",
       "url": "https://mediambient.repositori.gencat.cat/bitstream/handle/20.500.14343/2382/2008_El_Picot_Negre_11.pdf?isAllowed=y&sequence=1",
       "role": "trets del rossinyol i de la farinera borda"
+    },
+    {
+      "id": "sfmu-lactarius-torminosus",
+      "name": "SFMU · Lactarius torminosus",
+      "url": "https://www.sfmu.org/toxin/CHAMPIGN/CHPGMONO/LACTOIS1.HTM",
+      "role": "toxicitat i confusió amb Lactarius deliciosus"
+    },
+    {
+      "id": "nnepc-false-morel",
+      "name": "Northern New England Poison Center · False morel",
+      "url": "https://www.nnepc.org/regional-news/foraging-for-mushrooms-can-be-risky",
+      "role": "confusió i risc de Gyromitra esculenta"
+    },
+    {
+      "id": "smnf-calocybe-gambosa",
+      "name": "Société Mycologique du Nord de la France · Calocybe gambosa",
+      "url": "https://www.smnf.fr/wp-content/Photos_SMNF/Photos_SMNF_C/Calocybe_gambosa.htm",
+      "role": "confusió del moixernó amb Inosperma erubescens"
     },
     {
       "id": "enciclopedia-russulals",
