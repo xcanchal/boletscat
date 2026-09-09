@@ -164,6 +164,32 @@ test("la fitxa inclou temporada, fonts, avís i CTA premium", () => {
   assert.doesNotMatch(html, /Fitxa pilot/);
 });
 
+test("totes les confusions mostren una imatge i un risc semàntic", () => {
+  for (const species of catalog.species) {
+    const lookalikes = species.lookalikes || [];
+    if (!lookalikes.length) continue;
+    const html = renderSpeciesPage(species, catalog);
+    assert.equal(
+      (html.match(/class="lookalike-photo"/g) || []).length,
+      lookalikes.length,
+      `${species.slug}: no totes les confusions tenen imatge`,
+    );
+    assert.doesNotMatch(
+      html,
+      /class="lookalike-photo"><img[^>]+alt=""/,
+      `${species.slug}: la imatge de confusió no té text alternatiu`,
+    );
+  }
+
+  const cep = renderSpeciesPage(catalog.species.find((species) => species.slug === "cep"), catalog);
+  const murgola = renderSpeciesPage(catalog.species.find((species) => species.slug === "murgola"), catalog);
+  const molleric = renderSpeciesPage(catalog.species.find((species) => species.slug === "molleric"), catalog);
+  assert.match(cep, /risk-label toxic/);
+  assert.match(cep, /risk-label not-edible/);
+  assert.match(murgola, /risk-label deadly/);
+  assert.match(molleric, /risk-label edible/);
+});
+
 test("totes les fitxes del catàleg apareixen al sitemap i robots el declara", () => {
   const sitemap = renderSitemap(catalog);
   assert.match(renderRobots(), /Sitemap: https:\/\/boletada\.cat\/sitemap\.xml/);

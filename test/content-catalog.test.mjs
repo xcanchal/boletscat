@@ -7,6 +7,10 @@ const catalog = JSON.parse(
   await readFile(new URL("../content/catalog.json", import.meta.url), "utf8"),
 );
 const appSource = await readFile(new URL("../app.html", import.meta.url), "utf8");
+const speciesBySlug = new Map(catalog.species.map((species) => [species.slug, species]));
+
+const lookalikeImageFor = (lookalike) => lookalike.media
+  || (lookalike.slug ? speciesBySlug.get(lookalike.slug)?.media?.card : null);
 
 const MODEL_SPECIES = new Set([
   "rovello",
@@ -50,6 +54,10 @@ test("el catàleg editorial té identificadors i referències consistents", () =
       assert.ok(lookalike.risk);
       assert.ok(lookalike.note);
       if (lookalike.slug) assert.ok(speciesSlugs.includes(lookalike.slug), `${species.slug}: confusió inexistent ${lookalike.slug}`);
+      const image = lookalikeImageFor(lookalike);
+      assert.ok(image, `${species.slug}: falta la imatge de ${lookalike.scientific}`);
+      assert.match(image.src, /^\/media\/bolets\/.+\.webp$/);
+      assert.ok(image.alt);
     }
     assert.match(species.updatedAt || "", /^\d{4}-\d{2}-\d{2}$/, `${species.slug}: falta la data d'actualització`);
     assert.equal(species.publication, undefined, `${species.slug}: l'estat editorial no forma part del catàleg públic`);
@@ -80,6 +88,18 @@ test("el catàleg editorial té identificadors i referències consistents", () =
       assert.ok(MODEL_SPECIES.has(species.prediction.key));
     } else {
       assert.equal(species.prediction.key, null);
+    }
+  }
+});
+
+test("totes les imatges de confusions existeixen al projecte", async () => {
+  for (const species of catalog.species) {
+    for (const lookalike of species.lookalikes || []) {
+      const image = lookalikeImageFor(lookalike);
+      await assert.doesNotReject(
+        readFile(new URL(`..${image.src}`, import.meta.url)),
+        `${species.slug}: no existeix ${image.src}`,
+      );
     }
   }
 });

@@ -50,6 +50,15 @@ const speciesReference = (species, preposition = "") => {
 
 const sentenceCase = (value) => `${value.charAt(0).toLocaleUpperCase("ca")}${value.slice(1)}`;
 
+const riskToneFor = (risk) => {
+  const normalized = String(risk).toLocaleLowerCase("ca");
+  if (normalized.includes("mortal")) return "deadly";
+  if (normalized.includes("tòxic")) return "toxic";
+  if (normalized.includes("no comestible")) return "not-edible";
+  if (normalized.includes("comestible")) return "edible";
+  return "caution";
+};
+
 export const renderRobots = () => `User-agent: *
 Allow: /
 Disallow: /api/
@@ -157,7 +166,16 @@ export function renderSpeciesPage(species, catalog) {
     ? `Compara les condicions actuals ${speciesReference(species, "de")} sobre el mapa de Catalunya.`
     : "Consulta les espècies disponibles al predictor i compara les condicions actuals sobre el mapa de Catalunya.";
   const confusionSection = species.lookalikes?.length
-    ? `<section class="prose-section confusion-section"><span class="kicker">Confusions</span><h2>No el confonguis amb…</h2><div class="lookalike-list">${species.lookalikes.map((lookalike) => { const relatedSpecies = lookalike.slug ? catalog.species.find((entry) => entry.slug === lookalike.slug) : null; const photo = relatedSpecies?.media?.card; const media = photo ? `<figure class="lookalike-photo"><img src="${escapeHtml(photo.src)}" alt="" width="1536" height="1024" loading="lazy" decoding="async"/></figure>` : ""; const content = `${media}<div><strong>${escapeHtml(lookalike.name)}</strong><em>${escapeHtml(lookalike.scientific)}</em></div><span class="risk-label">${escapeHtml(lookalike.risk)}</span><p>${escapeHtml(lookalike.note)}</p>`; return lookalike.slug ? `<a class="lookalike${photo ? " has-photo" : ""}" href="/bolets/${escapeHtml(lookalike.slug)}/">${content}<span class="lookalike-arrow" aria-hidden="true">→</span></a>` : `<article class="lookalike">${content}</article>`; }).join("")}</div></section>`
+    ? `<section class="prose-section confusion-section"><span class="kicker">Confusions</span><h2>No el confonguis amb…</h2><div class="lookalike-list">${species.lookalikes.map((lookalike) => {
+      const relatedSpecies = lookalike.slug ? catalog.species.find((entry) => entry.slug === lookalike.slug) : null;
+      const photo = lookalike.media || relatedSpecies?.media?.card;
+      const media = photo ? `<figure class="lookalike-photo"><img src="${escapeHtml(photo.src)}" alt="${escapeHtml(photo.alt)}" width="1536" height="1024" loading="lazy" decoding="async"/></figure>` : "";
+      const content = `${media}<div><strong>${escapeHtml(lookalike.name)}</strong><em>${escapeHtml(lookalike.scientific)}</em></div><span class="risk-label ${riskToneFor(lookalike.risk)}">${escapeHtml(lookalike.risk)}</span><p>${escapeHtml(lookalike.note)}</p>`;
+      const className = `lookalike${photo ? " has-photo" : ""}`;
+      return lookalike.slug
+        ? `<a class="${className}" href="/bolets/${escapeHtml(lookalike.slug)}/">${content}<span class="lookalike-arrow" aria-hidden="true">→</span></a>`
+        : `<article class="${className}">${content}</article>`;
+    }).join("")}</div></section>`
     : "";
   const kitchenSection = species.culinary?.preparation && ["edible", "conditional"].includes(species.edibility.category)
     ? `<section class="prose-section kitchen-section"><span class="kicker">A la cuina</span><h2>Com preparar-lo</h2><div class="culinary-rating"><span>Valoració culinària</span><strong>${escapeHtml(species.culinary.label)}</strong></div><p>${escapeHtml(species.culinary.preparation)}</p><p class="kitchen-caution">Consumeix només bolets identificats amb certesa, en bon estat i cuinats. La fitxa no substitueix el criteri d’una persona experta.</p></section>`
