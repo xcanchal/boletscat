@@ -50,6 +50,8 @@ import { publishGeneration } from './src/prediction-generations.mjs';
 import { calculateMoistureReserve } from './src/moisture-model.mjs';
 import { indexDailyAggregates, latestObservation, missingDailyAggregate } from './src/weather-quality.mjs';
 import { fetchJsonWithRetry, splitUtcDailyWindows } from './src/socrata.mjs';
+import { alertOps } from './src/alerts.mjs';
+import { logger } from './src/logger.mjs';
 
 const BASE = "https://analisi.transparenciacatalunya.cat/resource";
 const DS_MESURES = `${BASE}/nzvn-apee.json`, DS_ESTACIONS = `${BASE}/yqwd-vj5e.json`;
@@ -577,4 +579,8 @@ async function generate(args, OUT, generationId) {
   };
 }
 
-main().catch((e) => { console.error("✖", e.message); process.exit(1); });
+main().catch(async (error) => {
+  logger.error({ event: "prediction_generation_failed", err: error }, "La generació de prediccions ha fallat");
+  await alertOps({ event: "prediction_generation_failed", message: error.message });
+  process.exit(1);
+});

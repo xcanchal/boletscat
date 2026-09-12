@@ -1,5 +1,7 @@
 import pg from "pg";
+import { alertOps } from "./alerts.mjs";
 import { config } from "./config.mjs";
+import { logger } from "./logger.mjs";
 
 const { Pool } = pg;
 
@@ -10,5 +12,6 @@ export const pool = new Pool({
 });
 
 pool.on("error", (error) => {
-  console.error("Error inesperat al pool de PostgreSQL", error);
+  logger.error({ event: "database_pool_error", err: error }, "Error inesperat al pool de PostgreSQL");
+  void alertOps({ event: "database_pool_error", message: error.message });
 });

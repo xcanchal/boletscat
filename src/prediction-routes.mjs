@@ -29,7 +29,7 @@ function assetResponse(c, result, filename) {
     : c.json({ error: result.error }, result.status);
 }
 
-export function registerPredictionRoutes(app, { root, authorize }) {
+export function registerPredictionRoutes(app, { root, authorize, onUnavailable = () => {} }) {
   app.use('/api/predictions/*', async (c, next) => {
     c.header('Cache-Control', 'private, no-store');
     c.header('Vary', 'Cookie');
@@ -39,13 +39,18 @@ export function registerPredictionRoutes(app, { root, authorize }) {
   });
   app.get('/api/predictions/current.json', async c => {
     try { return c.json(await readCurrentGeneration(root)); }
-    catch { return c.json({ error: 'predictions_unavailable' }, 503); }
+    catch (error) {
+      onUnavailable({ error, path:c.req.path });
+      return c.json({ error: 'predictions_unavailable' }, 503);
+    }
   });
   app.get('/api/predictions/generations/:generation/:filename', async c => {
     const generation = c.req.param('generation'), filename = c.req.param('filename');
     if (!GENERATION_ID.test(generation) || !PREDICTION_NAME.test(filename)) return c.json({ error: 'not_found' }, 404);
     try {
-      return assetResponse(c, await readGenerationAsset(root, generation, filename), filename);
+      const result = await readGenerationAsset(root, generation, filename);
+      if (result.status >= 500) onUnavailable({ error:new Error(result.error), path:c.req.path });
+      return assetResponse(c, result, filename);
     } catch (error) {
       if (error.code === 'ENOENT') return c.json({ error: 'generation_unavailable' }, 410);
       throw error;
@@ -59,8 +64,11 @@ export function registerPredictionRoutes(app, { root, authorize }) {
     if (!PREDICTION_NAME.test(filename)) return c.json({ error: 'not_found' }, 404);
     try {
       const manifest = await readCurrentGeneration(root);
-      return assetResponse(c, await readGenerationAsset(root, manifest.generationId, filename), filename);
-    } catch {
+      const result = await readGenerationAsset(root, manifest.generationId, filename);
+      if (result.status >= 500) onUnavailable({ error:new Error(result.error), path:c.req.path });
+      return assetResponse(c, result, filename);
+    } catch (error) {
+      onUnavailable({ error, path:c.req.path });
       return c.json({ error: 'predictions_unavailable' }, 503);
     }
   });

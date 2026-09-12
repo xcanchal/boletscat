@@ -4,6 +4,7 @@ import { emailOTP } from "better-auth/plugins";
 import { config } from "./config.mjs";
 import { pool } from "./db.mjs";
 import { sendTransactionalEmail } from "./email.mjs";
+import { betterAuthLog } from "./logger.mjs";
 import {
   isPasswordValid,
   PASSWORD_MAX_LENGTH,
@@ -16,6 +17,10 @@ export const auth = betterAuth({
   baseURL: config.authUrl,
   secret: config.authSecret,
   trustedOrigins: config.trustedOrigins,
+  logger: {
+    level: "info",
+    log: betterAuthLog,
+  },
   socialProviders: config.google.enabled ? {
     google: {
       clientId: config.google.clientId,

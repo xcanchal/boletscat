@@ -8,13 +8,13 @@ import { publishGeneration } from '../src/prediction-generations.mjs';
 import { loadSpeciesFiles, loadDiscoveryFiles } from '../prediction-client.mjs';
 import { tempRoot, writeFixture } from './helpers/generation-fixture.mjs';
 
-function harness(root) {
+function harness(root, onUnavailable) {
   const app = new Hono();
   registerPredictionRoutes(app, { root, authorize: c => {
     const cookie = c.req.header('Cookie');
     if (!cookie) return c.json({ error: 'unauthorized' }, 401);
     if (cookie !== 'access=active') return c.json({ error: 'subscription_required' }, 402);
-  } });
+  }, onUnavailable });
   const fetchImpl = (url, options) => app.request(url, { ...options, headers: { Cookie: 'access=active' } });
   return { app, fetchImpl };
 }
@@ -107,6 +107,15 @@ test('cold startup, missing assets and unauthorized users fail without flat-file
   assert.equal((await fetchImpl('/api/predictions/current.json')).status, 503);
   await assert.rejects(loadSpeciesFiles('.', 'rovello', { fetchImpl }), /503/);
   await assert.rejects(loadDiscoveryFiles('.', { fetchImpl: url => app.request(url) }), /401/);
+});
+
+test('prediction delivery reports an unavailable active generation', async t => {
+  const root = await tempRoot(t), failures = [];
+  const { fetchImpl } = harness(root, failure => failures.push(failure));
+  assert.equal((await fetchImpl('/api/predictions/current.json')).status, 503);
+  assert.equal(failures.length, 1);
+  assert.equal(failures[0].path, '/api/predictions/current.json');
+  assert.ok(failures[0].error instanceof Error);
 });
 
 test('same-size modification of a published asset is rejected by its digest', async t => {
