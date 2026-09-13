@@ -231,11 +231,6 @@
       cursor:pointer;transform:rotate(-45deg);transition:transform .15s,filter .15s}
     .discovery-marker img{width:100%;height:100%;object-fit:cover;transform:rotate(45deg) scale(1.25)}
     .discovery-marker:hover,.discovery-marker:focus-visible{transform:rotate(-45deg) scale(1.12);filter:brightness(1.08)}
-    .discovery-cluster{width:46px;height:46px;padding:0;border:2px solid #b6b94f;border-radius:50%;display:grid;place-content:center;
-      background:rgba(19,27,18,.94);color:var(--text);box-shadow:0 5px 16px rgba(0,0,0,.58);cursor:pointer;
-      font:700 15px/1 var(--ui);transition:transform .15s,filter .15s}
-    .discovery-cluster small{margin-top:3px;color:var(--muted);font-size:7px;font-weight:650;letter-spacing:.45px;text-transform:uppercase}
-    .discovery-cluster:hover,.discovery-cluster:focus-visible{transform:scale(1.08);filter:brightness(1.08)}
     body.discovery-mode .map-tools{display:none}
     .maplibregl-ctrl-attrib{font-size:10px}
 
@@ -1093,8 +1088,6 @@
     // no, l'error és de píxels constants i, allunyat, són desenes de km.
     const DISCOVERY_MARKER_PX = 38;
     const DISCOVERY_MARKER_TIP_PX = DISCOVERY_MARKER_PX / Math.SQRT2;
-    const DISCOVERY_CLUSTER_MAX_ZOOM = 10;
-    const DISCOVERY_CLUSTER_RADIUS_PX = 54;
     function clearDiscoveryMarkers() {
       discoveryMarkers.forEach(marker=>marker.remove());
       discoveryMarkers=[];
@@ -1148,32 +1141,11 @@
       });
       return [...groups.values()];
     }
-    function addDiscoveryCluster(points) {
-      const lngLat={
-        lng:points.reduce((sum,point)=>sum+point.lng,0)/points.length,
-        lat:points.reduce((sum,point)=>sum+point.lat,0)/points.length,
-      };
-      const speciesCount=new Set(points.map(point=>point.species)).size;
-      const wrapper=document.createElement('div');
-      const element=document.createElement('button');
-      element.type='button'; element.className='discovery-cluster';
-      element.innerHTML=`<span>${points.length}</span><small>zones</small>`;
-      element.setAttribute('aria-label',`${points.length} zones de ${speciesCount} espècies. Amplia per veure-les.`);
-      element.title=`${points.length} zones · ${speciesCount} espècies`;
-      element.addEventListener('click',event=>{
-        event.preventDefault(); event.stopPropagation();
-        map.easeTo({center:[lngLat.lng,lngLat.lat],zoom:Math.min(13,Math.max(DISCOVERY_CLUSTER_MAX_ZOOM+.5,map.getZoom()+2)),duration:450});
-      });
-      wrapper.appendChild(element);
-      discoveryMarkers.push(new maplibregl.Marker({element:wrapper,anchor:'center'}).setLngLat(lngLat).addTo(map));
-    }
     function renderDiscoveryMarkers() {
       clearDiscoveryMarkers();
       if(!discoveryPoints.length)return;
-      const clustered=map.getZoom()<DISCOVERY_CLUSTER_MAX_ZOOM;
-      const groups=groupDiscoveryPoints(discoveryPoints,clustered?DISCOVERY_CLUSTER_RADIUS_PX:DISCOVERY_MARKER_PX+6);
+      const groups=groupDiscoveryPoints(discoveryPoints,DISCOVERY_MARKER_PX+6);
       for(const group of groups) {
-        if(clustered&&group.length>1) { addDiscoveryCluster(group); continue; }
         for(const [collisionIndex,point] of group.entries()) {
           const collisionCount=group.length;
           const angle=collisionCount>1?(Math.PI*2*collisionIndex/collisionCount)-Math.PI/2:0;
