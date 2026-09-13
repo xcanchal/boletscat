@@ -231,6 +231,11 @@
       cursor:pointer;transform:rotate(-45deg);transition:transform .15s,filter .15s}
     .discovery-marker img{width:100%;height:100%;object-fit:cover;transform:rotate(45deg) scale(1.25)}
     .discovery-marker:hover,.discovery-marker:focus-visible{transform:rotate(-45deg) scale(1.12);filter:brightness(1.08)}
+    .discovery-cluster{width:46px;height:46px;padding:0;border:2px solid #b6b94f;border-radius:50%;display:grid;place-content:center;
+      background:rgba(19,27,18,.94);color:var(--text);box-shadow:0 5px 16px rgba(0,0,0,.58);cursor:pointer;
+      font:700 15px/1 var(--ui);transition:transform .15s,filter .15s}
+    .discovery-cluster small{margin-top:3px;color:var(--muted);font-size:7px;font-weight:650;letter-spacing:.45px;text-transform:uppercase}
+    .discovery-cluster:hover,.discovery-cluster:focus-visible{transform:scale(1.08);filter:brightness(1.08)}
     body.discovery-mode .map-tools{display:none}
     .maplibregl-ctrl-attrib{font-size:10px}
 
@@ -688,7 +693,7 @@
       if (savedIntensity!==null) predictionIntensity=Math.max(0,Math.min(1,+savedIntensity/100));
     } catch {}
     let currentRaster = null, areaRequest = 0, predictionLoadRequest=0;
-    let experienceMode='species', discoveryRequest=0, discoveryMarkers=[];
+    let experienceMode='species', discoveryRequest=0, discoveryMarkers=[], discoveryPoints=[];
     const dismissOpenPopup = () => {
       if (!popup.isOpen()) return false;
       areaRequest++;
@@ -1088,6 +1093,8 @@
     // no, l'error és de píxels constants i, allunyat, són desenes de km.
     const DISCOVERY_MARKER_PX = 38;
     const DISCOVERY_MARKER_TIP_PX = DISCOVERY_MARKER_PX / Math.SQRT2;
+    const DISCOVERY_CLUSTER_MAX_ZOOM = 10;
+    const DISCOVERY_CLUSTER_RADIUS_PX = 54;
     function clearDiscoveryMarkers() {
       discoveryMarkers.forEach(marker=>marker.remove());
       discoveryMarkers=[];
@@ -1125,35 +1132,76 @@
       if(request!==areaRequest||experienceMode!=='discovery')return;
       showDiscoveryPopup(entry,{place,center:true,update:true});
     }
-    function addDiscoveryMarkers(points) {
-      clearDiscoveryMarkers();
-      const collisionGroups=new Map();
-      for(const point of points) {
-        const key=`${point.lng.toFixed(5)}:${point.lat.toFixed(5)}`;
-        const group=collisionGroups.get(key)??[];
-        group.push(point); collisionGroups.set(key,group);
+    function groupDiscoveryPoints(points,radius) {
+      const projected=points.map(point=>map.project(point.lngLat));
+      const parent=points.map((_,index)=>index);
+      const root=index=>parent[index]===index?index:(parent[index]=root(parent[index]));
+      for(let left=0;left<points.length;left++)for(let right=left+1;right<points.length;right++) {
+        if(Math.hypot(projected[left].x-projected[right].x,projected[left].y-projected[right].y)>=radius)continue;
+        const leftRoot=root(left),rightRoot=root(right);
+        if(leftRoot!==rightRoot)parent[rightRoot]=leftRoot;
       }
-      for(const point of points) {
-        const group=collisionGroups.get(`${point.lng.toFixed(5)}:${point.lat.toFixed(5)}`);
-        const collisionIndex=group.indexOf(point),collisionCount=group.length;
-        const angle=collisionCount>1?(Math.PI*2*collisionIndex/collisionCount)-Math.PI/2:0;
-        const collisionRadius=collisionCount>1?13:0;
-        const offsetX=Math.cos(angle)*collisionRadius;
-        const offsetY=Math.sin(angle)*collisionRadius-DISCOVERY_MARKER_TIP_PX;
-        const wrapper=document.createElement('div');
-        wrapper.className='discovery-pin';
-        const element=document.createElement('button');
-        element.type='button'; element.className='discovery-marker';
-        element.style.setProperty('--marker-color',RATING_COLOR[scoreRating(point.score).key]);
-        element.innerHTML=`<img src="${esc(speciesImageUrl(point.species))}" alt="" />`;
-        element.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openDiscoveryPoint(point)});
-        wrapper.appendChild(element);
-        const marker=new maplibregl.Marker({element:wrapper,anchor:'center',offset:[offsetX,offsetY]}).setLngLat(point.lngLat).addTo(map);
-        element.setAttribute('aria-label',`${speciesLabel(point.species)}: ${Math.round(point.score*100)}%`);
-        element.title=`${speciesLabel(point.species)} · ${Math.round(point.score*100)}%`;
-        discoveryMarkers.push(marker);
+      const groups=new Map();
+      points.forEach((point,index)=>{
+        const key=root(index),group=groups.get(key)??[];
+        group.push(point); groups.set(key,group);
+      });
+      return [...groups.values()];
+    }
+    function addDiscoveryCluster(points) {
+      const lngLat={
+        lng:points.reduce((sum,point)=>sum+point.lng,0)/points.length,
+        lat:points.reduce((sum,point)=>sum+point.lat,0)/points.length,
+      };
+      const speciesCount=new Set(points.map(point=>point.species)).size;
+      const wrapper=document.createElement('div');
+      const element=document.createElement('button');
+      element.type='button'; element.className='discovery-cluster';
+      element.innerHTML=`<span>${points.length}</span><small>zones</small>`;
+      element.setAttribute('aria-label',`${points.length} zones de ${speciesCount} espècies. Amplia per veure-les.`);
+      element.title=`${points.length} zones · ${speciesCount} espècies`;
+      element.addEventListener('click',event=>{
+        event.preventDefault(); event.stopPropagation();
+        map.easeTo({center:[lngLat.lng,lngLat.lat],zoom:Math.min(13,Math.max(DISCOVERY_CLUSTER_MAX_ZOOM+.5,map.getZoom()+2)),duration:450});
+      });
+      wrapper.appendChild(element);
+      discoveryMarkers.push(new maplibregl.Marker({element:wrapper,anchor:'center'}).setLngLat(lngLat).addTo(map));
+    }
+    function renderDiscoveryMarkers() {
+      clearDiscoveryMarkers();
+      if(!discoveryPoints.length)return;
+      const clustered=map.getZoom()<DISCOVERY_CLUSTER_MAX_ZOOM;
+      const groups=groupDiscoveryPoints(discoveryPoints,clustered?DISCOVERY_CLUSTER_RADIUS_PX:DISCOVERY_MARKER_PX+6);
+      for(const group of groups) {
+        if(clustered&&group.length>1) { addDiscoveryCluster(group); continue; }
+        for(const [collisionIndex,point] of group.entries()) {
+          const collisionCount=group.length;
+          const angle=collisionCount>1?(Math.PI*2*collisionIndex/collisionCount)-Math.PI/2:0;
+          const collisionRadius=collisionCount>1?Math.max(22,collisionCount*7):0;
+          const offsetX=Math.cos(angle)*collisionRadius;
+          const offsetY=Math.sin(angle)*collisionRadius-DISCOVERY_MARKER_TIP_PX;
+          const wrapper=document.createElement('div');
+          wrapper.className='discovery-pin';
+          const element=document.createElement('button');
+          element.type='button'; element.className='discovery-marker';
+          element.style.setProperty('--marker-color',RATING_COLOR[scoreRating(point.score).key]);
+          element.innerHTML=`<img src="${esc(speciesImageUrl(point.species))}" alt="" />`;
+          element.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openDiscoveryPoint(point)});
+          wrapper.appendChild(element);
+          const marker=new maplibregl.Marker({element:wrapper,anchor:'center',offset:[offsetX,offsetY]}).setLngLat(point.lngLat).addTo(map);
+          element.setAttribute('aria-label',`${speciesLabel(point.species)}: ${Math.round(point.score*100)}%`);
+          element.title=`${speciesLabel(point.species)} · ${Math.round(point.score*100)}%`;
+          discoveryMarkers.push(marker);
+        }
       }
     }
+    function addDiscoveryMarkers(points) {
+      discoveryPoints=points;
+      renderDiscoveryMarkers();
+    }
+    map.on('moveend',()=>{
+      if(experienceMode==='discovery'&&discoveryPoints.length)renderDiscoveryMarkers();
+    });
     function renderDiscoveryRows(active,snapshot) {
       const rows=document.getElementById('discoveryRows'); rows.innerHTML='';
       if(!active.length)rows.innerHTML='<div class="discovery-empty">Cap espècie destaca prou avui.</div>';
@@ -1170,7 +1218,7 @@
       lastPredictionLoadAt=Date.now();
       const message=document.getElementById('discoveryMessage');
       message.textContent='Comparant les espècies disponibles…';
-      clearDiscoveryMarkers();
+      discoveryPoints=[]; clearDiscoveryMarkers();
       document.getElementById('discoveryRows').replaceChildren();
       document.getElementById('metaDate').textContent='';
       areaRequest++; popup.remove();
@@ -1214,7 +1262,7 @@
         window.umami?.track?.('map_discovery_opened');
         return;
       }
-      discoveryRequest++; clearDiscoveryMarkers();
+      discoveryRequest++; discoveryPoints=[]; clearDiscoveryMarkers();
       const selected=species??document.getElementById('species').value;
       document.getElementById('species').value=selected;
       const rasterLoaded=await load(selected,{preserveView:Boolean(center),snapshot});
