@@ -548,9 +548,9 @@ async function generate(args, OUT, generationId) {
 
   // ── Descoberta multiespècie ──────────────────────────────────────────────
   // Només té sentit amb totes les espècies puntuades: amb un subconjunt,
-  // la comparació i el repartiment de zones entre espècies serien incomplets.
+  // faltaria part del conjunt d'espècies que poden coexistir a cada zona.
   if (discoveryCandidates && all) {
-    const points = selectDiscoveryPoints(discoveryCandidates, { ensureEachSpecies:true });
+    const points = selectDiscoveryPoints(discoveryCandidates);
     writeFileSync(join(OUT, "bolets.discovery.json"), JSON.stringify({
       generated: refISO.slice(0, 10),
       generationId,

@@ -42,7 +42,7 @@ test("les cel·les per sota del llindar no generen zona", () => {
   assert.deepEqual(zones, []);
 });
 
-test("les zones seleccionades es reparteixen i no les monopolitza una espècie", () => {
+test("les zones massa properes de la mateixa espècie no es dupliquen", () => {
   const candidates = [
     { species:"cep", score:.9, x:0, y:0 },
     { species:"cep", score:.85, x:5000, y:0 },      // massa a prop de l'anterior
@@ -50,32 +50,26 @@ test("les zones seleccionades es reparteixen i no les monopolitza una espècie",
     { species:"cep", score:.75, x:80000, y:0 },
     { species:"rovello", score:.7, x:120000, y:0 },
   ];
-  const points = selectDiscoveryPoints(candidates, { maxPoints:4, maxPerSpecies:2, minDistanceMeters:16000 });
+  const points = selectDiscoveryPoints(candidates, { maxPoints:4, maxPerSpecies:2, minDistanceMeters:8000 });
 
   assert.deepEqual(points.map((point) => point.score), [.9, .8, .7]);
   assert.equal(points.filter((point) => point.species === "cep").length, 2);
 });
 
-test("cada espècie amb una zona mitjana conserva com a mínim un pin", () => {
+test("dues espècies poden mostrar pins a la mateixa zona", () => {
   const candidates = [
     { species:"rossinyol", score:.45, x:0, y:0 },
-    { species:"rossinyol", score:.42, x:40000, y:0 },
-    { species:"rossinyol", score:.4, x:80000, y:0 },
     { species:"rovello", score:.36, x:1000, y:0 },
-    { species:"rovello", score:.31, x:60000, y:0 },
     { species:"cep", score:.33, x:2000, y:0 },
-    { species:"cep", score:.28, x:120000, y:0 },
   ];
   const points = selectDiscoveryPoints(candidates, {
     maxPoints:5,
     maxPerSpecies:3,
-    minDistanceMeters:16000,
-    ensureEachSpecies:true,
+    minDistanceMeters:8000,
   });
 
   assert.deepEqual(new Set(points.map((point) => point.species)), new Set(["rossinyol", "rovello", "cep"]));
-  assert.equal(points.find((point) => point.species === "rovello").x, 60000);
-  assert.equal(points.find((point) => point.species === "cep").x, 120000);
+  assert.deepEqual(points.map((point) => point.x), [0, 1000, 2000]);
 });
 
 test("la llista resumeix la millor zona visible de cada espècie", () => {
@@ -109,7 +103,7 @@ test("les millors zones d'una espècie provenen del ràster, tenen suport i esta
   scores[20]=.9; // pic envoltat de valors baixos: no representa una clapa de .9
   const areas=selectSpeciesAreas(scores,areaGrid,"ou_de_reig");
   assert.deepEqual(areas.map(area=>+area.score.toFixed(2)),[.43,.31]);
-  assert.ok(Math.hypot(areas[0].x-areas[1].x,areas[0].y-areas[1].y)>=16000);
+  assert.ok(Math.hypot(areas[0].x-areas[1].x,areas[0].y-areas[1].y)>=8000);
   assert.ok(areas.every(area=>area.species==="ou_de_reig"));
 });
 
@@ -118,7 +112,7 @@ test("l'scorer publica la descoberta només quan puntua totes les espècies", as
 
   assert.match(scorer, /if \(discoveryCandidates && all\) \{[\s\S]*?bolets\.discovery\.json/);
   assert.match(scorer, /discoveryCandidates\.push\(\.\.\.topAreas\.filter\(\(point\) => point\.score >= DISCOVERY_MIN_SCORE\)\)/);
-  assert.match(scorer, /selectDiscoveryPoints\(discoveryCandidates, \{ ensureEachSpecies:true \}\)/);
+  assert.match(scorer, /selectDiscoveryPoints\(discoveryCandidates\)/);
   assert.match(scorer, /const topAreas = selectSpeciesAreas\(rasterScores, grid, spKey\)/);
 });
 
@@ -157,7 +151,8 @@ test("la punta del marcador s'ancora sobre la coordenada", async () => {
   const size = app.match(/const DISCOVERY_MARKER_PX = (\d+);/);
   assert.ok(size, "cal declarar la mida del marcador al costat del càlcul");
   assert.match(app, /const DISCOVERY_MARKER_TIP_PX = DISCOVERY_MARKER_PX \/ Math\.SQRT2;/);
-  assert.match(app, /new maplibregl\.Marker\(\{element:wrapper,anchor:'center',offset:\[0,-DISCOVERY_MARKER_TIP_PX\]\}\)/);
+  assert.match(app, /const offsetY=Math\.sin\(angle\)\*collisionRadius-DISCOVERY_MARKER_TIP_PX;/);
+  assert.match(app, /new maplibregl\.Marker\(\{element:wrapper,anchor:'center',offset:\[offsetX,offsetY\]\}\)/);
 
   // MapLibre escriu `transform` a l'element que li passem: si li donéssim el
   // marcador directament, el gir del CSS no s'aplicaria mai i la punta no

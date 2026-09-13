@@ -3,9 +3,9 @@
 // de cada espècie, de manera que el client només ha de dibuixar el resultat.
 
 export const DISCOVERY_MIN_SCORE = 0.25;
-export const DISCOVERY_MAX_POINTS = 18;
+export const DISCOVERY_MAX_POINTS = Number.POSITIVE_INFINITY;
 export const DISCOVERY_MAX_PER_SPECIES = 4;
-export const DISCOVERY_MIN_DISTANCE_M = 16000;
+export const DISCOVERY_MIN_DISTANCE_M = 8000;
 export const DISCOVERY_ZONE_M = 6000;
 // Una icona diu "vine aquí": ha de marcar una zona, no una cel·la solitària.
 // El màxim d'una zona pot ser una clapa de 250 m envoltada de no-res —un bosquet
@@ -66,58 +66,31 @@ export function zoneMaxima(best, grid, options = {}) {
   return [...zones.values()];
 }
 
-// Tria les zones amb més probabilitat mantenint-les separades i sense que una
-// sola espècie ocupi tot el mapa. Les distàncies són en metres UTM: a l'escala
-// de Catalunya la diferència amb la distància geodèsica és irrellevant.
+// Tria les zones amb més probabilitat evitant només duplicats propers de la
+// mateixa espècie. Dues espècies poden compartir zona: la descoberta respon
+// "què hi pot haver aquí?", no adjudica cada vall a una única guanyadora.
+// Les distàncies són en metres UTM: a l'escala de Catalunya la diferència amb
+// la distància geodèsica és irrellevant.
 export function selectDiscoveryPoints(candidates, options = {}) {
   const {
     maxPoints = DISCOVERY_MAX_POINTS,
     maxPerSpecies = DISCOVERY_MAX_PER_SPECIES,
     minDistanceMeters = DISCOVERY_MIN_DISTANCE_M,
-    ensureEachSpecies = false,
   } = options;
   const sorted = [...candidates].sort((a, b) => b.score - a.score);
   const selected = [];
-  const selectedCandidates = new Set();
   const perSpecies = new Map();
-  const distanceToSelected = (candidate) => selected.length
-    ? Math.min(...selected.map((point) => Math.hypot(point.x - candidate.x, point.y - candidate.y)))
-    : Infinity;
   const add = (candidate) => {
     selected.push(candidate);
-    selectedCandidates.add(candidate);
     perSpecies.set(candidate.species, (perSpecies.get(candidate.species) ?? 0) + 1);
   };
 
-  // “Què hi ha ara?” no és un podi exclusiu: si diverses espècies tenen una
-  // clapa prou bona, totes han de ser descobribles encara que una les superi
-  // lleugerament a les mateixes valls. Primer reservem un punt per espècie.
-  // Quan les seves millors zones xoquen, triem la candidata més separada que
-  // tingui aquella espècie per reduir solapaments de marcadors.
-  if (ensureEachSpecies) {
-    const bySpecies = new Map();
-    for (const candidate of sorted) {
-      const group = bySpecies.get(candidate.species) ?? [];
-      group.push(candidate);
-      bySpecies.set(candidate.species, group);
-    }
-    const groups = [...bySpecies.values()].sort((a, b) => b[0].score - a[0].score);
-    for (const group of groups) {
-      if (selected.length >= maxPoints) break;
-      const separated = group.find((candidate) => distanceToSelected(candidate) >= minDistanceMeters);
-      const candidate = separated ?? group.reduce((best, current) =>
-        distanceToSelected(current) > distanceToSelected(best) ? current : best,
-      );
-      add(candidate);
-    }
-  }
-
   for (const candidate of sorted) {
     if (selected.length >= maxPoints) break;
-    if (selectedCandidates.has(candidate)) continue;
     const count = perSpecies.get(candidate.species) ?? 0;
     if (count >= maxPerSpecies) continue;
-    if (selected.some((point) => Math.hypot(point.x - candidate.x, point.y - candidate.y) < minDistanceMeters)) continue;
+    if (selected.some((point) => point.species === candidate.species
+      && Math.hypot(point.x - candidate.x, point.y - candidate.y) < minDistanceMeters)) continue;
     add(candidate);
   }
   return selected.sort((a, b) => b.score - a.score);

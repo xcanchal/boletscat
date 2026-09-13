@@ -1127,7 +1127,19 @@
     }
     function addDiscoveryMarkers(points) {
       clearDiscoveryMarkers();
+      const collisionGroups=new Map();
       for(const point of points) {
+        const key=`${point.lng.toFixed(5)}:${point.lat.toFixed(5)}`;
+        const group=collisionGroups.get(key)??[];
+        group.push(point); collisionGroups.set(key,group);
+      }
+      for(const point of points) {
+        const group=collisionGroups.get(`${point.lng.toFixed(5)}:${point.lat.toFixed(5)}`);
+        const collisionIndex=group.indexOf(point),collisionCount=group.length;
+        const angle=collisionCount>1?(Math.PI*2*collisionIndex/collisionCount)-Math.PI/2:0;
+        const collisionRadius=collisionCount>1?13:0;
+        const offsetX=Math.cos(angle)*collisionRadius;
+        const offsetY=Math.sin(angle)*collisionRadius-DISCOVERY_MARKER_TIP_PX;
         const wrapper=document.createElement('div');
         wrapper.className='discovery-pin';
         const element=document.createElement('button');
@@ -1136,7 +1148,7 @@
         element.innerHTML=`<img src="${esc(speciesImageUrl(point.species))}" alt="" />`;
         element.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openDiscoveryPoint(point)});
         wrapper.appendChild(element);
-        const marker=new maplibregl.Marker({element:wrapper,anchor:'center',offset:[0,-DISCOVERY_MARKER_TIP_PX]}).setLngLat(point.lngLat).addTo(map);
+        const marker=new maplibregl.Marker({element:wrapper,anchor:'center',offset:[offsetX,offsetY]}).setLngLat(point.lngLat).addTo(map);
         element.setAttribute('aria-label',`${speciesLabel(point.species)}: ${Math.round(point.score*100)}%`);
         element.title=`${speciesLabel(point.species)} · ${Math.round(point.score*100)}%`;
         discoveryMarkers.push(marker);
