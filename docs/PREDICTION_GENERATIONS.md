@@ -11,7 +11,6 @@ support existing browser tabs and installed PWAs, not distributed native binarie
 
 ```text
 PREDICTION_DIR/                    default: private/predictions
-  .generation-lock/owner.json      exclusive writer; PID, host, start time
   .staging/g-<uuid>/               unpublished run; never served
   generations/g-<uuid>/            immutable validated output
     manifest.json                 schemaVersion, generationId, referenceDate,
@@ -21,9 +20,11 @@ PREDICTION_DIR/                    default: private/predictions
   experiments/g-<uuid>/            single-species output; never served
 ```
 
-`node score_estacions.mjs --all` takes the writer lock, generates into staging,
-validates all required files, finalizes the directory, then atomically replaces
-`current.json`. Paths must share one filesystem supporting atomic rename.
+`node score_estacions.mjs --all` takes a PostgreSQL transaction-level advisory
+lock, generates into staging, validates all required files, verifies the lock
+connection again, finalizes the directory, then atomically replaces `current.json`.
+The database releases the lock automatically when the transaction, connection or
+process ends. Paths must share one filesystem supporting atomic rename.
 The scorer and server both load `.env` and resolve `PREDICTION_DIR` identically.
 `--out` explicitly overrides the scorer destination; the server must be configured
 to use the same root. The scheduled command remains `node score_estacions.mjs --all`.
@@ -37,8 +38,8 @@ and the generation date is not proof of fresh upstream observations.
 | Event | Result |
 |---|---|
 | Generation or validation fails | Current pointer unchanged; staging cleaned |
-| Second scorer overlaps | Fails before generating; cannot publish out of order |
-| Process is killed | Current remains valid; lock requires inspected recovery |
+| Second scorer overlaps | Exits successfully as skipped; cannot publish out of order |
+| Process is killed | Current remains valid; PostgreSQL releases the lock automatically |
 | New generation publishes during a browser load | All related files stay pinned to the acquired generation |
 | A pinned generation no longer exists | HTTP 410; client retries the entire bundle once using current manifest |
 | No valid active generation | Current endpoint 503; readiness fails |
@@ -179,15 +180,15 @@ retained for long-lived clients and rollback; monitor disk usage. A later cleanu
 policy must keep current/rollback generations and define client lifetime/410
 recovery. Do not delete active assets or overwrite immutable generations.
 
-For a stale writer lock, inspect `owner.json` and verify the process/container is
-no longer running before removing that exact lock directory. There is no automatic
-timeout-based lock stealing. A live scorer may legitimately be slow. Abandoned
-staging/finalized-but-unpublished directories can be inspected and cleaned only
-after excluding an active writer. Never clear the entire prediction root.
+The scorer has no persistent lock file and needs no manual lock recovery. An old
+`.generation-lock` directory left by a pre-migration release is ignored and may be
+removed once no old scorer container is running. Abandoned staging or
+finalized-but-unpublished directories still require inspection before cleanup.
+Never clear the entire prediction root.
 
 For data rollback, select a retained validated generation and atomically replace
-`current.json` with its `manifest.json` while holding the same writer lock; never
-copy individual files over another generation. For code rollback to pre-generation
+`current.json` with its `manifest.json` while holding the same PostgreSQL advisory
+lock; never copy individual files over another generation. For code rollback to pre-generation
 code, restore the matching previous deployment and regenerate its flat output
 in a separate root. Old code cannot read the new directory layout automatically.
 That flat-only code rollback is only safe before generation clients are released;
@@ -224,7 +225,9 @@ the species loader in species mode and no loader in discovery mode. This separat
 client defect does not explain an old date that survives a full page reload.
 
 `test/prediction-generations.test.mjs` exercises publication, failed validation,
-interruption, lock exclusion and retained output. `test/prediction-delivery.test.mjs`
+interruption and retained output. `test/prediction-lock.test.mjs` verifies advisory
+lock acquisition, overlap skipping and automatic transactional cleanup.
+`test/prediction-delivery.test.mjs`
 uses the real Hono routes and browser-safe loader with fixture authorization to
 exercise protected delivery, traversal rejection, publication races, discovery
 pinning and bounded whole-bundle recovery. It does not replace testing real

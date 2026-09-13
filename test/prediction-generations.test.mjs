@@ -65,7 +65,7 @@ test('interruption and invalid output never replace the active pointer', async t
   assert.equal((await readdir(join(root, '.staging'))).length, 0);
 });
 
-test('readers retain the previous generation while another writer stages; overlapping writer fails', async t => {
+test('readers retain the previous generation while another writer stages', async t => {
   const root = await tempRoot(t);
   const first = await publishGeneration(root, writeFixture);
   const staged = Promise.withResolvers(), release = Promise.withResolvers();
@@ -75,10 +75,21 @@ test('readers retain the previous generation while another writer stages; overla
   await staged.promise;
   try {
     assert.equal((await readCurrentGeneration(root)).generationId, first.generationId);
-    await assert.rejects(publishGeneration(root, writeFixture), /already locked/);
   } finally { release.resolve(); }
   const second = await writer;
   assert.equal((await readCurrentGeneration(root)).generationId, second.generationId);
+});
+
+test('publication stops before changing current when the external lock is lost', async t => {
+  const root = await tempRoot(t);
+  const first = await publishGeneration(root, writeFixture);
+  await assert.rejects(
+    publishGeneration(root, writeFixture, { beforePublish: async () => { throw new Error('lock lost'); } }),
+    /lock lost/,
+  );
+  assert.equal((await readCurrentGeneration(root)).generationId, first.generationId);
+  assert.equal((await readdir(join(root, 'generations'))).length, 1);
+  assert.equal((await readdir(join(root, '.staging'))).length, 0);
 });
 
 test('an initial failed generation leaves readiness unavailable', async t => {

@@ -22,8 +22,8 @@ test('real scorer publishes all species and isolates single-species CLI runs', a
   }
   const gridPath = join(root, 'fixture.bin'); await writeFile(gridPath, grid);
   const run = (...args) => exec(process.execPath, ['--import', './test/helpers/scorer-weather.mjs', './score_estacions.mjs',
-    '--date=2026-09-05', ...args, `--grid=${gridPath}`], {
-    cwd, env: { ...process.env, PREDICTION_DIR: root, TZ: 'UTC' }, timeout: 15_000,
+    '--date=2026-09-05', '--test-without-lock', ...args, `--grid=${gridPath}`], {
+    cwd, env: { ...process.env, NODE_ENV: 'test', PREDICTION_DIR: root, TZ: 'UTC' }, timeout: 15_000,
   });
   const { stdout } = await run('--all');
   assert.match(stdout, /Published g-/);

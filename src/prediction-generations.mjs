@@ -1,7 +1,6 @@
 import { mkdir, readFile, writeFile, rename, rm, lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
-import { hostname } from 'node:os';
 import { decodeRgbaPng } from '../raster.mjs';
 import { SPECIES } from './species-model.mjs';
 
@@ -90,26 +89,18 @@ export async function readCurrentGeneration(root) {
   return manifest;
 }
 
-// The lock is deliberately never stolen on a timeout: a slow writer may still be alive.
-// A killed process leaves an explicit operational recovery step (see runbook).
-export async function publishGeneration(root, generate) {
+export async function publishGeneration(root, generate, { beforePublish = async () => {} } = {}) {
   await mkdir(root, { recursive: true });
-  const lock = join(root, '.generation-lock');
-  try { await mkdir(lock); }
-  catch (error) {
-    if (error.code === 'EEXIST') throw new Error('Prediction generation already locked; inspect .generation-lock/owner.json');
-    throw error;
-  }
   const generationId = `g-${randomUUID()}`;
   const staging = join(root, '.staging', generationId);
   const temporaryManifest = join(root, `.current-${generationId}.json`);
   try {
-    await writeFile(join(lock, 'owner.json'), JSON.stringify({ generationId, pid: process.pid, host: hostname(), startedAt: new Date().toISOString() }));
     await mkdir(staging, { recursive: true });
     const metadata = await generate(staging, generationId);
     const files = await validateGeneration(staging, generationId, metadata.referenceDate);
     const manifest = { ...metadata, schemaVersion: 1, generationId, generatedAt: new Date().toISOString(), files };
     await writeFile(join(staging, 'manifest.json'), JSON.stringify(manifest));
+    await beforePublish();
     await mkdir(join(root, 'generations'), { recursive: true });
     await rename(staging, join(root, 'generations', generationId));
     // Same filesystem: readers see either the old pointer or the complete new one.
@@ -119,6 +110,5 @@ export async function publishGeneration(root, generate) {
   } finally {
     await rm(staging, { recursive: true, force: true });
     await rm(temporaryManifest, { force: true });
-    await rm(lock, { recursive: true, force: true });
   }
 }

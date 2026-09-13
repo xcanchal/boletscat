@@ -18,8 +18,8 @@ if node scripts/check-active-predictions.mjs; then
 else
   echo "Sense cap generació activa vàlida; generant mapa i punts inicials en segon pla…"
   (
-    if node score_estacions.mjs --all; then
-      echo "Generació inicial publicada; el servei ja pot superar /readyz."
+    if node score_estacions.mjs --all && node scripts/check-active-predictions.mjs; then
+      echo "Generació activa disponible; el servei ja pot superar /readyz."
     else
       echo "(avís: no s'ha pogut generar el mapa a l'arrencada; el cron ho reintentarà)"
     fi

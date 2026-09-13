@@ -47,6 +47,7 @@ import { temperatureTrendFactor } from "./src/temperature-trend.mjs";
 import { seasonPrior } from "./src/season-prior.mjs";
 import { resolvePredictionDir } from "./src/prediction-path.mjs";
 import { publishGeneration } from './src/prediction-generations.mjs';
+import { withPredictionGenerationLock } from './src/prediction-lock.mjs';
 import { calculateMoistureReserve } from './src/moisture-model.mjs';
 import { indexDailyAggregates, latestObservation, missingDailyAggregate } from './src/weather-quality.mjs';
 import { fetchJsonWithRetry, splitUtcDailyWindows } from './src/socrata.mjs';
@@ -258,7 +259,20 @@ async function main() {
   const outArg = args.find((a) => a.startsWith("--out="))?.slice(6);
   const root = outArg ? resolve(outArg) : resolvePredictionDir();
   if (args.includes('--all')) {
-    const manifest = await publishGeneration(root, (OUT, generationId) => generate(args, OUT, generationId));
+    const publish = (assertHeld = async () => {}) => publishGeneration(
+        root,
+        (OUT, generationId) => generate(args, OUT, generationId),
+        { beforePublish: assertHeld },
+      );
+    const testWithoutLock = process.env.NODE_ENV === "test" && args.includes("--test-without-lock");
+    const result = testWithoutLock
+      ? { acquired: true, value: await publish() }
+      : await withPredictionGenerationLock(publish);
+    if (!result.acquired) {
+      logger.info({ event: "prediction_generation_skipped" }, "Ja hi ha una generació de prediccions en curs");
+      return;
+    }
+    const manifest = result.value;
     console.log(`Published ${manifest.generationId} (${manifest.referenceDate}) → ${join(root, 'current.json')}`);
   } else {
     // Single-species experiments must never replace part of the active dataset.

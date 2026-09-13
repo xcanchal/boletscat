@@ -7,7 +7,7 @@ La primera iteració escriu logs JSON a stdout perquè Coolify els reculli i env
 | Coolify | desplegament fallit, contenidor aturat, scheduled task fallida, servidor inaccessible, disc i backups | Telegram configurat a Coolify |
 | API | peticions `/api/*`, `healthz`, `readyz` i respostes 5xx | JSON a stdout amb Pino |
 | Aplicació | billing, correu, readiness, PostgreSQL i excepcions no controlades | JSON a stdout + Telegram |
-| Scorer | generació diària fallida | JSON a stdout + Telegram |
+| Scorer | generació diària fallida o omesa perquè ja n’hi ha una en curs | JSON a stdout; Telegram només si falla |
 | Better Auth | missatges interns, inclosos errors esperables d’usuari | JSON a stdout; sense Telegram directe |
 
 ## Variables de Coolify
