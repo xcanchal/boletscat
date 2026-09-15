@@ -4,7 +4,10 @@
 
 export const DISCOVERY_MIN_SCORE = 0.25;
 export const DISCOVERY_MAX_POINTS = Number.POSITIVE_INFINITY;
-export const DISCOVERY_MAX_PER_SPECIES = 4;
+// La descoberta pot conservar prou màxims per representar l'extensió real del
+// heatmap. El client els agrupa segons el zoom, així que aquest límit només és
+// una protecció contra una generació accidentalment massiva.
+export const DISCOVERY_MAX_PER_SPECIES = 24;
 export const DISCOVERY_MIN_DISTANCE_M = 8000;
 export const DISCOVERY_ZONE_M = 6000;
 // Una icona diu "vine aquí": ha de marcar una zona, no una cel·la solitària.

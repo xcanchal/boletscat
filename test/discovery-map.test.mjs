@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { PREDICTION_NAME } from '../src/prediction-generations.mjs';
 import {
+  DISCOVERY_MAX_PER_SPECIES,
   DISCOVERY_MIN_SCORE,
   DISCOVERY_MIN_SUPPORT,
   DISCOVERY_SUPPORT_RADIUS,
@@ -54,6 +55,16 @@ test("les zones massa properes de la mateixa espècie no es dupliquen", () => {
 
   assert.deepEqual(points.map((point) => point.score), [.9, .8, .7]);
   assert.equal(points.filter((point) => point.species === "cep").length, 2);
+});
+
+test("la descoberta conserva més de quatre zones d'una espècie", () => {
+  const candidates=Array.from({length:10},(_,index)=>({
+    species:"cep",score:.5-index*.01,x:index*10000,y:0,
+  }));
+  const points=selectDiscoveryPoints(candidates);
+
+  assert.equal(DISCOVERY_MAX_PER_SPECIES,24);
+  assert.equal(points.length,10);
 });
 
 test("dues espècies poden mostrar pins a la mateixa zona", () => {
@@ -111,7 +122,10 @@ test("l'scorer publica la descoberta només quan puntua totes les espècies", as
   const scorer = await readProjectFile("score_estacions.mjs");
 
   assert.match(scorer, /if \(discoveryCandidates && all\) \{[\s\S]*?bolets\.discovery\.json/);
-  assert.match(scorer, /discoveryCandidates\.push\(\.\.\.topAreas\.filter\(\(point\) => point\.score >= DISCOVERY_MIN_SCORE\)\)/);
+  assert.match(scorer, /const discoveryAreas=selectSpeciesAreas\(rasterScores,grid,spKey,\{/);
+  assert.match(scorer, /maxPoints:DISCOVERY_MAX_PER_SPECIES/);
+  assert.match(scorer, /minScore:DISCOVERY_MIN_SCORE/);
+  assert.match(scorer, /discoveryCandidates\.push\(\.\.\.discoveryAreas\)/);
   assert.match(scorer, /selectDiscoveryPoints\(discoveryCandidates\)/);
   assert.match(scorer, /const topAreas = selectSpeciesAreas\(rasterScores, grid, spKey\)/);
 });
@@ -132,6 +146,18 @@ test("el mapa permet alternar entre una espècie i la descoberta", async () => {
   assert.match(app, /renderDiscoveryRows\(\(discovery\.species\?\?\[\]\)/);
   assert.match(app, /Veure el mapa de \$\{esc\(speciesLabel\(entry\.species\)\.toLowerCase\(\)\)\}/);
   assert.match(app, /experienceMode==='discovery'/);
+});
+
+test("la descoberta agrupa pins llunyans i compta espècies, no zones", async () => {
+  const app=await readProjectFile("app.html");
+
+  assert.match(app, /const DISCOVERY_CLUSTER_MAX_ZOOM = 10/);
+  assert.match(app, /function groupDiscoveryPoints\(points,radius\)/);
+  assert.match(app, /const speciesCount=new Set\(points\.map\(point=>point\.species\)\)\.size/);
+  assert.match(app, /speciesCount===1\?'espècie':'espècies'/);
+  assert.match(app, /map\.fitBounds\(bounds/);
+  assert.match(app, /map\.on\('moveend'/);
+  assert.doesNotMatch(app, /<small>zones<\/small>/);
 });
 
 test("la versió mòbil empaqueta les imatges de descoberta i no el mòdul del servidor", async () => {

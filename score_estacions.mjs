@@ -41,7 +41,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { encodeRgbaPng } from "./raster.mjs";
 import { SUBSTRATE_BY_CODE } from "./substrate.mjs";
 import { capConditionScore } from "./prediction-confidence.mjs";
-import { DISCOVERY_MIN_SCORE, selectDiscoveryPoints, selectSpeciesAreas, summarizeDiscoverySpecies } from "./discovery-map.mjs";
+import { DISCOVERY_MAX_PER_SPECIES, DISCOVERY_MIN_SCORE, selectDiscoveryPoints, selectSpeciesAreas, summarizeDiscoverySpecies } from "./discovery-map.mjs";
 import { SPECIES, trapezoid } from "./src/species-model.mjs";
 import { temperatureTrendFactor } from "./src/temperature-trend.mjs";
 import { seasonPrior } from "./src/season-prior.mjs";
@@ -520,8 +520,17 @@ async function generate(args, OUT, generationId) {
       comparison.rasterScoreDelta=summarizeDifference(rasterScores,baselineRasterScores);
       comparison.baselineTopAreas=baselineTopAreas.map(point=>({x:Math.round(point.x),y:Math.round(point.y),score:+point.score.toFixed(4)}));
       comparison.candidateTopAreas=topAreas.map(point=>({x:Math.round(point.x),y:Math.round(point.y),score:+point.score.toFixed(4)}));
-      if (discoveryCandidates && all)
-        discoveryCandidates.push(...topAreas.filter((point) => point.score >= DISCOVERY_MIN_SCORE));
+      if (discoveryCandidates && all) {
+        // La llista d'una espècie continua limitada a vuit destinacions. Per a
+        // la descoberta conjunta conservem més màxims del mateix heatmap: el
+        // client ja els agrupa segons el zoom i així la capa representa també
+        // l'extensió de les zones favorables, no només els quatre millors pics.
+        const discoveryAreas=selectSpeciesAreas(rasterScores,grid,spKey,{
+          maxPoints:DISCOVERY_MAX_PER_SPECIES,
+          minScore:DISCOVERY_MIN_SCORE,
+        });
+        discoveryCandidates.push(...discoveryAreas);
+      }
       geojson.topAreas = topAreas.map((point) => {
         const [lng,lat]=utm31ToLngLat(point.x,point.y);
         let nearest=null,nearestDistance=Infinity;
