@@ -118,13 +118,25 @@ test("les millors zones d'una espècie provenen del ràster, tenen suport i esta
   assert.ok(areas.every(area=>area.species==="ou_de_reig"));
 });
 
+test("la descoberta filtra pel pic sense exigir que tota la clapa superi el 25%", () => {
+  const areaGrid={width:9,height:9,cell:250,x0:400000,y1:4600000};
+  const scores=new Float32Array(areaGrid.width*areaGrid.height).fill(.21);
+  scores[4*areaGrid.width+4]=.27;
+
+  const areas=selectSpeciesAreas(scores,areaGrid,"rovello",{maxPoints:DISCOVERY_MAX_PER_SPECIES})
+    .filter((point)=>point.score>=DISCOVERY_MIN_SCORE);
+
+  assert.equal(areas.length,1);
+  assert.ok(Math.abs(areas[0].score-.27)<1e-6);
+});
+
 test("l'scorer publica la descoberta només quan puntua totes les espècies", async () => {
   const scorer = await readProjectFile("score_estacions.mjs");
 
   assert.match(scorer, /if \(discoveryCandidates && all\) \{[\s\S]*?bolets\.discovery\.json/);
   assert.match(scorer, /const discoveryAreas=selectSpeciesAreas\(rasterScores,grid,spKey,\{/);
   assert.match(scorer, /maxPoints:DISCOVERY_MAX_PER_SPECIES/);
-  assert.match(scorer, /minScore:DISCOVERY_MIN_SCORE/);
+  assert.match(scorer, /\}\)\.filter\(\(point\)=>point\.score>=DISCOVERY_MIN_SCORE\)/);
   assert.match(scorer, /discoveryCandidates\.push\(\.\.\.discoveryAreas\)/);
   assert.match(scorer, /selectDiscoveryPoints\(discoveryCandidates\)/);
   assert.match(scorer, /const topAreas = selectSpeciesAreas\(rasterScores, grid, spKey\)/);

@@ -527,8 +527,7 @@ async function generate(args, OUT, generationId) {
         // l'extensió de les zones favorables, no només els quatre millors pics.
         const discoveryAreas=selectSpeciesAreas(rasterScores,grid,spKey,{
           maxPoints:DISCOVERY_MAX_PER_SPECIES,
-          minScore:DISCOVERY_MIN_SCORE,
-        });
+        }).filter((point)=>point.score>=DISCOVERY_MIN_SCORE);
         discoveryCandidates.push(...discoveryAreas);
       }
       geojson.topAreas = topAreas.map((point) => {
