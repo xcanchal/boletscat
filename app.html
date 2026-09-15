@@ -50,6 +50,20 @@
     *{box-sizing:border-box}
     html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg);font-family:var(--ui);-webkit-text-size-adjust:100%}
     #map{position:fixed;inset:0;width:100vw;height:100dvh;background:#0b100b url('./preview-map.webp?v=20260826d') center/cover no-repeat}
+    .prediction-loading{position:fixed;inset:0;z-index:1;display:grid;place-items:center;pointer-events:none;
+      background:rgba(7,12,7,.18);backdrop-filter:blur(.7px);animation:prediction-loading-in .18s ease-out both}
+    .prediction-loading[hidden]{display:none}
+    .boletada-loader{display:flex;align-items:center;gap:11px;min-height:54px;padding:9px 15px 9px 10px;
+      border:1px solid rgba(232,226,214,.15);border-radius:30px;background:rgba(20,27,19,.92);
+      box-shadow:0 12px 36px rgba(0,0,0,.4);color:var(--text);font-size:12px;font-weight:600}
+    .boletada-loader-mark{position:relative;display:grid;place-items:center;width:36px;height:36px;border-radius:50%;
+      background:rgba(232,114,42,.10)}
+    .boletada-loader-mark::after{content:'';position:absolute;inset:-3px;border:1px solid rgba(232,114,42,.42);
+      border-radius:50%;animation:prediction-loading-ring 1.1s ease-out infinite}
+    .boletada-loader-mark svg{width:24px;height:24px;animation:prediction-loading-mushroom .8s ease-in-out infinite alternate}
+    @keyframes prediction-loading-in{from{opacity:0}to{opacity:1}}
+    @keyframes prediction-loading-ring{0%{opacity:.8;transform:scale(.78)}100%{opacity:0;transform:scale(1.22)}}
+    @keyframes prediction-loading-mushroom{to{transform:translateY(-2px)}}
     button,select,input,a{touch-action:manipulation}
     .panel{position:absolute;top:max(16px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left));z-index:2;width:320px;max-width:calc(100vw - 32px);
       background:var(--panel);backdrop-filter:blur(10px);border:1px solid var(--edge);border-radius:14px;
@@ -178,7 +192,7 @@
       border:1px solid var(--edge);border-radius:9px;background:rgba(20,27,19,.94);backdrop-filter:blur(10px);
       box-shadow:0 8px 28px rgba(0,0,0,.42);color:var(--text);font-size:12px;line-height:1.35;text-align:center}
     @media (prefers-reduced-motion:reduce){
-      .maplibregl-ctrl-locate.is-locating svg{animation:none}
+      .maplibregl-ctrl-locate.is-locating svg,.prediction-loading,.boletada-loader-mark::after,.boletada-loader-mark svg{animation:none}
     }
 
     .maplibregl-popup{width:min(320px,calc(100vw - 24px))!important;max-width:calc(100vw - 24px)!important}
@@ -261,14 +275,7 @@
     .gate-brand svg{width:29px;height:29px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.45))}.gate-brand span{font-family:var(--display);font-size:21px}
     .map-preview-credit{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(9px,env(safe-area-inset-bottom));
       color:rgba(225,228,218,.5);font-size:9px;text-shadow:0 1px 6px rgba(0,0,0,.8)}
-    .access-loading{grid-column:1;grid-row:2;align-self:center;justify-self:center;display:grid;justify-items:center;gap:15px;
-      color:#f0eee4;text-align:center;pointer-events:none;text-shadow:0 2px 18px rgba(0,0,0,.7)}
-    .access-radar{position:relative;width:72px;height:72px;display:grid;place-items:center}
-    .access-radar::before,.access-radar::after{content:"";position:absolute;inset:0;border:1px solid rgba(232,114,42,.5);border-radius:50%;
-      animation:access-radar-pulse 1.8s ease-out infinite}
-    .access-radar::after{inset:12px;animation-delay:.45s}.access-radar svg{width:32px;height:32px;filter:drop-shadow(0 3px 12px rgba(0,0,0,.5))}
-    .access-loading strong{font-size:14px;letter-spacing:.01em}.access-loading span{display:block;margin-top:4px;color:#a9afa3;font-size:11px}
-    @keyframes access-radar-pulse{0%{opacity:0;transform:scale(.66)}35%{opacity:.75}100%{opacity:0;transform:scale(1.16)}}
+    .access-loading{grid-column:1;grid-row:2;align-self:center;justify-self:center;pointer-events:none}
     .gate-kicker,.card-kicker{text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:700;color:#a8ad8e}
     .gate-card{grid-column:1;grid-row:2;align-self:center;justify-self:center;width:min(430px,100%);pointer-events:auto;background:rgba(18,25,17,.91);
       border:1px solid rgba(223,226,210,.17);border-radius:22px;padding:28px;box-shadow:0 26px 90px rgba(0,0,0,.48);
@@ -330,7 +337,7 @@
       .gate-brand{grid-column:1;grid-row:1;margin:0 4px}.gate-brand span{font-size:20px}
       .gate-card{grid-column:1;grid-row:2;width:min(430px,100%);padding:21px;border-radius:19px}.gate-card h2{font-size:27px}
     }
-    @media (prefers-reduced-motion:reduce){.primary-action{transition:none}.access-radar::before,.access-radar::after{animation:none;opacity:.45}}
+    @media (prefers-reduced-motion:reduce){.primary-action{transition:none}}
   </style>
 </head>
 <body>
@@ -342,10 +349,12 @@
       </a>
       <div class="map-preview-credit" id="previewCredit" aria-hidden="true">Mapa © Esri · predicció Boletada</div>
       <section class="access-loading" id="loadingView" role="status" aria-live="polite">
-        <div class="access-radar" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M3.5 12.5C3.5 8 7.4 5 12 5s8.5 3 8.5 7.5c0 .8-.7 1.3-1.5 1.3H5c-.8 0-1.5-.5-1.5-1.3Z" fill="#e8722a"/><path d="M10 13.8h4v4.2c0 1.1-.9 2-2 2s-2-.9-2-2v-4.2Z" fill="#d9c9a8"/><circle cx="9" cy="9.2" r="1" fill="#c8451b" opacity=".7"/><circle cx="14" cy="8.4" r=".8" fill="#c8451b" opacity=".6"/></svg>
+        <div class="boletada-loader">
+          <span class="boletada-loader-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M3.5 12.5C3.5 8 7.4 5 12 5s8.5 3 8.5 7.5c0 .8-.7 1.3-1.5 1.3H5c-.8 0-1.5-.5-1.5-1.3Z" fill="#e8722a"/><path d="M10 13.8h4v4.2c0 1.1-.9 2-2 2s-2-.9-2-2v-4.2Z" fill="#d9c9a8"/><circle cx="9" cy="9.2" r="1" fill="#c8451b" opacity=".7"/><circle cx="14" cy="8.4" r=".8" fill="#c8451b" opacity=".6"/></svg>
+          </span>
+          <span>Comprovant l’accés…</span>
         </div>
-        <div><strong>Comprovant l’accés…</strong><span>Preparant el mapa d’avui</span></div>
       </section>
       <section class="gate-card" id="authView" aria-labelledby="authTitle" hidden>
         <h2 id="authTitle">Accedeix al compte</h2>
@@ -410,6 +419,18 @@
     </div>
   </main>
   <div id="map"></div>
+  <div class="prediction-loading" id="predictionLoading" role="status" aria-live="polite" hidden>
+    <div class="boletada-loader">
+      <span class="boletada-loader-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M3.5 12.5C3.5 8 7.4 5 12 5s8.5 3 8.5 7.5c0 .8-.7 1.3-1.5 1.3H5c-.8 0-1.5-.5-1.5-1.3Z" fill="#e8722a"/>
+          <path d="M10 13.8h4v4.2c0 1.1-.9 2-2 2s-2-.9-2-2v-4.2Z" fill="#d9c9a8"/>
+          <circle cx="9" cy="9.2" r="1" fill="#c8451b" opacity=".7"/><circle cx="14" cy="8.4" r=".8" fill="#c8451b" opacity=".6"/>
+        </svg>
+      </span>
+      <span id="predictionLoadingLabel">Carregant el mapa…</span>
+    </div>
+  </div>
   <div class="panel" id="panel">
     <div class="brand">
       <a class="brand-home" href="/" aria-label="Boletada, torna a l’inici">
@@ -472,7 +493,7 @@
     import { ErrorCode, Purchases, PurchasesError } from '/vendor/purchases.es.js';
     import { conditionRating, scoreRating } from '/prediction-confidence.mjs?v=20260903';
     import { createRasterProjection, projectedPixelAtLngLat } from '/raster-projection.mjs?v=20260903';
-    import { loadSpeciesFiles, loadDiscoveryFiles } from '/prediction-client.mjs?v=generations1';
+    import { loadSpeciesFiles, loadDiscoveryFiles } from '/prediction-client.mjs?v=generations2';
     const DATA_BASE = document.querySelector('meta[name="bolets-data-base"]')?.content ?? '.';
     let mapReady=false, mapUnlocked=false, initialMapLoaded=false, lastPredictionLoadAt=0;
     const FOREGROUND_REFRESH_INTERVAL = 60_000;
@@ -694,7 +715,27 @@
       if (savedIntensity!==null) predictionIntensity=Math.max(0,Math.min(1,+savedIntensity/100));
     } catch {}
     let currentRaster = null, areaRequest = 0, predictionLoadRequest=0;
+    let decodedSharedRasters=null, predictionLoadingTimer=null, activePredictionLoading=null;
     let experienceMode='species', discoveryRequest=0, discoveryMarkers=[], discoveryPoints=[];
+    const predictionLoading=document.getElementById('predictionLoading');
+    const predictionLoadingLabel=document.getElementById('predictionLoadingLabel');
+    function beginPredictionLoading(request,species) {
+      activePredictionLoading=request;
+      clearTimeout(predictionLoadingTimer);
+      predictionLoadingLabel.textContent=`Carregant el mapa de ${speciesLabel(species).toLowerCase()}…`;
+      document.getElementById('map').setAttribute('aria-busy','true');
+      if(!predictionLoading.hidden)return;
+      predictionLoadingTimer=setTimeout(()=>{
+        if(activePredictionLoading===request)predictionLoading.hidden=false;
+      },180);
+    }
+    function endPredictionLoading(request=null) {
+      if(request!==null&&activePredictionLoading!==request)return;
+      activePredictionLoading=null;
+      clearTimeout(predictionLoadingTimer);
+      predictionLoading.hidden=true;
+      document.getElementById('map').removeAttribute('aria-busy');
+    }
     const dismissOpenPopup = () => {
       if (!popup.isOpen()) return false;
       areaRequest++;
@@ -1263,6 +1304,7 @@
       areaRequest++; popup.remove();
       if(discovery) {
         predictionLoadRequest++;
+        endPredictionLoading();
         hidePredictionLayers();
         document.getElementById('metaSpecies').textContent='Què hi ha ara?';
         document.getElementById('metaDate').textContent='';
@@ -1311,6 +1353,20 @@
       }
     }
 
+    async function decodeSharedRasterPixels(bundle,grid) {
+      const generation=bundle.snapshot.generationId;
+      if(decodedSharedRasters?.generation!==generation) {
+        const pending=Promise.all(
+          ['terrain','weather','forest'].map(name=>imagePixels(bundle.images[name],grid))
+        ).then(([terrain,weather,forest])=>({terrain,weather,forest}));
+        decodedSharedRasters={generation,pending};
+        pending.catch(()=>{
+          if(decodedSharedRasters?.pending===pending)decodedSharedRasters=null;
+        });
+      }
+      return decodedSharedRasters.pending;
+    }
+
     function renderSpeciesRanking(geo) {
       const usesRasterAreas=Array.isArray(geo.topAreas);
       const top=[...(usesRasterAreas?geo.topAreas:geo.features)]
@@ -1345,14 +1401,19 @@
       const request=++predictionLoadRequest;
       lastPredictionLoadAt = Date.now();
       renderSpeciesInfo(species);
+      if(!preserveView||snapshot)beginPredictionLoading(request,species);
+      try {
       const msg = document.getElementById('msg'), content = document.getElementById('content');
       let geo,grid,pixels,terrain,weather,forest,generation;
       try {
         const bundle=await loadSpeciesFiles(DATA_BASE,species,{snapshot});
         ({geo,grid}=bundle); generation=bundle.snapshot.generationId;
-        [pixels,terrain,weather,forest]=await Promise.all(
-          ['pixels','terrain','weather','forest'].map(name=>imagePixels(bundle.images[name],grid))
-        );
+        const loaded=await Promise.all([
+          imagePixels(bundle.images.pixels,grid),
+          decodeSharedRasterPixels(bundle,grid),
+        ]);
+        pixels=loaded[0]; const shared=loaded[1];
+        ({terrain,weather,forest}=shared);
       } catch(error) {
         if(request!==predictionLoadRequest||experienceMode!=='species')return;
         console.error('No s’han pogut carregar les dades de predicció', { species, error });
@@ -1403,6 +1464,9 @@
       if (!preserveView&&!b.isEmpty()) map.fitBounds(b, { padding:60, maxZoom:9, duration:600 });
       renderSpeciesRanking(geo);
       return Boolean(currentRaster);
+      } finally {
+        endPredictionLoading(request);
+      }
     }
 
     let foregroundRefreshPending=false, lastForegroundAttemptAt=0;

@@ -2,14 +2,51 @@
 const generationPattern = /^g-[a-f0-9-]{36}$/;
 const apiUrl = (base, path) => base === '.' ? `/api/predictions/${path}` : new URL(`api/predictions/${path}`, base).href;
 
-async function response(fetchImpl, url) {
-  const result = await fetchImpl(url, { cache: 'no-store', credentials: 'include' });
+const sharedAssets = new Set([
+  'bolets.grid.json',
+  'bolets.terrain.png',
+  'bolets.weather.png',
+  'bolets.forest.png',
+]);
+const sharedAssetCaches = new WeakMap();
+
+async function response(fetchImpl, url, cache = 'no-store') {
+  const result = await fetchImpl(url, { cache, credentials: 'include' });
   if (!result.ok) {
     const error = new Error(`Prediction request failed (${result.status})`);
     error.status = result.status;
     throw error;
   }
   return result;
+}
+
+function sharedAssetCache(fetchImpl, generation) {
+  let cache = sharedAssetCaches.get(fetchImpl);
+  if (cache?.generation !== generation) {
+    cache = { generation, assets: new Map() };
+    sharedAssetCaches.set(fetchImpl, cache);
+  }
+  return cache.assets;
+}
+
+function readAsset(base, manifest, name, kind, fetchImpl) {
+  const url = apiUrl(base, `generations/${manifest.generationId}/${encodeURIComponent(name)}`);
+  const read = async () => {
+    const result = await response(fetchImpl, url, 'force-cache');
+    return kind === 'blob' ? result.blob() : result.json();
+  };
+  if (!sharedAssets.has(name)) return read();
+
+  const cache = sharedAssetCache(fetchImpl, manifest.generationId);
+  const key = `${name}:${kind}`;
+  if (!cache.has(key)) {
+    const pending = read().catch(error => {
+      cache.delete(key);
+      throw error;
+    });
+    cache.set(key, pending);
+  }
+  return cache.get(key);
 }
 
 export async function openPredictionSnapshot(base = '.', fetchImpl = fetch) {
@@ -23,10 +60,9 @@ export async function openPredictionSnapshot(base = '.', fetchImpl = fetch) {
 async function loadSnapshot(base, snapshot, fetchImpl, load) {
   for (let attempt = 0; attempt < 2; attempt++) {
     const manifest = snapshot ?? await openPredictionSnapshot(base, fetchImpl);
-    const read = async (name, kind) => {
+    const read = (name, kind) => {
       if (!Object.hasOwn(manifest.files, name)) throw new Error(`Asset missing from manifest: ${name}`);
-      const result = await response(fetchImpl, apiUrl(base, `generations/${manifest.generationId}/${encodeURIComponent(name)}`));
-      return kind === 'blob' ? result.blob() : result.json();
+      return readAsset(base, manifest, name, kind, fetchImpl);
     };
     try { return { snapshot: manifest, ...await load(read, manifest) }; }
     catch (error) {

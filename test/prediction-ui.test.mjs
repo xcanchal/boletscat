@@ -19,7 +19,8 @@ test("el popup identifica dades desconegudes i carrega l'estructura forestal", (
   assert.match(app, /<span class="unknown-value">Desconegut<\/span>/);
   assert.doesNotMatch(app, /Desconegut \?/);
   assert.match(app, /entorn dens/);
-  assert.match(app, /\['pixels','terrain','weather','forest'\]/);
+  assert.match(app, /\['terrain','weather','forest'\]/);
+  assert.match(app, /imagePixels\(bundle\.images\.pixels,grid\)/);
 });
 
 test("el popup concentra les xifres útils i no publica els factors interns", () => {

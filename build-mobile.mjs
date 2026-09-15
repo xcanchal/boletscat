@@ -38,7 +38,7 @@ html = html
     "from './vendor/purchases.es.js'",
   )
   .replace(
-    "from '/prediction-client.mjs?v=generations1'",
+    "from '/prediction-client.mjs?v=generations2'",
     "from './prediction-client.mjs'",
   )
   .replace(

@@ -14,10 +14,20 @@ const practices = injectPublicFooter(practicesSource, "bones-practiques.html");
 const contentCss = await readFile(new URL("../content/content.css", import.meta.url), "utf8");
 const app = await readFile(new URL("../app.html", import.meta.url), "utf8");
 
-test("una predicció absent no conserva les dades ni la capa de l’espècie anterior", () => {
+test("una predicció absent no conserva les dades ni la capa de l'espècie anterior", () => {
   assert.match(app, /async function load\(species,\{preserveView=false,snapshot=null\}=\{\}\) \{[\s\S]*?renderSpeciesInfo\(species\);/);
   assert.match(app, /catch\(error\) \{[\s\S]*?hidePredictionLayers\(\);[\s\S]*?speciesLabel\(species\)/);
   assert.match(app, /function hidePredictionLayers\(\) \{[\s\S]*?\['prediccio','cobertura'\]/);
+});
+
+test("el canvi d'espècie mostra l'estat de càrrega i reutilitza els ràsters compartits", () => {
+  assert.match(app, /id="predictionLoading"[\s\S]*?id="predictionLoadingLabel"/);
+  assert.equal((app.match(/class="boletada-loader"/g) ?? []).length, 2);
+  assert.doesNotMatch(app, /access-radar/);
+  assert.match(app, /setTimeout\(\(\)=>\{[\s\S]*?predictionLoading\.hidden=false;[\s\S]*?\},180\)/);
+  assert.match(app, /async function decodeSharedRasterPixels\(bundle,grid\)/);
+  assert.match(app, /decodedSharedRasters\?\.generation!==generation/);
+  assert.match(app, /finally \{[\s\S]*?endPredictionLoading\(request\)/);
 });
 
 test("la PWA actualitza les prediccions quan torna a primer pla", () => {

@@ -23,13 +23,14 @@ test('all manifest/assets/legacy paths are guarded and traversal never reaches f
   const root = await tempRoot(t), manifest = await publishGeneration(root, writeFixture);
   const { app, fetchImpl } = harness(root);
   const asset = `/api/predictions/generations/${manifest.generationId}/bolets.ou_de_reig.geojson`;
+  assert.equal((await fetchImpl('/api/predictions/current.json')).headers.get('Cache-Control'), 'private, no-store');
   for (const path of ['/api/predictions/current.json', asset, '/api/predictions/bolets.rovello.png']) {
     assert.equal((await app.request(path)).status, 401);
     assert.equal((await app.request(path, { headers: { Cookie: 'access=inactive' } })).status, 402);
   }
   const response = await fetchImpl(asset);
   assert.equal(response.status, 200);
-  assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
+  assert.equal(response.headers.get('Cache-Control'), 'private, max-age=31536000, immutable');
   assert.equal((await response.json()).species, 'ou_de_reig');
   for (const tail of ['..%2F..%2F.env', 'manifest.json', 'bolets.evil.png', 'bolets..%2F.env.png']) {
     assert.equal((await fetchImpl(`/api/predictions/generations/${manifest.generationId}/${tail}`)).status, 404);
@@ -65,7 +66,8 @@ test('a publication between manifest and assets cannot mix a client bundle; disc
   const observed = [];
   const racingFetch = async (url, options) => {
     observed.push(url);
-    assert.equal(options.cache, 'no-store'); assert.equal(options.credentials, 'include');
+    assert.equal(options.cache, url.endsWith('current.json') ? 'no-store' : 'force-cache');
+    assert.equal(options.credentials, 'include');
     const result = await fetchImpl(url, options);
     if (!switched && url.endsWith('current.json')) {
       switched = true;
@@ -84,6 +86,26 @@ test('a publication between manifest and assets cannot mix a client bundle; disc
   const refreshed = await loadSpeciesFiles('.', 'rovello', { fetchImpl });
   assert.equal(refreshed.snapshot.generationId, second.generationId);
   assert.equal(refreshed.geo.features[0].properties.score, .2);
+});
+
+test('shared generation assets are fetched once across species drilldowns', async t => {
+  const root = await tempRoot(t), manifest = await publishGeneration(root, writeFixture);
+  const { fetchImpl: authorizedFetch } = harness(root);
+  const requests = new Map();
+  const fetchImpl = async (url, options) => {
+    requests.set(url, (requests.get(url) ?? 0) + 1);
+    return authorizedFetch(url, options);
+  };
+
+  await loadSpeciesFiles('.', 'rovello', { snapshot: manifest, fetchImpl });
+  await loadSpeciesFiles('.', 'ou_de_reig', { snapshot: manifest, fetchImpl });
+
+  for (const name of ['bolets.grid.json', 'bolets.terrain.png', 'bolets.weather.png', 'bolets.forest.png']) {
+    const url = `/api/predictions/generations/${manifest.generationId}/${name}`;
+    assert.equal(requests.get(url), 1, name);
+  }
+  assert.equal(requests.get(`/api/predictions/generations/${manifest.generationId}/bolets.rovello.png`), 1);
+  assert.equal(requests.get(`/api/predictions/generations/${manifest.generationId}/bolets.ou_de_reig.png`), 1);
 });
 
 test('an expired generation retries the whole bundle once with the latest manifest', async t => {

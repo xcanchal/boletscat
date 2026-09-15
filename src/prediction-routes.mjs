@@ -50,6 +50,7 @@ export function registerPredictionRoutes(app, { root, authorize, onUnavailable =
     try {
       const result = await readGenerationAsset(root, generation, filename);
       if (result.status >= 500) onUnavailable({ error:new Error(result.error), path:c.req.path });
+      if (result.status === 200) c.header('Cache-Control', 'private, max-age=31536000, immutable');
       return assetResponse(c, result, filename);
     } catch (error) {
       if (error.code === 'ENOENT') return c.json({ error: 'generation_unavailable' }, 410);
